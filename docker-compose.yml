@@ -11,7 +11,7 @@ services:
       FLASK_DEBUG: 1
       FLASK_APP: src/app.py
     ports:
-      - 5000:5000
+      - 5001:5000
     volumes:
       - .:/app
     networks:

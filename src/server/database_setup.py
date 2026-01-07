@@ -19,6 +19,12 @@ def get_db_uri_and_path():
 def add_database(app):
     # Get the database URI and path.
     db_uri, db_path = get_db_uri_and_path()
+
+    # Create the directory for the database if it doesn't exist.
+    db_dir = os.path.dirname(db_path)
+    if not os.path.exists(db_dir):
+        os.makedirs(db_dir)
+
     # Check if the app already has extensions and if SQLAlchemy is among them
     if not hasattr(app, 'extensions') or 'sqlalchemy' not in app.extensions:
         # Set the database URI in the application's configuration
@@ -69,7 +75,7 @@ def create_database_table(app):
         count = db.session.query(Auth).count()
 
         if count == 0:
-            hashed_password = generate_password_hash('Password', method='sha256')
+            hashed_password = generate_password_hash('Password')
             admin = Auth(username='Admin', password=hashed_password)
             db.session.add(admin)
             db.session.commit()
