@@ -17,6 +17,7 @@ import {
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Edit, Play, Trash2, Plus, Clock, Pause, CheckCircle } from "lucide-react";
 import { useForm } from "react-hook-form";
@@ -331,7 +332,7 @@ function JobForm({ sources, destinations, notifications, initialData, onSuccess 
                             <FormDescription>Pause automated execution without deleting</FormDescription>
                         </div>
                         <FormControl>
-                            <input type="checkbox" checked={field.value} onChange={field.onChange} className="h-4 w-4" />
+                            <Switch checked={field.value} onCheckedChange={field.onChange} />
                         </FormControl>
                     </FormItem>
                 )} />

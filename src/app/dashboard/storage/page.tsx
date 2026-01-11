@@ -22,6 +22,7 @@ import {
     DialogFooter
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Database, Search } from "lucide-react";
 import { toast } from "sonner";
 import { Label } from "@/components/ui/label";
@@ -325,13 +326,11 @@ export default function StoragePage() {
                                     <div className="space-y-2 max-h-[200px] overflow-y-auto">
                                         {dbConfig.map((db, idx) => (
                                             <div key={db.id} className="flex items-center gap-2 p-2 bg-secondary/50 rounded-sm">
-                                                <input
-                                                    type="checkbox"
-                                                    className="w-4 h-4"
+                                                <Checkbox
                                                     checked={db.selected}
-                                                    onChange={e => {
+                                                    onCheckedChange={(checked) => {
                                                         const newC = [...dbConfig];
-                                                        newC[idx].selected = e.target.checked;
+                                                        newC[idx].selected = checked === true;
                                                         setDbConfig(newC);
                                                     }}
                                                 />
