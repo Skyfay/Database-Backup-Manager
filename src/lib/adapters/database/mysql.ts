@@ -20,8 +20,8 @@ export const MySQLAdapter: DatabaseAdapter = {
             // Construct command
             // Note: Password handling in command line is insecure, better to use config file or env var
             // but for this MVP we'll construct it carefully.
-
-            let command = `mysqldump -h ${config.host} -P ${config.port} -u ${config.user}`;
+            // We force protocol=tcp to avoid socket connection attempts on localhost (Docker issues)
+            let command = `mysqldump -h ${config.host} -P ${config.port} -u ${config.user} --protocol=tcp`;
 
             if (config.password) {
                 command += ` -p"${config.password}"`;
@@ -106,7 +106,8 @@ export const MySQLAdapter: DatabaseAdapter = {
 
     async test(config: any): Promise<{ success: boolean; message: string }> {
         try {
-            let command = `mysqladmin ping -h ${config.host} -P ${config.port} -u ${config.user} --connect-timeout=5`;
+            // Force protocol=tcp to ensure we connect via network port (vital for Docker on localhost)
+            let command = `mysqladmin ping -h ${config.host} -P ${config.port} -u ${config.user} --protocol=tcp --connect-timeout=5`;
              if (config.password) {
                 // Using MYSQL_PWD env var logic relative to exec might be safer but inline works for MVP
                 command += ` -p"${config.password}"`;

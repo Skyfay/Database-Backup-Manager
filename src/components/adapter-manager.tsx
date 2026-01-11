@@ -24,8 +24,18 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Trash2, Plus, Edit } from "lucide-react";
+import { Trash2, Plus, Edit, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface AdapterManagerProps {
     type: 'database' | 'storage' | 'notification';
@@ -167,6 +177,9 @@ function AdapterCard({ config, definition, onDelete, onEdit }: { config: Adapter
 
 function AdapterForm({ type, adapters, onSuccess, initialData }: { type: string, adapters: AdapterDefinition[], onSuccess: () => void, initialData?: AdapterConfig }) {
     const [selectedAdapterId, setSelectedAdapterId] = useState<string>(initialData?.adapterId || "");
+    const [connectionError, setConnectionError] = useState<string | null>(null);
+    const [pendingSubmission, setPendingSubmission] = useState<any | null>(null);
+
     const selectedAdapter = adapters.find(a => a.id === selectedAdapterId);
 
     // Dynamic schema based on selection
@@ -195,34 +208,7 @@ function AdapterForm({ type, adapters, onSuccess, initialData }: { type: string,
     }, [adapters, initialData, form]);
 
 
-    const onSubmit = async (data: any) => {
-        if (type === 'database') {
-             const toastId = toast.loading("Testing connection...");
-             try {
-                 const testRes = await fetch('/api/adapters/test-connection', {
-                     method: 'POST',
-                     headers: { 'Content-Type': 'application/json' },
-                     body: JSON.stringify({ adapterId: data.adapterId, config: data.config })
-                 });
-
-                 const testResult = await testRes.json();
-
-                 if (testResult.success) {
-                     toast.success("Connection test successful", { id: toastId });
-                 } else {
-                     toast.dismiss(toastId);
-                     if (!confirm(`Connection Test Failed:\n${testResult.message}\n\nDo you want to save anyway?`)) {
-                         return; // Abort save
-                     }
-                 }
-             } catch (e) {
-                 toast.dismiss(toastId);
-                 if (!confirm("Could not test connection due to an error. Save anyway?")) {
-                     return;
-                 }
-             }
-        }
-
+const saveConfig = async (data: any) => {
         try {
             const url = initialData ? `/api/adapters/${initialData.id}` : '/api/adapters';
             const method = initialData ? 'PUT' : 'POST';
@@ -249,8 +235,40 @@ function AdapterForm({ type, adapters, onSuccess, initialData }: { type: string,
         }
     };
 
+    const onSubmit = async (data: any) => {
+        if (type === 'database') {
+             const toastId = toast.loading("Testing connection...");
+             try {
+                 const testRes = await fetch('/api/adapters/test-connection', {
+                     method: 'POST',
+                     headers: { 'Content-Type': 'application/json' },
+                     body: JSON.stringify({ adapterId: data.adapterId, config: data.config })
+                 });
+
+                 const testResult = await testRes.json();
+
+                 toast.dismiss(toastId);
+
+                 if (testResult.success) {
+                     toast.success("Connection test successful");
+                     await saveConfig(data);
+                 } else {
+                     setConnectionError(testResult.message);
+                     setPendingSubmission(data);
+                 }
+             } catch (e) {
+                 toast.dismiss(toastId);
+                 setConnectionError("Could not test connection due to an unexpected error.");
+                 setPendingSubmission(data);
+             }
+        } else {
+            await saveConfig(data);
+        }
+    };
+
     return (
-        <Form {...form}>
+        <>
+            <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <FormField
                     control={form.control}
@@ -363,5 +381,35 @@ function AdapterForm({ type, adapters, onSuccess, initialData }: { type: string,
                 </Button>
             </form>
         </Form>
+
+        <AlertDialog open={!!connectionError} onOpenChange={(open) => !open && setConnectionError(null)}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <div className="flex items-center gap-2 text-destructive">
+                        <AlertCircle className="h-5 w-5" />
+                        <AlertDialogTitle>Connection Failed</AlertDialogTitle>
+                    </div>
+                    <AlertDialogDescription className="pt-2 flex flex-col gap-2">
+                        <p>We could not establish a connection to the database.</p>
+                        <div className="bg-muted p-3 rounded-md text-xs font-mono break-all text-destructive">
+                            {connectionError}
+                        </div>
+                        <p className="font-medium mt-2">Do you want to save this configuration anyway?</p>
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel onClick={() => { setConnectionError(null); setPendingSubmission(null); }}>
+                        Cancel, let me fix it
+                    </AlertDialogCancel>
+                    <AlertDialogAction onClick={() => {
+                        setConnectionError(null);
+                        if (pendingSubmission) saveConfig(pendingSubmission);
+                    }}>
+                        Save Anyway
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+        </>
     );
 }

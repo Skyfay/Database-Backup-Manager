@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { registry } from "@/lib/core/registry";
+import { registerAdapters } from "@/lib/adapters";
+
+// Ensure adapters are registered
+registerAdapters();
 
 export async function POST(req: NextRequest) {
     try {
