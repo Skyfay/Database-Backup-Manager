@@ -41,7 +41,7 @@ A robust, self-hosted solution for automating database backups. Manage sources, 
 ### Prerequisites
 
 - Node.js (v18+)
-- Package manager (`pnpm` recommended, `npm` or `yarn` work too)
+- Package manager (`pnpm`)
 - Docker (optional, for running test databases)
 
 ### Installation
@@ -55,8 +55,6 @@ A robust, self-hosted solution for automating database backups. Manage sources, 
 2. **Install dependencies**
    ```bash
    pnpm install
-   # or
-   npm install
    ```
 
 3. **Configure Environment**
@@ -79,10 +77,6 @@ Start the development server:
 
 ```bash
 pnpm dev
-# or
-npm run dev
-# or
-yarn dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the dashboard.
