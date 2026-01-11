@@ -28,6 +28,7 @@ export type BackupResult = {
     size?: number;
     error?: string;
     logs: string[];
+    metadata?: any;
     startedAt: Date;
     completedAt: Date;
 };

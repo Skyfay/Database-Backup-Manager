@@ -53,4 +53,5 @@ model Execution {
 
   size      Int?     // Size in bytes
   path      String?  // Path in destination
+  metadata  String?  // JSON metadata (e.g. number of DBs)
 }

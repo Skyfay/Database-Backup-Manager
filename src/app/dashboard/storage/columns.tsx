@@ -21,6 +21,7 @@ export type FileInfo = {
     jobName?: string;
     sourceName?: string;
     sourceType?: string;
+    dbInfo?: { count: string | number; label: string };
 };
 
 interface ColumnsProps {
@@ -61,7 +62,7 @@ export const createColumns = ({ onRestore, onDownload, onDelete }: ColumnsProps)
             const job = row.original.jobName;
             const source = row.original.sourceName;
             const type = row.original.sourceType;
-            
+
             if (!job && !source) return <span className="text-muted-foreground">-</span>
 
             return (
@@ -77,6 +78,9 @@ export const createColumns = ({ onRestore, onDownload, onDelete }: ColumnsProps)
                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                              <HardDrive className="h-3 w-3" />
                              <span>{job}</span>
+                             {row.original.dbInfo?.label && row.original.dbInfo.label !== "Unknown" && (
+                                 <Badge variant="secondary" className="text-[9px] h-4 px-1">{row.original.dbInfo.label}</Badge>
+                             )}
                          </div>
                     )}
                 </div>
@@ -87,27 +91,29 @@ export const createColumns = ({ onRestore, onDownload, onDelete }: ColumnsProps)
         accessorKey: "size",
         header: ({ column }) => {
             return (
-                <Button
-                    variant="ghost"
-                    onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                >
-                    Size
-                    <ArrowUpDown className="ml-2 h-4 w-4" />
-                </Button>
+                <div className="flex justify-end">
+                    <Button
+                        variant="ghost"
+                        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+                    >
+                        Size
+                        <ArrowUpDown className="ml-2 h-4 w-4" />
+                    </Button>
+                </div>
             );
         },
         cell: ({ row }) => {
             const size = parseFloat(row.getValue("size"));
             let formatted = "0 B";
-            
+
             if (size > 0) {
                 const k = 1024;
                 const units = ["B", "KB", "MB", "GB", "TB"];
                 const i = Math.floor(Math.log(size) / Math.log(k));
                 formatted = parseFloat((size / Math.pow(k, i)).toFixed(2)) + " " + units[i];
             }
-            
-            return <div className="font-medium font-mono text-xs">{formatted}</div>;
+
+            return <div className="font-medium font-mono text-xs text-right pr-4">{formatted}</div>;
         },
     },
     {
@@ -156,7 +162,7 @@ export const createColumns = ({ onRestore, onDownload, onDelete }: ColumnsProps)
                             <TooltipContent>Restore</TooltipContent>
                         </Tooltip>
                     </TooltipProvider>
-                    
+
                      <TooltipProvider>
                         <Tooltip>
                             <TooltipTrigger asChild>

@@ -49,6 +49,8 @@ export async function runJob(jobId: string) {
     let status: "Success" | "Failed" = "Success";
     let tempFile: string | null = null;
     let dumpSize = 0;
+    let finalRemotePath: string | null = null;
+    let metadata: any = null;
 
     try {
         log("Initialization started");
@@ -72,6 +74,36 @@ export async function runJob(jobId: string) {
         log(`Starting Dump from ${job.source.name} (${job.source.type})...`);
         const sourceConfig = JSON.parse(job.source.config);
 
+        // Determine Metadata from Config
+        try {
+              const dbVal = sourceConfig.database;
+              const options = sourceConfig.options || "";
+              const isAll = options.includes("--all-databases");
+
+              let label = 'Unknown';
+              let count: number | string = 'Unknown';
+
+              if (isAll) {
+                  label = 'All DBs';
+                  count = 'All';
+              } else if (Array.isArray(dbVal)) {
+                  label = `${dbVal.length} DBs`;
+                  count = dbVal.length;
+              } else if (typeof dbVal === 'string') {
+                  if (dbVal.includes(',')) {
+                      const parts = dbVal.split(',').filter((s: string) => s.trim().length > 0);
+                      label = `${parts.length} DBs`;
+                      count = parts.length;
+                  } else if (dbVal.trim().length > 0) {
+                      label = 'Single DB';
+                      count = 1;
+                  }
+              }
+              metadata = { label, count };
+        } catch (e) {
+            // Ignore metadata parsing error
+        }
+
         // Ensure config has required fields passed from the Source entity logic if needed
         // The adapter expects the raw config object stored in DB
 
@@ -93,16 +125,16 @@ export async function runJob(jobId: string) {
         log(`Starting Upload to ${job.destination.name} (${job.destination.type})...`);
         const destConfig = JSON.parse(job.destination.config);
 
-        // Define remote path (Standard: /BackupManager/JobName/FileName)
-        const remotePath = `/backups/${job.name}/${path.basename(tempFile)}`;
+        // Define remote path (Standard: /backups/JobName/FileName)
+        finalRemotePath = `/backups/${job.name}/${path.basename(tempFile)}`;
 
-        const uploadSuccess = await destAdapter.upload(destConfig, tempFile, remotePath);
+        const uploadSuccess = await destAdapter.upload(destConfig, tempFile, finalRemotePath);
 
         if (!uploadSuccess) {
             throw new Error("Upload failed (Adapter returned false)");
         }
 
-        log(`Upload successful to ${remotePath}`);
+        log(`Upload successful to ${finalRemotePath}`);
 
         // 7. Success Finalization
         status = "Success";
@@ -129,7 +161,10 @@ export async function runJob(jobId: string) {
             data: {
                 status: status,
                 endedAt: new Date(),
-                logs: JSON.stringify(logs) // Store as simple string array for now
+                logs: JSON.stringify(logs), // Store as simple string array for now
+                size: dumpSize,
+                path: finalRemotePath,
+                metadata: metadata ? JSON.stringify(metadata) : null
             }
         });
 
