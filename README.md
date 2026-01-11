@@ -1,37 +1,36 @@
-# Backup Control Plane (Next.js + shadcn/ui)
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-Interactive control plane to model backup targets, storage locations, and pluggable notification channels. Built with Next.js App Router, Tailwind CSS 3, and shadcn/ui components.
+## Getting Started
 
-## Quickstart / Starten
+First, run the development server:
 
 ```bash
-pnpm install
+npm run dev
+# or
+yarn dev
+# or
 pnpm dev
+# or
+bun dev
 ```
 
-Then open http://localhost:3000. The dashboard uses mock data and in-memory state; no backend is required.
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-## Concepts
-- **Backup targets**: engine (Postgres/MySQL/Mongo/etc.), host, schedule (cron), retention, linked storage, linked notification channels.
-- **Storage locations**: S3/GCS/Azure/local endpoints with encryption + region metadata.
-- **Notification channels**: Discord, email, or webhook targets; can be attached to any backup target.
-- **Actions**: run a backup now, add targets/storage/channels through forms; toast feedback via `sonner`.
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-## Structure
-- App shell & layout: `src/app/layout.tsx`, `src/components/layout/*`
-- Dashboard UI: `src/components/dashboard/dashboard.tsx`
-- Domain models: `src/lib/types.ts`
-- Mock data: `src/lib/data/mock-data.ts`
-- Pure helpers: `src/lib/services/*`, `src/lib/utils.ts`
-- UI kit (shadcn-style): `src/components/ui/*`
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-## Extending
-- Add a real API layer by replacing the mock services with fetch calls or server actions.
-- New notification channels: extend `NotificationChannelType`, add an adapter in `src/lib/services/notifications.ts`, and surface it in the form select.
-- Storage backends: extend `StorageLocationType` and use the same `createStorageLocation` helper.
+## Learn More
 
-For architecture notes and AI prompts, see [docs/AI.md](docs/AI.md).
+To learn more about Next.js, take a look at the following resources:
 
-## shadcn/ui Hinweis
-- UI-Komponenten folgen dem shadcn/ui-Stil (Radix + Tailwind). Sie liegen unter `src/components/ui` und nutzen `tailwindcss-animate`, `class-variance-authority`, `lucide-react`, etc.
-- Kein CLI-Scaffold nötig; bei Bedarf kannst du weitere Komponenten nach https://ui.shadcn.com/ ergänzen.
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+
+## Deploy on Vercel
+
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.

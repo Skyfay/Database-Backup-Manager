@@ -1,0 +1,53 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model AdapterConfig {
+  id          String   @id @default(uuid())
+  name        String
+  type        String   // 'database', 'storage', 'notification'
+  adapterId   String   // 'mysql', 's3', etc.
+  config      String   // JSON string of config
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  jobsSource      Job[] @relation("Source")
+  jobsDestination Job[] @relation("Destination")
+}
+
+model Job {
+  id            String   @id @default(uuid())
+  name          String
+  schedule      String   // Cron expression
+  enabled       Boolean  @default(true)
+
+  sourceId      String
+  source        AdapterConfig @relation("Source", fields: [sourceId], references: [id])
+
+  destinationId String
+  destination   AdapterConfig @relation("Destination", fields: [destinationId], references: [id])
+
+  executions    Execution[]
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Execution {
+  id        String   @id @default(uuid())
+  jobId     String
+  job       Job      @relation(fields: [jobId], references: [id])
+
+  status    String   // 'pending', 'running', 'success', 'failed'
+  logs      String   // JSON array of logs
+  startedAt DateTime @default(now())
+  endedAt   DateTime?
+
+  size      Int?     // Size in bytes
+  path      String?  // Path in destination
+}
