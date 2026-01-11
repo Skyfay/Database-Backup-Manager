@@ -78,7 +78,23 @@ export const MySQLAdapter: DatabaseAdapter = {
         const logs: string[] = [];
 
         try {
-             let command = `mysql -h ${config.host} -P ${config.port} -u ${config.user}`;
+            // Ensure database exists before restoring
+            // Use single quotes for the shell command to prevent backtick expansion
+            const createCmd = `mysql -h ${config.host} -P ${config.port} -u ${config.user} --protocol=tcp ${config.password ? `-p"${config.password}"` : ''} -e 'CREATE DATABASE IF NOT EXISTS \`${config.database}\`'`;
+
+            try {
+                await execAsync(createCmd);
+                logs.push(`Database '${config.database}' ensured.`);
+            } catch (e: any) {
+                // Try to extract the specific MySQL error message
+                const msg = e.message || "";
+                const match = msg.match(/ERROR \d+.*$/m);
+                const cleanError = match ? match[0] : msg;
+                logs.push(`Warning: Failed to create database '${config.database}' (User permissions?): ${cleanError}`);
+            }
+
+             // Add --protocol=tcp to avoid socket issues on localhost
+             let command = `mysql -h ${config.host} -P ${config.port} -u ${config.user} --protocol=tcp`;
 
             if (config.password) {
                 command += ` -p"${config.password}"`;
@@ -101,11 +117,17 @@ export const MySQLAdapter: DatabaseAdapter = {
             };
 
         } catch (error: any) {
-             logs.push(`Error: ${error.message}`);
+            // Clean up error message
+            const msg = error.message || "";
+            const match = msg.match(/ERROR \d+.*$/m);
+            const cleanError = match ? match[0] : msg;
+
+            logs.push(`Error: ${cleanError}`);
+
             return {
                 success: false,
                 logs,
-                error: error.message,
+                error: cleanError,
                 startedAt,
                 completedAt: new Date(),
             };

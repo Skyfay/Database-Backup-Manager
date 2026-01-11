@@ -49,6 +49,13 @@ export interface DatabaseAdapter extends BaseAdapter {
     restore(config: any, sourcePath: string): Promise<BackupResult>;
 }
 
+export type FileInfo = {
+    name: string;
+    path: string;
+    size: number;
+    lastModified: Date;
+};
+
 export interface StorageAdapter extends BaseAdapter {
     type: 'storage';
     /**
@@ -64,7 +71,7 @@ export interface StorageAdapter extends BaseAdapter {
     /**
      * Lists files in a directory
      */
-    list(config: any, remotePath: string): Promise<string[]>;
+    list(config: any, remotePath: string): Promise<FileInfo[]>;
 
     /**
      * Deletes a file

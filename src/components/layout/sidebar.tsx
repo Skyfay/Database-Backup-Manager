@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LayoutDashboard, Database, HardDrive, CalendarClock, History, Settings, Bell } from "lucide-react"
+import { LayoutDashboard, Database, HardDrive, FolderOpen, CalendarClock, History, Settings, Bell } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 
@@ -10,6 +10,7 @@ const sidebarItems = [
     { icon: LayoutDashboard, label: "Overview", href: "/dashboard" },
     { icon: Database, label: "Sources", href: "/dashboard/sources" },
     { icon: HardDrive, label: "Destinations", href: "/dashboard/destinations" },
+    { icon: FolderOpen, label: "Storage Explorer", href: "/dashboard/storage" },
     { icon: CalendarClock, label: "Jobs", href: "/dashboard/jobs" },
     { icon: History, label: "History", href: "/dashboard/history" },
     { icon: Bell, label: "Notifications", href: "/dashboard/notifications" },

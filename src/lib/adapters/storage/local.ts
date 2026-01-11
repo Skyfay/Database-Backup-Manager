@@ -1,8 +1,8 @@
-import { StorageAdapter } from "@/lib/core/interfaces";
+import { StorageAdapter, FileInfo } from "@/lib/core/interfaces";
 import { LocalStorageSchema } from "@/lib/adapters/definitions";
 import fs from "fs/promises";
 import path from "path";
-import { existsSync } from "fs";
+import { existsSync, statSync } from "fs";
 
 export const LocalFileSystemAdapter: StorageAdapter = {
     id: "local-filesystem",
@@ -49,15 +49,32 @@ export const LocalFileSystemAdapter: StorageAdapter = {
         }
     },
 
-    async list(config: { basePath: string }, remotePath: string = ""): Promise<string[]> {
+    async list(config: { basePath: string }, remotePath: string = ""): Promise<FileInfo[]> {
         try {
             const dirPath = path.join(config.basePath, remotePath);
             if (!existsSync(dirPath)) {
                 return [];
             }
 
-            const files = await fs.readdir(dirPath);
-            // This is a simple list, might want to make it recursive or return more info later
+            const entries = await fs.readdir(dirPath, { withFileTypes: true, recursive: true });
+
+            const files: FileInfo[] = [];
+
+            for (const entry of entries) {
+                if (entry.isFile()) {
+                    // With recursive: true, entry.name is just the filename, entry.path is the directory
+                    const fullPath = path.join(entry.parentPath || entry.path, entry.name); // Node 20+ uses parentPath
+                    const relativePath = path.relative(config.basePath, fullPath);
+                    const stats = statSync(fullPath);
+
+                    files.push({
+                        name: entry.name,
+                        path: relativePath,
+                        size: stats.size,
+                        lastModified: stats.mtime
+                    });
+                }
+            }
             return files;
         } catch (error) {
             console.error("Local list failed:", error);

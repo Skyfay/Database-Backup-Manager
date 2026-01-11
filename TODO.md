@@ -59,6 +59,11 @@
     - [x] List past executions
     - [x] View detailed logs per execution
     - [ ] Download backup artifact (if local/accessible)
+- [ ] **Storage Explorer & Restore**
+    - [ ] List backups per Destination
+    - [ ] Download backup artifacts
+    - [ ] Restore workflow (Select Source, Type-Check, Rename)
+    - [ ] Filtering (Size, Source, Job)
 - [ ] **Dashboard Home**
     - [ ] Real statistics (Success rate, Total size)
     - [ ] Recent activity feed
