@@ -17,10 +17,12 @@ export const MySQLAdapter: DatabaseAdapter = {
         const logs: string[] = [];
 
         try {
-            // Construct command
-            // Note: Password handling in command line is insecure, better to use config file or env var
-            // but for this MVP we'll construct it carefully.
-            // We force protocol=tcp to avoid socket connection attempts on localhost (Docker issues)
+            // Determine databases to backup
+            let dbs: string[] = [];
+            if(Array.isArray(config.database)) dbs = config.database;
+            else if(config.database && config.database.includes(',')) dbs = config.database.split(',');
+            else if(config.database) dbs = [config.database];
+
             let command = `mysqldump -h ${config.host} -P ${config.port} -u ${config.user} --protocol=tcp`;
 
             if (config.password) {
@@ -31,7 +33,13 @@ export const MySQLAdapter: DatabaseAdapter = {
                 command += ` ${config.options}`;
             }
 
-            command += ` ${config.database} > "${destinationPath}"`;
+            if (dbs.length > 1) {
+                command += ` --databases ${dbs.join(' ')}`;
+            } else if (dbs.length === 1) {
+                command += ` ${dbs[0]}`;
+            }
+
+            command += ` > "${destinationPath}"`;
 
             logs.push(`Executing command: ${command.replace(/-p"[^"]*"/, '-p"*****"')}`);
 
@@ -118,5 +126,13 @@ export const MySQLAdapter: DatabaseAdapter = {
         } catch (error: any) {
             return { success: false, message: "Connection failed: " + (error.stderr || error.message) };
         }
+    },
+
+    async getDatabases(config: any): Promise<string[]> {
+        const command = `mysql -h ${config.host} -P ${config.port} -u ${config.user} ${config.password ? `-p"${config.password}"` : ''} --protocol=tcp -e "SHOW DATABASES" --skip-column-names`;
+        const { stdout } = await execAsync(command);
+        const sysDbs = ['information_schema', 'mysql', 'performance_schema', 'sys'];
+        return stdout.split('\n').map(s => s.trim()).filter(s => s && !sysDbs.includes(s));
     }
-}
+};
+

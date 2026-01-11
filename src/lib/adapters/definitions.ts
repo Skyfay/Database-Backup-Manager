@@ -12,7 +12,7 @@ export const MySQLSchema = z.object({
     port: z.coerce.number().default(3306),
     user: z.string().min(1, "User is required"),
     password: z.string().optional(),
-    database: z.string().min(1, "Database name is required"),
+    database: z.union([z.string(), z.array(z.string())]).default(""),
     options: z.string().optional().describe("Additional mysqldump options"),
 });
 
@@ -21,7 +21,7 @@ export const PostgresSchema = z.object({
     port: z.coerce.number().default(5432),
     user: z.string().min(1, "User is required"),
     password: z.string().optional(),
-    database: z.string().min(1, "Database name is required"),
+    database: z.union([z.string(), z.array(z.string())]).default(""),
     options: z.string().optional().describe("Additional pg_dump options"),
 });
 
@@ -31,7 +31,7 @@ export const MongoDBSchema = z.object({
     port: z.coerce.number().default(27017),
     user: z.string().optional(),
     password: z.string().optional(),
-    database: z.string().optional().describe("Database name"),
+    database: z.union([z.string(), z.array(z.string())]).default(""),
     options: z.string().optional().describe("Additional mongodump options"),
 });
 

@@ -107,12 +107,21 @@ export const PostgresAdapter: DatabaseAdapter = {
         try {
             const env = { ...process.env, PGPASSWORD: config.password };
             // Simple query to check connection
-            const command = `psql -h ${config.host} -p ${config.port} -U ${config.user} -d ${config.database} -c "SELECT 1"`;
+            const command = `psql -h ${config.host} -p ${config.port} -U ${config.user} -d postgres -c "SELECT 1"`;
 
             await execAsync(command, { env });
             return { success: true, message: "Connection successful" };
         } catch (error: any) {
              return { success: false, message: "Connection failed: " + (error.stderr || error.message) };
         }
+    },
+
+    async getDatabases(config: any): Promise<string[]> {
+        const env = { ...process.env, PGPASSWORD: config.password };
+        // -t = tuples only (no header/footer), -A = unaligned
+        const command = `psql -h ${config.host} -p ${config.port} -U ${config.user} -d postgres -t -A -c "SELECT datname FROM pg_database WHERE datistemplate = false;"`;
+
+        const { stdout } = await execAsync(command, { env });
+        return stdout.split('\n').map(s => s.trim()).filter(s => s);
     }
-}
+};

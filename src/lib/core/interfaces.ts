@@ -15,6 +15,11 @@ export interface BaseAdapter {
      * Optional method to test the connection configuration
      */
     test?: (config: any) => Promise<{ success: boolean; message: string }>;
+
+    /**
+     * Optional method to list available databases (for Source adapters)
+     */
+    getDatabases?: (config: any) => Promise<string[]>;
 }
 
 export type BackupResult = {

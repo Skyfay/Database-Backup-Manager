@@ -18,13 +18,28 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+    Command,
+    CommandEmpty,
+    CommandGroup,
+    CommandInput,
+    CommandItem,
+    CommandList,
+} from "@/components/ui/command";
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { ADAPTER_DEFINITIONS, AdapterDefinition } from "@/lib/adapters/definitions";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Trash2, Plus, Edit, AlertCircle } from "lucide-react";
+import { Trash2, Plus, Edit, AlertCircle, Check, ChevronsUpDown, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import {
     AlertDialog,
@@ -180,14 +195,67 @@ function AdapterForm({ type, adapters, onSuccess, initialData }: { type: string,
     const [connectionError, setConnectionError] = useState<string | null>(null);
     const [pendingSubmission, setPendingSubmission] = useState<any | null>(null);
 
+    // Multi-Select DB Logic
+    const [availableDatabases, setAvailableDatabases] = useState<string[]>([]);
+    const [isLoadingDbs, setIsLoadingDbs] = useState(false);
+    const [isDbListOpen, setIsDbListOpen] = useState(false);
+
     const selectedAdapter = adapters.find(a => a.id === selectedAdapterId);
 
-    // Dynamic schema based on selection
+    // Initial load of databases if editing
+    useEffect(() => {
+        if(initialData && type === 'database') {
+             // We don't automatically load DB list on edit to avoid slow requests
+        }
+    }, [initialData, type]);
+
     const schema = z.object({
         name: z.string().min(1, "Name is required"),
-        adapterId: z.string().min(1, "Adapter type is required"),
+        adapterId: z.string().min(1, "Type is required"),
         config: selectedAdapter ? selectedAdapter.configSchema : z.any()
     });
+
+    const fetchDatabases = async (currentConfig: any) => {
+        if (!selectedAdapterId) return;
+
+        setIsLoadingDbs(true);
+        try {
+             const testRes = await fetch('/api/adapters/test-connection', {
+                 method: 'POST',
+                 headers: { 'Content-Type': 'application/json' },
+                 body: JSON.stringify({ adapterId: selectedAdapterId, config: currentConfig })
+             });
+             const testResult = await testRes.json();
+
+             if (!testResult.success) {
+                 toast.error(`Connection failed: ${testResult.message}`);
+                 setAvailableDatabases([]);
+                 setIsLoadingDbs(false);
+                 return;
+             }
+
+             const res = await fetch('/api/adapters/access-check', {
+                 method: 'POST',
+                 headers: { 'Content-Type': 'application/json' },
+                 body: JSON.stringify({ adapterId: selectedAdapterId, config: currentConfig })
+             });
+             const data = await res.json();
+
+             if(data.success) {
+                 setAvailableDatabases(data.databases);
+                 setConnectionError(null);
+                 toast.success(`Loaded ${data.databases.length} databases`);
+                 setIsDbListOpen(true);
+             } else {
+                 toast.error("Failed to list databases: " + (data.error || "Unknown"));
+             }
+        } catch(e) {
+            console.error(e);
+            toast.error("Network error while listing databases");
+        } finally {
+            setIsLoadingDbs(false);
+        }
+    };
 
     const form = useForm({
         resolver: zodResolver(schema),
@@ -329,6 +397,7 @@ const saveConfig = async (data: any) => {
                              // Very basic type checking
                              const isPassword = key.toLowerCase().includes("password") || key.toLowerCase().includes("secret");
                              const description = shape.description;
+                             const isDatabaseField = key === 'database' && type === 'database';
 
                              return (
                                  <FormField
@@ -350,6 +419,80 @@ const saveConfig = async (data: any) => {
                                                         onChange={field.onChange}
                                                         className="h-4 w-4"
                                                     />
+                                                ) : isDatabaseField ? (
+                                                    <div className="flex gap-2">
+                                                        <Popover open={isDbListOpen} onOpenChange={setIsDbListOpen}>
+                                                            <PopoverTrigger asChild>
+                                                                <Button
+                                                                    variant="outline"
+                                                                    role="combobox"
+                                                                    className="w-full justify-between h-auto min-h-[40px]"
+                                                                >
+                                                                    {field.value && (Array.isArray(field.value) ? field.value.length > 0 : field.value) ? (
+                                                                         <div className="flex flex-wrap gap-1">
+                                                                            {Array.isArray(field.value)
+                                                                               ? field.value.map((db: string) => <Badge variant="secondary" key={db} className="mr-1">{db}</Badge>)
+                                                                               : <Badge variant="secondary">{field.value}</Badge>
+                                                                            }
+                                                                         </div>
+                                                                    ) : "Select databases..."}
+                                                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                                </Button>
+                                                            </PopoverTrigger>
+                                                            <PopoverContent className="w-[400px] p-0" align="start">
+                                                                <Command>
+                                                                    <CommandInput placeholder="Search databases..." />
+                                                                    <CommandList>
+                                                                        <CommandEmpty>
+                                                                            {isLoadingDbs ? (
+                                                                                 <div className="flex items-center justify-center p-4">
+                                                                                     <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                                                                     Loading...
+                                                                                 </div>
+                                                                            ) : "No database found or not loaded."}
+                                                                        </CommandEmpty>
+                                                                        <CommandGroup>
+                                                                            {availableDatabases.map((db) => (
+                                                                                <CommandItem
+                                                                                    value={db}
+                                                                                    key={db}
+                                                                                    onSelect={(currentValue) => {
+                                                                                        const current = Array.isArray(field.value) ? field.value : (field.value ? [field.value] : []);
+                                                                                        const isSelected = current.includes(currentValue);
+                                                                                        let newValue;
+                                                                                        if (isSelected) {
+                                                                                            newValue = current.filter((v: string) => v !== currentValue);
+                                                                                        } else {
+                                                                                            newValue = [...current, currentValue];
+                                                                                        }
+                                                                                        field.onChange(newValue);
+                                                                                    }}
+                                                                                >
+                                                                                    <Check
+                                                                                        className={cn(
+                                                                                            "mr-2 h-4 w-4",
+                                                                                            (Array.isArray(field.value) ? field.value.includes(db) : field.value === db)
+                                                                                                ? "opacity-100"
+                                                                                                : "opacity-0"
+                                                                                        )}
+                                                                                    />
+                                                                                    {db}
+                                                                                </CommandItem>
+                                                                            ))}
+                                                                        </CommandGroup>
+                                                                    </CommandList>
+                                                                </Command>
+                                                            </PopoverContent>
+                                                        </Popover>
+                                                        <Button
+                                                            type="button"
+                                                            variant="secondary"
+                                                            onClick={() => fetchDatabases(form.getValues().config)}
+                                                            disabled={isLoadingDbs}
+                                                        >
+                                                             {isLoadingDbs ? <Loader2 className="h-4 w-4 animate-spin" /> : "Load"}
+                                                        </Button>
+                                                    </div>
                                                 ) : (
                                                     <Input
                                                         type={isPassword ? "password" : "text"}

@@ -136,10 +136,8 @@ export const MongoDBAdapter: DatabaseAdapter = {
                 if (config.user && config.password) {
                      command += ` --username "${config.user}" --password "${config.password}"`;
                 }
-                if (config.database) {
-                     // Connect to specific DB, though ping works generally
-                     command += ` "${config.database}"`;
-                }
+                 // Ping against 'test' or admin? admin is safer for connection test
+                 command += ` admin`;
             }
 
             await execAsync(command);
@@ -147,5 +145,23 @@ export const MongoDBAdapter: DatabaseAdapter = {
         } catch (error: any) {
              return { success: false, message: "Connection failed: " + (error.stderr || error.message) };
         }
+    },
+
+    async getDatabases(config: any): Promise<string[]> {
+         let command = `mongosh --eval "db.adminCommand('listDatabases').databases.map(d => d.name).join(',')" --quiet`;
+
+        if (config.uri) {
+            command += ` "${config.uri}"`;
+        } else {
+            command += ` --host "${config.host}" --port ${config.port}`;
+            if (config.user && config.password) {
+                    command += ` --username "${config.user}" --password "${config.password}"`;
+            }
+            command += ` admin`;
+        }
+
+        const { stdout } = await execAsync(command);
+        const sysDbs = ['admin', 'config', 'local'];
+        return stdout.trim().split(',').map(s => s.trim()).filter(s => s && !sysDbs.includes(s));
     }
-}
+};

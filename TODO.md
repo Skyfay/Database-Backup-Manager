@@ -39,6 +39,8 @@
     - [x] List all sources
     - [x] Create/Edit source configuration
     - [x] Test connection (Auto-test on creation + Force option)
+    - [x] Validate credentials & permissions
+    - [x] Fetch available databases (List & Multi-Select)
 - [x] **Destinations Management**
     - [x] List all destinations
     - [x] Create/Edit destination configuration
