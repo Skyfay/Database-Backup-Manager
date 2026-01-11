@@ -250,7 +250,7 @@ export default function StoragePage() {
         onRestore: handleRestoreClick,
         onDownload: handleDownload,
         onDelete: handleDeleteClick
-    }), []);
+    }), [handleRestoreClick, handleDownload, handleDeleteClick]);
 
     return (
         <div className="space-y-6">
