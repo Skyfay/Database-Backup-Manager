@@ -20,8 +20,8 @@
 ## 🔌 Adapters Implementation
 ### Database Sources
 - [x] **MySQL / MariaDB Adapter** (`mysqldump`)
-- [ ] **PostgreSQL Adapter** (`pg_dump`)
-- [ ] **MongoDB Adapter** (`mongodump`)
+- [x] **PostgreSQL Adapter** (`pg_dump`)
+- [x] **MongoDB Adapter** (`mongodump`)
 
 ### Storage Destinations
 - [x] **Local Filesystem Adapter**
