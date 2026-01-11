@@ -1,15 +1,8 @@
+
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { format } from "date-fns";
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow
-} from "@/components/ui/table";
 import {
     Select,
     SelectContent,
@@ -29,9 +22,11 @@ import {
     DialogFooter
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Download, RotateCcw, Search, Database } from "lucide-react";
+import { Database, Search } from "lucide-react";
 import { toast } from "sonner";
 import { Label } from "@/components/ui/label";
+import { DataTable } from "./data-table";
+import { createColumns, FileInfo } from "./columns";
 
 interface AdapterConfig {
     id: string;
@@ -41,13 +36,6 @@ interface AdapterConfig {
     adapterId: string;
 }
 
-interface FileInfo {
-    name: string;
-    path: string;
-    size: number;
-    lastModified: string;
-}
-
 export default function StoragePage() {
     const [destinations, setDestinations] = useState<AdapterConfig[]>([]);
     const [sources, setSources] = useState<AdapterConfig[]>([]);
@@ -55,7 +43,10 @@ export default function StoragePage() {
 
     const [files, setFiles] = useState<FileInfo[]>([]);
     const [loading, setLoading] = useState(false);
-    const [filter, setFilter] = useState("");
+
+    // Delete Confirmation State
+    const [fileToDelete, setFileToDelete] = useState<FileInfo | null>(null);
+    const [deleting, setDeleting] = useState(false);
 
     // Restore Modal State
     const [restoreFile, setRestoreFile] = useState<FileInfo | null>(null);
@@ -166,6 +157,35 @@ export default function StoragePage() {
         setDbConfig([]);
     };
 
+    const handleDeleteClick = (file: FileInfo) => {
+        setFileToDelete(file);
+    };
+
+    const confirmDelete = async () => {
+        if (!fileToDelete) return;
+        setDeleting(true);
+        try {
+            const res = await fetch(`/api/storage/${selectedDestination}/files`, {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ path: fileToDelete.path }),
+            });
+
+            if (res.ok) {
+                toast.success("File deleted successfully");
+                setFileToDelete(null);
+                fetchFiles(selectedDestination); // Refresh list
+            } else {
+                const data = await res.json();
+                toast.error("Failed to delete file: " + data.error);
+            }
+        } catch (error) {
+            toast.error("Error deleting file");
+        } finally {
+            setDeleting(false);
+        }
+    };
+
     const confirmRestore = async (usePrivileged = false) => {
         if (!restoreFile || !targetSource) return;
 
@@ -180,11 +200,18 @@ export default function StoragePage() {
                  mapping = dbConfig.map(c => ({ originalName: c.name, targetName: c.targetName, selected: c.selected }));
             }
 
+            // Add root auth info if privileged
+            let auth = undefined;
+            if (usePrivileged) {
+                 auth = { user: privUser, password: privPass };
+            }
+
             const payload: any = {
                  file: restoreFile.path,
                 targetSourceId: targetSource,
                 targetDatabaseName: targetDbName || undefined,
-                databaseMapping: mapping
+                databaseMapping: mapping,
+                privilegedAuth: auth
             }
 
             const res = await fetch(`/api/storage/${selectedDestination}/restore`, {
@@ -219,19 +246,11 @@ export default function StoragePage() {
         }
     };
 
-    const formatSize = (bytes: number) => {
-        if (bytes === 0) return "0 B";
-        const k = 1024;
-        const sizes = ["B", "KB", "MB", "GB", "TB"];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
-    };
-
-    // Filtering logic
-    const filteredFiles = files.filter(f =>
-        f.name.toLowerCase().includes(filter.toLowerCase()) ||
-        f.path.toLowerCase().includes(filter.toLowerCase())
-    );
+    const columns = useMemo(() => createColumns({
+        onRestore: handleRestoreClick,
+        onDownload: handleDownload,
+        onDelete: handleDeleteClick
+    }), []);
 
     return (
         <div className="space-y-6">
@@ -250,75 +269,25 @@ export default function StoragePage() {
                         </SelectContent>
                     </Select>
                 </div>
-                {selectedDestination && (
-                    <div className="flex-1 relative">
-                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                        <Input
-                            placeholder="Filter files..."
-                            className="pl-8"
-                            value={filter}
-                            onChange={(e) => setFilter(e.target.value)}
-                        />
-                    </div>
-                )}
             </div>
 
             {selectedDestination && (
                  <Card>
                     <CardHeader>
-                        <CardTitle>Backups ({filteredFiles.length})</CardTitle>
+                        <CardTitle>Backups</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>File Name</TableHead>
-                                    <TableHead>Size</TableHead>
-                                    <TableHead>Last Modified</TableHead>
-                                    <TableHead className="text-right">Actions</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {loading ? (
-                                    <TableRow>
-                                        <TableCell colSpan={4} className="h-24 text-center">Loading...</TableCell>
-                                    </TableRow>
-                                ) : filteredFiles.length === 0 ? (
-                                    <TableRow>
-                                        <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">No files found.</TableCell>
-                                    </TableRow>
-                                ) : filteredFiles.map((file) => (
-                                    <TableRow key={file.path}>
-                                        <TableCell className="font-medium">
-                                            <div className="flex flex-col">
-                                                <span>{file.name}</span>
-                                                <span className="text-xs text-muted-foreground hidden sm:block truncate max-w-[300px]">{file.path}</span>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>{formatSize(file.size)}</TableCell>
-                                        <TableCell>{new Date(file.lastModified).toLocaleString()}</TableCell>
-                                        <TableCell className="text-right">
-                                            <div className="flex justify-end gap-2">
-                                                <Button variant="outline" size="sm" onClick={() => handleDownload(file)}>
-                                                    <Download className="h-4 w-4 mr-1" />
-                                                    Download
-                                                </Button>
-                                                <Button variant="secondary" size="sm" onClick={() => handleRestoreClick(file)}>
-                                                    <RotateCcw className="h-4 w-4 mr-1" />
-                                                    Restore
-                                                </Button>
-                                            </div>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
+                        {loading ? (
+                             <div className="flex justify-center p-8">Loading files...</div>
+                        ) : (
+                             <DataTable columns={columns} data={files} />
+                        )}
                     </CardContent>
                  </Card>
             )}
 
             {/* Restore Modal */}
-            <Dialog open={!!restoreFile} onOpenChange={(o) => { if(!o) setRestoreFile(null); }}>
+            <Dialog open={!!restoreFile} onOpenChange={(o) => { if(!o && !restoring) setRestoreFile(null); }}>
                 <DialogContent className="sm:max-w-[800px]">
                     <DialogHeader>
                         <DialogTitle>Restore Backup</DialogTitle>
@@ -446,6 +415,25 @@ export default function StoragePage() {
                                 </div>
                             </div>
                         )}
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Delete Confirmation Modal */}
+            <Dialog open={!!fileToDelete} onOpenChange={(o) => { if(!o && !deleting) setFileToDelete(null); }}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Delete Backup</DialogTitle>
+                        <DialogDescription>
+                            Are you sure you want to delete <b>{fileToDelete?.name}</b>?
+                            This action cannot be undone.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setFileToDelete(null)} disabled={deleting}>Cancel</Button>
+                        <Button variant="destructive" onClick={confirmDelete} disabled={deleting}>
+                            {deleting ? "Deleting..." : "Delete Permanently"}
+                        </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
