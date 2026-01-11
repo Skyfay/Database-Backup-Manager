@@ -102,11 +102,13 @@ export function AdapterManager({ type, title, description }: AdapterManagerProps
 
         try {
             const res = await fetch(`/api/adapters/${id}`, { method: 'DELETE' });
-            if (res.ok) {
+            const data = await res.json();
+
+            if (res.ok && data.success) {
                 toast.success("Configuration deleted");
                 setConfigs(configs.filter(c => c.id !== id));
             } else {
-                toast.error("Failed to delete");
+                toast.error(data.error || "Failed to delete");
             }
         } catch (error) {
              toast.error("Error deleting configuration");
