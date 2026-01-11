@@ -8,6 +8,25 @@ export const EmailAdapter: NotificationAdapter = {
     name: "Email (SMTP)",
     configSchema: EmailSchema,
 
+    async test(config: any): Promise<{ success: boolean; message: string }> {
+        try {
+            const transporter = nodemailer.createTransport({
+                host: config.host,
+                port: config.port,
+                secure: config.secure,
+                auth: (config.user && config.password) ? {
+                    user: config.user,
+                    pass: config.password,
+                } : undefined,
+            });
+
+            await transporter.verify();
+            return { success: true, message: "SMTP connection verified successfully!" };
+        } catch (error: any) {
+            return { success: false, message: error.message || "Failed to verify SMTP connection" };
+        }
+    },
+
     async send(config: any, message: string, context?: any): Promise<boolean> {
         try {
             const transporter = nodemailer.createTransport({

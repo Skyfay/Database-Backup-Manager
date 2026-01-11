@@ -330,6 +330,36 @@ const saveConfig = async (data: any) => {
         }
     };
 
+
+    const testConnection = async () => {
+        const data = form.getValues();
+        if (!data.adapterId) {
+            toast.error("Please select an adapter type first");
+            return;
+        }
+
+        const toastId = toast.loading("Testing connection...");
+        try {
+            const res = await fetch('/api/adapters/test-connection', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ adapterId: data.adapterId, config: data.config })
+            });
+            const result = await res.json();
+
+            toast.dismiss(toastId);
+
+            if (result.success) {
+                toast.success(result.message || "Connection successful");
+            } else {
+                toast.error(result.message || "Connection failed");
+            }
+        } catch (e) {
+            toast.dismiss(toastId);
+            toast.error("Failed to test connection");
+        }
+    };
+
     const onSubmit = async (data: any) => {
         if (type === 'database') {
              const toastId = toast.loading("Testing connection...");
@@ -546,9 +576,22 @@ const saveConfig = async (data: any) => {
                     </div>
                 )}
 
-                <Button type="submit" disabled={!selectedAdapter} className="w-full">
-                    {initialData ? "Save Changes" : "Create"}
-                </Button>
+                {/* Dialog Footer Actions */}
+                <div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 gap-2 pt-4">
+                    {(type === 'notification' || type === 'database') && (
+                        <Button
+                            type="button"
+                            variant="secondary"
+                            onClick={testConnection}
+                            disabled={!selectedAdapter}
+                        >
+                            Test Connection
+                        </Button>
+                    )}
+                    <Button type="submit" disabled={!selectedAdapter}>
+                        {initialData ? "Save Changes" : "Create"}
+                    </Button>
+                </div>
             </form>
         </Form>
 
