@@ -17,6 +17,13 @@
     - [x] Define Adapter Interfaces (Database, Storage, Notification)
     - [x] Create Type Definitions
 
+## 📦 Deployment & Maintenance
+- [ ] **Containerization**
+    - [ ] Dockerfile optimization
+    - [ ] docker-compose setup
+- [ ] **Meta-Backup**
+    - [ ] Export/Import App Configuration
+
 ## 🔌 Adapters Implementation
 ### Database Sources
 - [x] **MySQL / MariaDB Adapter** (`mysqldump`)
@@ -50,6 +57,7 @@
     - [x] List all backup jobs
     - [x] Job Editor (Select Source, Destination, Schedule)
     - [x] Manual Trigger Button
+    - [ ] Retention Policies (Smart rotation: Keep last X days/weeks)
 - [x] **Theme Support**
     - [x] Dark / Light / System Mode
     - [x] Auto-detection & Settings Toggle
@@ -83,3 +91,13 @@
 - [x] **Scheduler**
     - [x] Implement Cron scheduler (e.g., `node-cron` or similar)
     - [x] Manage active jobs
+
+## 🔐 Authentication & Security
+- [ ] **User Management**
+    - [ ] Login page
+    - [ ] Auth via OIDC
+    - [ ] Multi-User Setup
+    - [ ] User Permissions
+- [ ] **Data Security**
+    - [ ] Backup Encryption (Encrypt resulting artifacts)
+    - [ ] Credential Encryption (Encrypt DB passwords in database at rest via AES)
