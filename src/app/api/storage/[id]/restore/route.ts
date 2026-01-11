@@ -105,6 +105,11 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
             dbConf.database = targetDatabaseName;
         }
 
+        // Pass database mapping if provided
+        if (body.databaseMapping) {
+            dbConf.databaseMapping = body.databaseMapping;
+        }
+
         // Add privileged auth if provided
         if (body.privilegedAuth) {
             dbConf.privilegedAuth = body.privilegedAuth;
