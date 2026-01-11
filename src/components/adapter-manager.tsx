@@ -138,7 +138,7 @@ export function AdapterManager({ type, title, description }: AdapterManagerProps
             )}
 
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent className="max-h-[80vh] overflow-y-auto">
+                <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle>{editingId ? "Edit Configuration" : "Add New Configuration"}</DialogTitle>
                     </DialogHeader>
@@ -426,7 +426,7 @@ const saveConfig = async (data: any) => {
                                                                 <Button
                                                                     variant="outline"
                                                                     role="combobox"
-                                                                    className="w-full justify-between h-auto min-h-[40px]"
+                                                                    className="flex-1 justify-between h-auto min-h-[40px]"
                                                                 >
                                                                     {field.value && (Array.isArray(field.value) ? field.value.length > 0 : field.value) ? (
                                                                          <div className="flex flex-wrap gap-1">
