@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation"
 import { LayoutDashboard, Database, HardDrive, FolderOpen, CalendarClock, History, Settings, Bell } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
+import { UserNav } from "./user-nav"
 
 const sidebarItems = [
     { icon: LayoutDashboard, label: "Overview", href: "/dashboard" },
@@ -17,7 +18,15 @@ const sidebarItems = [
     { icon: Settings, label: "Settings", href: "/dashboard/settings" },
 ]
 
-export function Sidebar() {
+interface SidebarProps {
+    user: {
+        name?: string | null
+        email?: string | null
+        image?: string | null
+    }
+}
+
+export function Sidebar({ user }: SidebarProps) {
     const pathname = usePathname()
 
     return (
@@ -41,16 +50,7 @@ export function Sidebar() {
                 ))}
             </nav>
             <div className="p-4 border-t">
-                {/* Future User Profile Section */}
-                <div className="flex items-center gap-3 rounded-lg border p-3 shadow-sm bg-muted/50 cursor-not-allowed opacity-75">
-                    <div className="h-9 w-9 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold">
-                        A
-                    </div>
-                    <div className="flex flex-col">
-                        <span className="text-sm font-medium">Admin User</span>
-                        <span className="text-xs text-muted-foreground">admin@local</span>
-                    </div>
-                </div>
+                <UserNav user={user} />
             </div>
         </div>
     )
