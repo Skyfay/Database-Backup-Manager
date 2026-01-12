@@ -31,6 +31,11 @@ export const MongoDBAdapter: DatabaseAdapter = {
                 command += ` --host "${config.host}" --port ${config.port}`;
                 if (config.user && config.password) {
                      command += ` --username "${config.user}" --password "${config.password}"`;
+                     if (config.authenticationDatabase) {
+                         command += ` --authenticationDatabase "${config.authenticationDatabase}"`;
+                     } else {
+                         command += ` --authenticationDatabase "admin"`;
+                     }
                 }
                 if (config.database) {
                     command += ` --db "${config.database}"`;
@@ -135,9 +140,14 @@ export const MongoDBAdapter: DatabaseAdapter = {
                 command += ` --host "${config.host}" --port ${config.port}`;
                 if (config.user && config.password) {
                      command += ` --username "${config.user}" --password "${config.password}"`;
+                     if (config.authenticationDatabase) {
+                        command += ` --authenticationDatabase "${config.authenticationDatabase}"`;
+                     } else {
+                        command += ` --authenticationDatabase "admin"`;
+                     }
                 }
                  // Ping against 'test' or admin? admin is safer for connection test
-                 command += ` admin`;
+                 // command += ` admin`; // Removed implicit admin, relying on authenticationDatabase or default
             }
 
             await execAsync(command);
@@ -156,8 +166,12 @@ export const MongoDBAdapter: DatabaseAdapter = {
             command += ` --host "${config.host}" --port ${config.port}`;
             if (config.user && config.password) {
                     command += ` --username "${config.user}" --password "${config.password}"`;
+                    if (config.authenticationDatabase) {
+                        command += ` --authenticationDatabase "${config.authenticationDatabase}"`;
+                     } else {
+                        command += ` --authenticationDatabase "admin"`;
+                     }
             }
-            command += ` admin`;
         }
 
         const { stdout } = await execAsync(command);

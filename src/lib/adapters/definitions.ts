@@ -31,6 +31,7 @@ export const MongoDBSchema = z.object({
     port: z.coerce.number().default(27017),
     user: z.string().optional(),
     password: z.string().optional(),
+    authenticationDatabase: z.string().default("admin").optional(),
     database: z.union([z.string(), z.array(z.string())]).default(""),
     options: z.string().optional().describe("Additional mongodump options"),
 });
