@@ -40,6 +40,7 @@
 - [x] **Discord Webhook**
 - [x] **Email (SMTP)**
 - [ ] **Slack / Teams**
+- [ ] **Notification Conditions** (Success only / Failed only)
 
 ## 🖥 Dashboard & Features
 - [x] **Sources Management**
@@ -96,6 +97,7 @@
 - [ ] **User Management**
     - [ ] Login page
     - [ ] Auth via OIDC
+    - [ ] Passkey only, TOTP for 2FA
     - [ ] Multi-User Setup
     - [ ] User Permissions
 - [ ] **Data Security**
