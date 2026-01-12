@@ -59,9 +59,17 @@ A robust, self-hosted solution for automating database backups. Manage sources, 
 
 3. **Configure Environment**
    Set up your `.env` file containing your database configuration and app secrets.
+
+   Generate a secure secret for authentication:
+   ```bash
+   openssl rand -base64 64
+   ```
+
+   Add it to your `.env` file:
    ```bash
    # Example
    DATABASE_URL="file:./dev.db"
+   AUTH_SECRET="your-generated-secret-value"
    ```
 
 4. **Initialize Database**
