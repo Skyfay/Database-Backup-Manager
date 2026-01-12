@@ -26,6 +26,7 @@ brew install libpq
 echo -e "${GREEN}Installing MongoDB Database Tools (mongodump, mongorestore)...${NC}"
 brew tap mongodb/brew
 brew install mongodb-database-tools
+brew install mongosh
 
 echo -e "${GREEN}Installing generally useful tools (zip)...${NC}"
 brew install zip
