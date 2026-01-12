@@ -1,31 +1,39 @@
 "use client"
 
 import { usePathname } from "next/navigation"
-
-const routeTitles: Record<string, string> = {
-    "/dashboard": "Overview",
-    "/dashboard/sources": "Sources",
-    "/dashboard/destinations": "Destinations",
-    "/dashboard/storage": "Storage Explorer",
-    "/dashboard/jobs": "Backup Jobs",
-    "/dashboard/history": "Execution History",
-    "/dashboard/notifications": "Notifications",
-    "/dashboard/settings": "Settings",
-}
+import { ChevronRight } from "lucide-react"
+import Link from "next/link"
+import React from "react"
 
 export function Header() {
     const pathname = usePathname()
-    // Find exact match or fallback for sub-routes (simple implementation)
-    const title = routeTitles[pathname] ||
-                  Object.entries(routeTitles).find(([route]) => pathname.startsWith(route) && route !== '/dashboard')?.[1] ||
-                  "Database Backup Manager";
+    // Split path, filtering empty strings
+    const segments = pathname.split('/').filter(Boolean)
 
     return (
         <header className="border-b h-16 flex items-center px-6 bg-background sticky top-0 z-10">
-            <h2 className="text-lg font-medium">{title}</h2>
-            <div className="ml-auto flex items-center gap-4">
-                 {/* Placeholder for header actions like Theme Toggle or Search */}
-            </div>
+            <nav className="flex items-center text-sm text-muted-foreground">
+                {segments.map((segment, index) => {
+                    const isLast = index === segments.length - 1
+                    const href = `/${segments.slice(0, index + 1).join('/')}`
+
+                    // Capitalize first letter
+                    const name = segment.charAt(0).toUpperCase() + segment.slice(1)
+
+                    return (
+                        <React.Fragment key={href}>
+                            {index > 0 && <ChevronRight className="h-4 w-4 mx-2 text-muted-foreground/50" />}
+                            {isLast ? (
+                                <span className="font-medium text-foreground">{name}</span>
+                            ) : (
+                                <Link href={href} className="hover:text-foreground transition-colors">
+                                    {name}
+                                </Link>
+                            )}
+                        </React.Fragment>
+                    )
+                })}
+            </nav>
         </header>
     )
 }
