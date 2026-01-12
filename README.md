@@ -89,6 +89,10 @@ pnpm dev
 
 Open [http://localhost:3000/dashboard](http://localhost:3000/dashboard) with your browser to see the dashboard.
 
+**Default Admin Credentials:**
+- Email: `admin@example.com`
+- Password: `admin123`
+
 ## 🐳 Testing Infrastructure
 
 To spin up test instances of MySQL, Postgres, and MongoDB for development:
