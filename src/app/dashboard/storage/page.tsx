@@ -26,7 +26,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Database, Search } from "lucide-react";
 import { toast } from "sonner";
 import { Label } from "@/components/ui/label";
-import { DataTable } from "./data-table";
+import { DataTable } from "@/components/ui/data-table";
 import { createColumns, FileInfo } from "./columns";
 
 interface AdapterConfig {

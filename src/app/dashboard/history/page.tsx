@@ -1,9 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { format } from "date-fns";
+import { useEffect, useState, useMemo } from "react";
 import {
     Dialog,
     DialogContent,
@@ -12,18 +9,9 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog"
 import { ScrollArea } from "@/components/ui/scroll-area";
-
-interface Execution {
-    id: string;
-    jobId?: string;
-    job?: { name: string };
-    type?: string;
-    status: "Running" | "Success" | "Failed";
-    startedAt: string;
-    endedAt?: string;
-    logs: string; // JSON string
-    path?: string;
-}
+import { format } from "date-fns";
+import { DataTable } from "@/components/ui/data-table";
+import { createColumns, Execution } from "./columns";
 
 export default function HistoryPage() {
     const [executions, setExecutions] = useState<Execution[]>([]);
@@ -52,74 +40,20 @@ export default function HistoryPage() {
         }
     };
 
+    const columns = useMemo(() => createColumns(setSelectedLog), []);
+
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
+             <div className="flex items-center justify-between">
                 <h2 className="text-3xl font-bold tracking-tight">Execution History</h2>
             </div>
 
-            <div className="rounded-md border">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Job / Resource</TableHead>
-                            <TableHead>Type</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead>Started At</TableHead>
-                            <TableHead>Duration</TableHead>
-                            <TableHead>Logs</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {executions.length === 0 ? (
-                             <TableRow>
-                                <TableCell colSpan={6} className="text-center h-24 text-muted-foreground">
-                                    No executions found.
-                                </TableCell>
-                            </TableRow>
-                        ) : executions.map((exec) => (
-                            <TableRow key={exec.id}>
-                                <TableCell className="font-medium">
-                                    {exec.job?.name || (
-                                        <div className="flex flex-col">
-                                            <span>Manual Action</span>
-                                            {exec.path && <span className="text-[10px] text-muted-foreground truncate max-w-[200px]" title={exec.path}>{exec.path}</span>}
-                                        </div>
-                                    )}
-                                </TableCell>
-                                <TableCell>
-                                    <Badge variant="outline">{exec.type || "Backup"}</Badge>
-                                </TableCell>
-                                <TableCell>
-                                    <Badge variant={exec.status === "Success" ? "secondary" : exec.status === "Failed" ? "destructive" : "default"}>
-                                        {exec.status}
-                                    </Badge>
-                                </TableCell>
-                                <TableCell>{format(new Date(exec.startedAt), "PPpp")}</TableCell>
-                                <TableCell>
-                                    {exec.endedAt ?
-                                        `${Math.round((new Date(exec.endedAt).getTime() - new Date(exec.startedAt).getTime()) / 1000)}s`
-                                        : "-"
-                                    }
-                                </TableCell>
-                                <TableCell>
-                                    <span
-                                        className="text-blue-500 cursor-pointer hover:underline text-sm"
-                                        onClick={() => setSelectedLog(exec)}
-                                    >
-                                        View Logs
-                                    </span>
-                                </TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            </div>
+            <DataTable columns={columns} data={executions} searchKey="jobName" />
 
             <Dialog open={!!selectedLog} onOpenChange={(open) => !open && setSelectedLog(null)}>
                 <DialogContent className="max-w-[80vw] w-full max-h-[80vh] overflow-hidden flex flex-col">
                     <DialogHeader>
-                        <DialogTitle>Execution Logs - {selectedLog?.job?.name}</DialogTitle>
+                        <DialogTitle>Execution Logs - {selectedLog?.job?.name || selectedLog?.type || "Unknown Activity"}</DialogTitle>
                         <DialogDescription>
                             {selectedLog?.startedAt && format(new Date(selectedLog.startedAt), "PPpp")}
                         </DialogDescription>
