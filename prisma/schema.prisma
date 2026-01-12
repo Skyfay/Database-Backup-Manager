@@ -68,6 +68,9 @@ model User {
   sessions      Session[]
   Authenticator Authenticator[]
 
+  totpSecret       String?
+  isTwoFactorEnabled Boolean @default(false)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

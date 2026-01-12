@@ -1,11 +1,24 @@
 import { AppearanceForm } from "@/components/settings/appearance-form";
 import { AccountForm } from "@/components/settings/account-form";
+import { SecurityForm } from "@/components/settings/security-form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { auth } from "@/auth";
+import prisma from "@/lib/prisma";
 
 export default async function SettingsPage() {
     const session = await auth();
     const user = session?.user || {};
+
+    // Fetch user details including 2FA status from DB since session might be stale or not include it
+    let isTwoFactorEnabled = false;
+    if (user.email) {
+        const dbUser = await prisma.user.findUnique({
+            where: { email: user.email },
+            select: { isTwoFactorEnabled: true }
+        });
+        isTwoFactorEnabled = dbUser?.isTwoFactorEnabled || false;
+    }
+
 
     return (
          <div className="space-y-6">
@@ -15,10 +28,14 @@ export default async function SettingsPage() {
              <Tabs defaultValue="account" className="space-y-4">
                 <TabsList>
                     <TabsTrigger value="account">Account</TabsTrigger>
+                    <TabsTrigger value="security">Security</TabsTrigger>
                     <TabsTrigger value="appearance">Appearance</TabsTrigger>
                 </TabsList>
                 <TabsContent value="account" className="space-y-4">
                     <AccountForm user={user} />
+                </TabsContent>
+                <TabsContent value="security" className="space-y-4">
+                    <SecurityForm isTwoFactorEnabled={isTwoFactorEnabled} />
                 </TabsContent>
                 <TabsContent value="appearance" className="space-y-4">
                      <AppearanceForm />
