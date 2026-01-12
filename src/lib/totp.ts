@@ -1,4 +1,4 @@
-import { TOTP, NobleCryptoPlugin, ScureBase32Plugin, generateSecret } from 'otplib';
+import { TOTP, NobleCryptoPlugin, ScureBase32Plugin, generateSecret, generateURI } from 'otplib';
 import QRCode from 'qrcode';
 
 const authenticator = new TOTP({
@@ -7,19 +7,26 @@ const authenticator = new TOTP({
 });
 
 export const generateTotpSecret = () => {
-  return generateSecret();
+    return generateSecret();
 };
 
 export const generateTotpQrCode = async (secret: string, email: string) => {
-  const otpauth = authenticator.keyuri(email, 'DatabaseBackupManager', secret);
-  return await QRCode.toDataURL(otpauth);
+    const otpauth = generateURI({
+        secret,
+        label: email,
+        issuer: 'DatabaseBackupManager',
+        algorithm: 'sha1',
+        digits: 6,
+        period: 30
+    });
+    return await QRCode.toDataURL(otpauth);
 };
 
 export const verifyTotpToken = (token: string, secret: string) => {
-  try {
-      return authenticator.check(token, secret);
-  } catch (err) {
-      console.error("TOTP Check Error:", err);
-      return false;
-  }
+    try {
+        return authenticator.check(token, secret);
+    } catch (err) {
+        console.error("TOTP Check Error:", err);
+        return false;
+    }
 };
