@@ -7,6 +7,28 @@ import path from "path";
 import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 
+// Helper function to check magic numbers (file signatures)
+async function validateImageSignature(file: File): Promise<boolean> {
+    const buffer = await file.slice(0, 12).arrayBuffer();
+    const arr = new Uint8Array(buffer);
+
+    // JPEG: FF D8 FF
+    if (arr[0] === 0xFF && arr[1] === 0xD8 && arr[2] === 0xFF) return true;
+
+    // PNG: 89 50 4E 47 0D 0A 1A 0A
+    if (arr[0] === 0x89 && arr[1] === 0x50 && arr[2] === 0x4E && arr[3] === 0x47 &&
+        arr[4] === 0x0D && arr[5] === 0x0A && arr[6] === 0x1A && arr[7] === 0x0A) return true;
+
+    // GIF: 47 49 46 38 (GIF8)
+    if (arr[0] === 0x47 && arr[1] === 0x49 && arr[2] === 0x46 && arr[3] === 0x38) return true;
+
+    // WEBP: RIFF....WEBP
+    if (arr[0] === 0x52 && arr[1] === 0x49 && arr[2] === 0x46 && arr[3] === 0x46 &&
+        arr[8] === 0x57 && arr[9] === 0x45 && arr[10] === 0x42 && arr[11] === 0x50) return true;
+
+    return false;
+}
+
 // Helper function to delete old avatar file
 async function deleteOldAvatar(userImage: string | null) {
     if (!userImage || !userImage.startsWith('/uploads/avatars/')) return;
@@ -41,19 +63,20 @@ export async function uploadAvatar(formData: FormData) {
         return { success: false, error: "File too large (max 5MB)" };
     }
 
-    if (!file.type.startsWith("image/")) {
-        return { success: false, error: "Invalid file type" };
+    const isValidImage = await validateImageSignature(file);
+    if (!isValidImage) {
+        return { success: false, error: "Invalid file type (Must be JPEG, PNG, GIF, or WEBP)" };
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
     const filename = `${session.user.id}-${Date.now()}${path.extname(file.name)}`;
-    
+
     // Ensure the uploads directory matches where we created it (public/uploads/avatars)
     const uploadDir = path.join(process.cwd(), "public", "uploads", "avatars");
     const filepath = path.join(uploadDir, filename);
 
     try {
-        // Delete old avatar if it exists (check database explicitly to get latest state if needed, 
+        // Delete old avatar if it exists (check database explicitly to get latest state if needed,
         // but session.user.image is usually sufficient handled by better-auth session)
         // Ideally we should fetch the user from DB to be sure, but session is likely fresh enough or we can fetch.
         const user = await prisma.user.findUnique({ where: { id: session.user.id }, select: { image: true } });
@@ -62,7 +85,7 @@ export async function uploadAvatar(formData: FormData) {
         }
 
         await writeFile(filepath, buffer);
-        
+
         const publicUrl = `/uploads/avatars/${filename}`;
 
         await prisma.user.update({
@@ -72,7 +95,7 @@ export async function uploadAvatar(formData: FormData) {
 
         revalidatePath("/dashboard/settings");
         revalidatePath("/dashboard"); // For navbar/sidebar avatar
-        
+
         return { success: true, url: publicUrl };
     } catch (error) {
         console.error("Upload error:", error);
@@ -93,7 +116,7 @@ export async function removeAvatar() {
     try {
         // Fetch user to get the current image path
         const user = await prisma.user.findUnique({ where: { id: session.user.id }, select: { image: true } });
-        
+
         if (user?.image) {
              await deleteOldAvatar(user.image);
         }
@@ -105,7 +128,7 @@ export async function removeAvatar() {
 
         revalidatePath("/dashboard/settings");
         revalidatePath("/dashboard");
-        
+
         return { success: true };
     } catch (error) {
         console.error("Remove avatar error:", error);
