@@ -16,12 +16,12 @@ import {
 import { Input } from "@/components/ui/input"
 import { toast } from "sonner"
 import { updateUser } from "@/app/actions/user"
-import { uploadAvatar } from "@/app/actions/upload"
+import { uploadAvatar, removeAvatar } from "@/app/actions/upload"
 import { User } from "@prisma/client"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useRef, useState } from "react"
-import { Loader2, Upload } from "lucide-react"
+import { Loader2, Upload, Trash2 } from "lucide-react"
 
 const formSchema = z.object({
     name: z.string().min(2, {
@@ -94,6 +94,23 @@ export function ProfileForm({ user }: ProfileFormProps) {
         }
     }
 
+    const handleRemoveAvatar = async () => {
+        setIsUploading(true);
+        try {
+            const result = await removeAvatar();
+            if (result.success) {
+                setPreviewUrl(null);
+                toast.success("Avatar removed successfully");
+            } else {
+                toast.error(result.error || "Failed to remove avatar");
+            }
+        } catch (error) {
+            toast.error("An error occurred while removing avatar");
+        } finally {
+            setIsUploading(false);
+        }
+    }
+
     return (
         <Card>
             <CardHeader>
@@ -135,9 +152,28 @@ export function ProfileForm({ user }: ProfileFormProps) {
                             ref={fileInputRef} 
                             onChange={handleFileChange} 
                         />
-                        <Button variant="ghost" size="sm" className="mt-2" onClick={handleAvatarClick} disabled={isUploading}>
-                            Change Avatar
-                        </Button>
+                        {previewUrl ? (
+                            <Button 
+                                variant="destructive" 
+                                size="sm" 
+                                className="mt-2 h-8" 
+                                onClick={handleRemoveAvatar} 
+                                disabled={isUploading}
+                            >
+                                <Trash2 className="mr-2 h-3 w-3" />
+                                Remove Avatar
+                            </Button>
+                        ) : (
+                            <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="mt-2 h-8" 
+                                onClick={handleAvatarClick} 
+                                disabled={isUploading}
+                            >
+                                Upload Avatar
+                            </Button>
+                        )}
                     </div>
                 </div>
 

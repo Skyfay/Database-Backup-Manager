@@ -57,3 +57,29 @@ export async function uploadAvatar(formData: FormData) {
         return { success: false, error: "Failed to save file" };
     }
 }
+
+export async function removeAvatar() {
+    const headersList = await headers();
+    const session = await auth.api.getSession({
+        headers: headersList
+    });
+
+    if (!session) {
+        return { success: false, error: "Unauthorized" };
+    }
+
+    try {
+        await prisma.user.update({
+            where: { id: session.user.id },
+            data: { image: null }
+        });
+
+        revalidatePath("/dashboard/settings");
+        revalidatePath("/dashboard");
+        
+        return { success: true };
+    } catch (error) {
+        console.error("Remove avatar error:", error);
+        return { success: false, error: "Failed to remove avatar" };
+    }
+}
