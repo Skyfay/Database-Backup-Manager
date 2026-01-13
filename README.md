@@ -62,7 +62,16 @@ A robust, self-hosted solution for automating database backups. Manage sources, 
    ```bash
    # Example
    DATABASE_URL="file:./dev.db"
+
+   # Better Auth Configuration
+   BETTER_AUTH_SECRET="your-super-secret-key-here"
+   BETTER_AUTH_URL="http://localhost:3000" # Set to your domain in production
    ```
+
+   > **Tip**: You can generate a secure secret using `openssl`:
+   > ```bash
+   > openssl rand -base64 32
+   > ```
 
 4. **Initialize Database**
    Push the schema to your local database:
