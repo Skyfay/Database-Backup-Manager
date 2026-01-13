@@ -2,6 +2,7 @@ import { NotificationAdapter } from "@/lib/core/interfaces";
 import { EmailSchema } from "@/lib/adapters/definitions";
 import nodemailer from "nodemailer";
 import { formatBytes } from "@/lib/utils";
+import React from "react";
 
 const createTransporter = (config: any) => {
     const secure = config.secure === "ssl";
@@ -46,22 +47,18 @@ export const EmailAdapter: NotificationAdapter = {
             await transporter.verify();
 
             let subject = "Database Backup Notification";
-            let html = `<p>${message}</p>`;
 
             if (context) {
                 subject = context.success ? "✅ Backup Successful" : "❌ Backup Failed";
-
-                html += `
-                    <h3>Details:</h3>
-                    <ul>
-                        <li><strong>Status:</strong> ${context.success ? "Success" : "Failed"}</li>
-                        <li><strong>Adapter:</strong> ${context.adapterName || "Unknown"}</li>
-                        <li><strong>Duration:</strong> ${context.duration ? `${context.duration}ms` : "N/A"}</li>
-                        ${context.size !== undefined ? `<li><strong>Size:</strong> ${formatBytes(context.size)}</li>` : ''}
-                        ${context.error ? `<li><strong>Error:</strong> ${context.error}</li>` : ''}
-                    </ul>
-                `;
             }
+
+            // Dynamic import to avoid build errors with server components in some contexts
+            const { renderToStaticMarkup } = await import("react-dom/server");
+            const { NotificationEmail } = await import("@/components/email/notification-template");
+
+            const html = renderToStaticMarkup(
+                <NotificationEmail message={message} context={context} />
+            );
 
             const info = await transporter.sendMail({
                 from: config.from,
