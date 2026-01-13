@@ -30,10 +30,13 @@ export function SecurityForm() {
     const [showBackupCodes, setShowBackupCodes] = useState(false)
     const [password, setPassword] = useState("")
     const [isDisabling, setIsDisabling] = useState(false)
+    
+    // Controlled Dialog State
+    const [isEnableDialogOpen, setIsEnableDialogOpen] = useState(false)
+    const [isDisableDialogOpen, setIsDisableDialogOpen] = useState(false)
 
     // Check if 2FA is enabled from session
     const isTwoFactorEnabled = session?.user?.twoFactorEnabled
-
 
     const handleEnable2FA = async () => {
         setIsPending(true)
@@ -85,8 +88,6 @@ export function SecurityForm() {
     const handleDisable2FA = async () => {
         setIsDisabling(true)
         try {
-            // Usually requires password again?
-            // checking docs: disable({ password, ... })
              const result = await authClient.twoFactor.disable({
                 password: password
             })
@@ -97,6 +98,7 @@ export function SecurityForm() {
             }
 
             toast.success("Two-factor authentication disabled")
+            setIsDisableDialogOpen(false)
         } catch (error) {
             toast.error("Error disabling 2FA")
         } finally {
@@ -126,7 +128,7 @@ export function SecurityForm() {
                         </p>
                     </div>
                     {isTwoFactorEnabled && !showBackupCodes ? (
-                         <Dialog>
+                         <Dialog open={isDisableDialogOpen} onOpenChange={setIsDisableDialogOpen}>
                             <DialogTrigger asChild>
                                 <Button variant="destructive" size="sm" disabled={isDisabling}>
                                     {isDisabling && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -150,7 +152,7 @@ export function SecurityForm() {
                                     />
                                 </div>
                                 <DialogFooter>
-                                    <Button variant="outline" onClick={() => setPassword("")}>Cancel</Button>
+                                    <Button variant="outline" onClick={() => setIsDisableDialogOpen(false)}>Cancel</Button>
                                     <Button variant="destructive" onClick={handleDisable2FA} disabled={!password || isDisabling}>
                                         Disable
                                     </Button>
@@ -158,7 +160,14 @@ export function SecurityForm() {
                             </DialogContent>
                         </Dialog>
                     ) : (
-                        <Dialog>
+                        <Dialog open={isEnableDialogOpen} onOpenChange={(open) => {
+                                setIsEnableDialogOpen(open)
+                                if (!open) {
+                                    setTotpURI(null)
+                                    setVerificationCode("")
+                                    setPassword("")
+                                }
+                            }}>
                              <DialogTrigger asChild>
                                 <Button variant="default" size="sm">
                                     Enable
@@ -234,7 +243,10 @@ export function SecurityForm() {
                                                 <div key={i} className="text-center select-all">{code}</div>
                                             ))}
                                         </div>
-                                        <Button className="w-full" onClick={() => setShowBackupCodes(false)}>
+                                        <Button className="w-full" onClick={() => {
+                                             setShowBackupCodes(false)
+                                             setIsEnableDialogOpen(false)
+                                        }}>
                                             Done
                                         </Button>
                                      </div>

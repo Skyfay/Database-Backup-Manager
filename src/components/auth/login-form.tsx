@@ -37,6 +37,7 @@ export function LoginForm({ allowSignUp = true }: LoginFormProps) {
   const [loading, setLoading] = useState(false)
   const [twoFactorStep, setTwoFactorStep] = useState(false)
   const [totpCode, setTotpCode] = useState("")
+  const [isBackupCode, setIsBackupCode] = useState(false)
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -50,19 +51,35 @@ export function LoginForm({ allowSignUp = true }: LoginFormProps) {
   async function handleVerify2FA() {
       setLoading(true)
       try {
-          await authClient.twoFactor.verifyTotp({
-              code: totpCode,
-              fetchOptions: {
-                  onSuccess: () => {
-                       router.push("/dashboard")
-                       toast.success("Login successful")
-                  },
-                  onError: (ctx) => {
-                      toast.error(ctx.error.message)
-                      setLoading(false)
+          if (isBackupCode) {
+               await authClient.twoFactor.verifyBackupCode({
+                  code: totpCode,
+                  fetchOptions: {
+                      onSuccess: () => {
+                           router.push("/dashboard")
+                           toast.success("Login successful")
+                      },
+                      onError: (ctx) => {
+                          toast.error(ctx.error.message)
+                          setLoading(false)
+                      }
                   }
-              }
-          })
+              })
+          } else {
+              await authClient.twoFactor.verifyTotp({
+                  code: totpCode,
+                  fetchOptions: {
+                      onSuccess: () => {
+                           router.push("/dashboard")
+                           toast.success("Login successful")
+                      },
+                      onError: (ctx) => {
+                          toast.error(ctx.error.message)
+                          setLoading(false)
+                      }
+                  }
+              })
+          }
       } catch (error) {
           console.error(error)
           toast.error("An error occurred")
@@ -128,23 +145,32 @@ export function LoginForm({ allowSignUp = true }: LoginFormProps) {
       return (
           <Card className="w-[350px]">
                <CardHeader>
-                  <CardTitle>Two-Factor Authentication</CardTitle>
-                  <CardDescription>Enter the code from your authenticator app.</CardDescription>
+                  <CardTitle>{isBackupCode ? "Backup Code" : "Two-Factor Authentication"}</CardTitle>
+                  <CardDescription>
+                      {isBackupCode 
+                        ? "Enter one of your emergency backup codes."
+                        : "Enter the code from your authenticator app."}
+                  </CardDescription>
                </CardHeader>
                <CardContent>
                    <div className="space-y-4">
                        <div className="space-y-2">
-                           <Label htmlFor="2fa-code">Verification Code</Label>
+                           <Label htmlFor="2fa-code">{isBackupCode ? "Backup Code" : "Verification Code"}</Label>
                            <Input
                               id="2fa-code"
                               value={totpCode}
-                              onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                              placeholder="123456"
-                              className="text-center tracking-widest text-lg"
-                              maxLength={6}
+                              onChange={(e) => {
+                                  if (isBackupCode) {
+                                      setTotpCode(e.target.value)
+                                  } else {
+                                      setTotpCode(e.target.value.replace(/\D/g, '').slice(0, 6))
+                                  }
+                              }}
+                              placeholder={isBackupCode ? "XXXX-XXXX-XXXX" : "123456"}
+                              className={isBackupCode ? "text-center text-lg" : "text-center tracking-widest text-lg"}
                               autoFocus
                               onKeyDown={(e) => {
-                                  if (e.key === "Enter" && totpCode.length === 6) {
+                                  if (e.key === "Enter") {
                                       handleVerify2FA()
                                   }
                               }}
@@ -153,21 +179,34 @@ export function LoginForm({ allowSignUp = true }: LoginFormProps) {
                        <Button
                           onClick={handleVerify2FA}
                           className="w-full"
-                          disabled={loading || totpCode.length !== 6}
+                          disabled={loading || (isBackupCode ? totpCode.length < 8 : totpCode.length !== 6)}
                        >
                           {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                           Verify
                        </Button>
-                       <Button
-                          variant="ghost"
-                          className="w-full"
-                          onClick={() => {
-                              setTwoFactorStep(false)
-                              setTotpCode("")
-                          }}
-                       >
-                           Back to Login
-                       </Button>
+                       <div className="flex flex-col gap-2">
+                            <Button
+                                variant="link"
+                                className="w-full h-auto p-0"
+                                onClick={() => {
+                                    setIsBackupCode(!isBackupCode)
+                                    setTotpCode("")
+                                }}
+                            >
+                                {isBackupCode ? "Use Authenticator App" : "Use Backup Code"}
+                            </Button>
+                           <Button
+                              variant="ghost"
+                              className="w-full"
+                              onClick={() => {
+                                  setTwoFactorStep(false)
+                                  setTotpCode("")
+                                  setIsBackupCode(false)
+                              }}
+                           >
+                               Back to Login
+                           </Button>
+                       </div>
                    </div>
                </CardContent>
           </Card>
