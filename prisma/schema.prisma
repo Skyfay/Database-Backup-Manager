@@ -67,9 +67,20 @@ model User {
   updatedAt     DateTime
   sessions      Session[]
   accounts      Account[]
+  twoFactorEnabled Boolean?
+  twoFactor        TwoFactor?
 
   @@unique([email])
   @@map("user")
+}
+
+model TwoFactor {
+  id          String @id
+  secret      String
+  backupCodes String
+  userId      String
+  user        User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([userId])
 }
 
 model Session {

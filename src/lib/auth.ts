@@ -1,7 +1,7 @@
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import prisma from "./prisma";
-import { APIError } from "better-auth/api";
+import { twoFactor } from "better-auth/plugins";
 
 export const auth = betterAuth({
     database: prismaAdapter(prisma, {
@@ -11,6 +11,9 @@ export const auth = betterAuth({
         enabled: true,
         autoSignIn: true
     },
+    plugins: [
+        twoFactor()
+    ],
     hooks: {
         before: async (ctx) => {
             if (ctx.request?.url) { // Ensure request and url exist
@@ -20,22 +23,22 @@ export const auth = betterAuth({
                     // If users exist, check if the requester is authenticated (admin)
                     if (userCount > 0) {
                         try {
-                            // We need to construct a headers object that matches what getSession expects
-                            // The context request headers are available
                             const session = await auth.api.getSession({
-                                headers: ctx.headers
+                                headers: ctx.headers || new Headers()
                             });
 
                             if (session) {
                                 return; // Allow if authenticated
                             }
                         } catch (e) {
-                            // Ignore error, verify session failed
+                            // ignore
                         }
-
-                        throw new APIError("FORBIDDEN", {
-                           message: "Registration is disabled because an admin account already exists."
-                        });
+                        
+                        // Check if we are checking access permission
+                        return {
+                            success: false, // Explicitly match type
+                            error: "Registration is restricted to administrators." 
+                        } as any; /* Type casting to bypass strict typing if APIError is not matching context return */
                     }
                 }
             }
