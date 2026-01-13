@@ -50,7 +50,7 @@ export function LoginForm({ allowSignUp = true }: LoginFormProps) {
   async function handleVerify2FA() {
       setLoading(true)
       try {
-          await authClient.twoFactor.verifyOtp({
+          await authClient.twoFactor.verifyTotp({
               code: totpCode,
               fetchOptions: {
                   onSuccess: () => {
