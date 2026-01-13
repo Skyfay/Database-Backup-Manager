@@ -26,7 +26,11 @@ const formSchema = z.object({
   name: z.string().optional(),
 })
 
-export function LoginForm() {
+interface LoginFormProps {
+    allowSignUp?: boolean;
+}
+
+export function LoginForm({ allowSignUp = true }: LoginFormProps) {
   const router = useRouter()
   const [isLogin, setIsLogin] = useState(true)
   const [loading, setLoading] = useState(false)
@@ -143,6 +147,7 @@ export function LoginForm() {
           </form>
         </Form>
       </CardContent>
+      {allowSignUp && (
       <CardFooter className="flex justify-center">
         <Button
             variant="link"
@@ -152,6 +157,7 @@ export function LoginForm() {
             {isLogin ? "Don't have an account? Sign up" : "Already have an account? Login"}
         </Button>
       </CardFooter>
+      )}
     </Card>
   )
 }
