@@ -2,10 +2,24 @@
 
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
-import { writeFile } from "fs/promises";
+import { writeFile, unlink } from "fs/promises";
 import path from "path";
 import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+
+// Helper function to delete old avatar file
+async function deleteOldAvatar(userImage: string | null) {
+    if (!userImage || !userImage.startsWith('/uploads/avatars/')) return;
+
+    try {
+        const filename = path.basename(userImage);
+        const filepath = path.join(process.cwd(), "public", "uploads", "avatars", filename);
+        await unlink(filepath);
+    } catch (error) {
+        console.error("Failed to delete old avatar file:", error);
+        // Continue execution even if file deletion fails
+    }
+}
 
 export async function uploadAvatar(formData: FormData) {
     const headersList = await headers();
@@ -39,6 +53,14 @@ export async function uploadAvatar(formData: FormData) {
     const filepath = path.join(uploadDir, filename);
 
     try {
+        // Delete old avatar if it exists (check database explicitly to get latest state if needed, 
+        // but session.user.image is usually sufficient handled by better-auth session)
+        // Ideally we should fetch the user from DB to be sure, but session is likely fresh enough or we can fetch.
+        const user = await prisma.user.findUnique({ where: { id: session.user.id }, select: { image: true } });
+        if (user?.image) {
+            await deleteOldAvatar(user.image);
+        }
+
         await writeFile(filepath, buffer);
         
         const publicUrl = `/uploads/avatars/${filename}`;
@@ -69,6 +91,13 @@ export async function removeAvatar() {
     }
 
     try {
+        // Fetch user to get the current image path
+        const user = await prisma.user.findUnique({ where: { id: session.user.id }, select: { image: true } });
+        
+        if (user?.image) {
+             await deleteOldAvatar(user.image);
+        }
+
         await prisma.user.update({
             where: { id: session.user.id },
             data: { image: null }

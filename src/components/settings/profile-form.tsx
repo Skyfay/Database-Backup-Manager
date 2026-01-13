@@ -123,7 +123,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
                 <div className="flex items-center gap-6 mb-8 group">
                     <div className="relative">
                         <Avatar className="h-20 w-20 cursor-pointer hover:opacity-80 transition-opacity" onClick={handleAvatarClick}>
-                            <AvatarImage src={previewUrl || ""} alt={user.name} className="object-cover" />
+                            <AvatarImage src={previewUrl || undefined} alt={user.name} className="object-cover" />
                             <AvatarFallback className="text-lg">{user.name?.charAt(0).toUpperCase()}</AvatarFallback>
                             {isUploading && (
                                 <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-full">
@@ -131,9 +131,9 @@ export function ProfileForm({ user }: ProfileFormProps) {
                                 </div>
                             )}
                         </Avatar>
-                        <Button 
-                            variant="outline" 
-                            size="icon" 
+                        <Button
+                            variant="outline"
+                            size="icon"
                             className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full shadow-sm"
                             onClick={handleAvatarClick}
                             disabled={isUploading}
@@ -141,34 +141,34 @@ export function ProfileForm({ user }: ProfileFormProps) {
                             <Upload className="h-4 w-4" />
                         </Button>
                     </div>
-                    
+
                     <div className="space-y-1">
                         <h4 className="text-sm font-medium leading-none">{user.name}</h4>
                         <p className="text-sm text-muted-foreground">{user.email}</p>
-                        <Input 
-                            type="file" 
-                            accept="image/*" 
-                            className="hidden" 
-                            ref={fileInputRef} 
-                            onChange={handleFileChange} 
+                        <Input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            ref={fileInputRef}
+                            onChange={handleFileChange}
                         />
                         {previewUrl ? (
-                            <Button 
-                                variant="destructive" 
-                                size="sm" 
-                                className="mt-2 h-8" 
-                                onClick={handleRemoveAvatar} 
+                            <Button
+                                variant="destructive"
+                                size="sm"
+                                className="mt-2 h-8"
+                                onClick={handleRemoveAvatar}
                                 disabled={isUploading}
                             >
                                 <Trash2 className="mr-2 h-3 w-3" />
                                 Remove Avatar
                             </Button>
                         ) : (
-                            <Button 
-                                variant="outline" 
-                                size="sm" 
-                                className="mt-2 h-8" 
-                                onClick={handleAvatarClick} 
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="mt-2 h-8"
+                                onClick={handleAvatarClick}
                                 disabled={isUploading}
                             >
                                 Upload Avatar

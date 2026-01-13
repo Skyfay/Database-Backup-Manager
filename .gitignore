@@ -45,3 +45,6 @@ prisma/dev.db
 
 # backups
 backups/
+
+# uploads
+public/uploads/
