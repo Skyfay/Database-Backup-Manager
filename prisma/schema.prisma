@@ -64,6 +64,8 @@ model User {
   emailVerified Boolean
   image         String?
   timezone      String    @default("UTC")
+  dateFormat    String    @default("P") // e.g. "P" for localized date, "yyyy-MM-dd" for ISO
+  timeFormat    String    @default("p") // e.g. "p" for localized time, "HH:mm" for 24h
   createdAt     DateTime
   updatedAt     DateTime
   sessions      Session[]

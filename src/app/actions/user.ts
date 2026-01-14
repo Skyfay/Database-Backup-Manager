@@ -32,7 +32,7 @@ export async function deleteUser(userId: string) {
     }
 }
 
-export async function updateUser(userId: string, data: { name?: string; email?: string; timezone?: string }) {
+export async function updateUser(userId: string, data: { name?: string; email?: string; timezone?: string; dateFormat?: string; timeFormat?: string }) {
     try {
         await prisma.user.update({
             where: {
@@ -41,7 +41,9 @@ export async function updateUser(userId: string, data: { name?: string; email?: 
             data: {
                 name: data.name,
                 email: data.email,
-                timezone: data.timezone
+                timezone: data.timezone,
+                dateFormat: data.dateFormat,
+                timeFormat: data.timeFormat
             }
         });
         revalidatePath("/dashboard/users");

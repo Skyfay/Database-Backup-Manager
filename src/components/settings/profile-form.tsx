@@ -36,6 +36,13 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 const formSchema = z.object({
     name: z.string().min(2, {
@@ -45,6 +52,8 @@ const formSchema = z.object({
         message: "Please enter a valid email address.",
     }),
     timezone: z.string().optional(),
+    dateFormat: z.string().optional(),
+    timeFormat: z.string().optional(),
 })
 
 interface ProfileFormProps {
@@ -65,6 +74,10 @@ export function ProfileForm({ user }: ProfileFormProps) {
             name: user.name || "",
             email: user.email || "",
             timezone: user.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
+            // @ts-ignore
+            dateFormat: user.dateFormat || "P",
+            // @ts-ignore
+            timeFormat: user.timeFormat || "p",
         },
     })
 
@@ -73,6 +86,8 @@ export function ProfileForm({ user }: ProfileFormProps) {
             loading: 'Updating profile...',
             success: (data) => {
                 if(data.success) {
+                    // Force a hard reload to update session data globally
+                    window.location.reload();
                     return 'Profile updated successfully';
                 } else {
                     throw new Error(data.error)
@@ -290,6 +305,61 @@ export function ProfileForm({ user }: ProfileFormProps) {
                                 </FormItem>
                             )}
                         />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <FormField
+                                control={form.control}
+                                name="dateFormat"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Date Format</FormLabel>
+                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                            <FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select date format" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                <SelectItem value="P">Localized (01/14/2026)</SelectItem>
+                                                <SelectItem value="PP">Medium (Jan 14, 2026)</SelectItem>
+                                                <SelectItem value="PPP">Long (January 14th, 2026)</SelectItem>
+                                                <SelectItem value="yyyy-MM-dd">ISO (2026-01-14)</SelectItem>
+                                                <SelectItem value="dd.MM.yyyy">European (14.01.2026)</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        <FormDescription>
+                                            How dates are displayed across the application.
+                                        </FormDescription>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="timeFormat"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Time Format</FormLabel>
+                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                            <FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select time format" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                <SelectItem value="p">Localized (12:00 AM)</SelectItem>
+                                                <SelectItem value="pp">Medium (12:00:00 AM)</SelectItem>
+                                                <SelectItem value="HH:mm">24 Hour (14:30)</SelectItem>
+                                                <SelectItem value="HH:mm:ss">24 Hour w/ Seconds (14:30:15)</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        <FormDescription>
+                                            How times are displayed across the application.
+                                        </FormDescription>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
                         <Button type="submit">Save Changes</Button>
                     </form>
                 </Form>

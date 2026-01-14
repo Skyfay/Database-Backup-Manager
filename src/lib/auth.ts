@@ -13,6 +13,16 @@ export const auth = betterAuth({
                 type: "string",
                 required: false,
                 defaultValue: "UTC"
+            },
+            dateFormat: {
+                type: "string",
+                required: false,
+                defaultValue: "P"
+            },
+            timeFormat: {
+                type: "string",
+                required: false,
+                defaultValue: "p"
             }
         }
     },
