@@ -1,7 +1,7 @@
-# Basis-Image: Node.js 20 auf Alpine Linux (klein & sicher)
+# Base Image: Node.js 20 on Alpine Linux (small & secure)
 FROM node:20-alpine AS base
 
-# Installiere notwendige System-Tools für Backups
+# Install necessary system tools for backups
 # mysql-client -> mysqldump
 # postgresql-client -> pg_dump
 # mongodb-tools -> mongodump
@@ -11,11 +11,11 @@ RUN apk add --no-cache \
     mongodb-tools \
     zip
 
-# 1. Dependencies installieren
+# 1. Install Dependencies
 FROM base AS deps
 WORKDIR /app
 COPY package.json pnpm-lock.yaml* ./
-# Installiere pnpm wenn nötig oder nutze corepack
+# Install pnpm if needed or use corepack
 RUN corepack enable && corepack prepare pnpm@latest --activate
 RUN pnpm install --frozen-lockfile
 
@@ -25,14 +25,14 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Environment Variablen für Build
+# Environment variables for build
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Prisma Client generieren und Next.js App bauen
+# Generate Prisma Client and build Next.js app
 RUN npx prisma generate
 RUN npm run build
 
-# 3. Runner Phase (Das eigentliche Image)
+# 3. Runner Phase (The actual image)
 FROM base AS runner
 WORKDIR /app
 
@@ -42,16 +42,16 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-# Kopiere gebaute Dateien
+# Copy built files
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-# Kopiere Prisma Schema für Runtime-Zugriffe (falls nötig) oder Migrationen
+# Copy Prisma Schema for runtime access (if needed) or migrations
 COPY --from=builder /app/prisma ./prisma
 
-# Berechtigungen für Backup-Ordner (optional, falls lokal gespeichert wird)
-# Auch storage Ordner für Avatare vorbereiten
-# db Ordner explizit für SQLite Persistence erstellen
+# Permissions for backup folder (optional, if stored locally)
+# Also prepare storage folder for avatars
+# Explicitly create db folder for SQLite persistence
 RUN mkdir -p /backups /app/storage/avatars /app/db && \
     chown -R nextjs:nodejs /backups /app/storage /app/db
 
