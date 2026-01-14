@@ -45,15 +45,15 @@ export function SecurityForm() {
     const [isDisableDialogOpen, setIsDisableDialogOpen] = useState(false)
 
     // Check if 2FA is enabled from session
-    const isTwoFactorEnabled = session?.user?.twoFactorEnabled
-    // @ts-expect-error Types might mismatch for additional fields between client and server
+    const isTwoFactorEnabled = !!session?.user?.twoFactorEnabled
     const isPasskeyTwoFactor = !!(session?.user as User)?.passkeyTwoFactor
 
     const fetchPasskeys = async () => {
         try {
             const result = await authClient.passkey.listUserPasskeys()
             if (result.data) {
-                setPasskeys(result.data)
+                // Fix: convert undefined to null for Prisma compatibility
+                setPasskeys(result.data.map(p => ({ ...p, name: p.name ?? null })) as Passkey[])
             }
         } catch (error) {
             console.error("Failed to fetch passkeys", error)
@@ -134,7 +134,7 @@ export function SecurityForm() {
             toast.success("Two-factor authentication disabled")
             setIsDisableDialogOpen(false)
             await refetch()
-        } catch (error) {
+        } catch {
             toast.error("Error disabling 2FA")
         } finally {
             setIsDisabling(false)
@@ -145,7 +145,6 @@ export function SecurityForm() {
     const handleAddPasskey = async () => {
         setIsPending(true)
         try {
-            // @ts-ignore - name is optional but helpful
             const result = await authClient.passkey.addPasskey({
                 name: passkeyName || "My Passkey"
             })
@@ -178,7 +177,7 @@ export function SecurityForm() {
 
                  // Fetch updated list to check if any passkeys remain
                  const listResult = await authClient.passkey.listUserPasskeys()
-                 const remaining = listResult.data || []
+                 const remaining = (listResult.data || []).map(p => ({ ...p, name: p.name ?? null })) as Passkey[]
                  setPasskeys(remaining)
 
                  // If no passkeys remain and Passkey 2FA was enabled, disable it automatically
@@ -190,7 +189,7 @@ export function SecurityForm() {
                      }
                  }
              }
-        } catch (error) {
+        } catch {
             toast.error("Failed to delete passkey")
         }
     }
@@ -213,7 +212,7 @@ export function SecurityForm() {
                      toast.error(result.error || "Failed to update settings")
                 }
             }
-        } catch (error) {
+        } catch {
             toast.error("Failed to update settings")
         }
     }
@@ -439,7 +438,7 @@ export function SecurityForm() {
                                         <TableRow>
                                             <TableHead>Name</TableHead>
                                             <TableHead>Created</TableHead>
-                                            <TableHead className="w-[100px]"></TableHead>
+                                            <TableHead className="w-25"></TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
