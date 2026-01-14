@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { authClient } from "@/lib/auth-client"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { togglePasskeyTwoFactor as togglePasskeyAction } from "@/app/actions/user"
+import { User, Passkey } from "@prisma/client"
 
 export function SecurityForm() {
     const { data: session, refetch } = authClient.useSession()
@@ -35,8 +36,7 @@ export function SecurityForm() {
     const [isDisabling, setIsDisabling] = useState(false)
 
     // Passkey State
-    const [passkeys, setPasskeys] = useState<any[]>([])
-    const [isLoadingPasskeys, setIsLoadingPasskeys] = useState(false)
+    const [passkeys, setPasskeys] = useState<Passkey[]>([])
     const [passkeyName, setPasskeyName] = useState("")
     const [isAddPasskeyOpen, setIsAddPasskeyOpen] = useState(false)
 
@@ -46,10 +46,10 @@ export function SecurityForm() {
 
     // Check if 2FA is enabled from session
     const isTwoFactorEnabled = session?.user?.twoFactorEnabled
-    const isPasskeyTwoFactor = !!session?.user?.passkeyTwoFactor
+    // @ts-expect-error Types might mismatch for additional fields between client and server
+    const isPasskeyTwoFactor = !!(session?.user as User)?.passkeyTwoFactor
 
     const fetchPasskeys = async () => {
-        setIsLoadingPasskeys(true)
         try {
             const result = await authClient.passkey.listUserPasskeys()
             if (result.data) {
@@ -57,8 +57,6 @@ export function SecurityForm() {
             }
         } catch (error) {
             console.error("Failed to fetch passkeys", error)
-        } finally {
-            setIsLoadingPasskeys(false)
         }
     }
 

@@ -74,9 +74,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
             name: user.name || "",
             email: user.email || "",
             timezone: user.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
-            // @ts-ignore
             dateFormat: user.dateFormat || "P",
-            // @ts-ignore
             timeFormat: user.timeFormat || "p",
         },
     })
