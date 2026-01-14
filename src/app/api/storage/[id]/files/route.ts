@@ -5,11 +5,21 @@ import { registerAdapters } from "@/lib/adapters"; // Import registration
 import { StorageAdapter } from "@/lib/core/interfaces";
 import { decryptConfig } from "@/lib/crypto";
 import prisma from "@/lib/prisma";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
 
 // Ensure adapters are registered in this route handler environment
 registerAdapters();
 
 export async function GET(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+    const session = await auth.api.getSession({
+        headers: await headers()
+    });
+
+    if (!session) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     try {
         const params = await props.params;
         const adapterConfig = await prisma.adapterConfig.findUnique({

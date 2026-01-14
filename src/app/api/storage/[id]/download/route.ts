@@ -8,10 +8,20 @@ import prisma from "@/lib/prisma";
 import path from "path";
 import os from "os";
 import fs from "fs";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
 
 registerAdapters();
 
 export async function GET(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+    const session = await auth.api.getSession({
+        headers: await headers()
+    });
+
+    if (!session) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const params = await props.params;
     let tempFile: string | null = null;
 

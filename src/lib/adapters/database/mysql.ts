@@ -1,12 +1,12 @@
 import { DatabaseAdapter, BackupResult } from "@/lib/core/interfaces";
 import { MySQLSchema } from "@/lib/adapters/definitions";
-import { exec, spawn } from "child_process";
+import { execFile, spawn } from "child_process";
 import fs from "fs/promises";
 import { createReadStream } from "fs";
 import readline from "readline";
 import util from "util";
 
-const execAsync = util.promisify(exec);
+const execFileAsync = util.promisify(execFile);
 
 export const MySQLAdapter: DatabaseAdapter = {
     id: "mysql",
@@ -68,27 +68,43 @@ export const MySQLAdapter: DatabaseAdapter = {
             else if(config.database && config.database.includes(',')) dbs = config.database.split(',');
             else if(config.database) dbs = [config.database];
 
-            let command = `mysqldump -h ${config.host} -P ${config.port} -u ${config.user} --protocol=tcp`;
+            const args: string[] = [
+                '-h', config.host,
+                '-P', String(config.port),
+                '-u', config.user,
+                '--protocol=tcp'
+            ];
 
             if (config.password) {
-                command += ` -p"${config.password}"`;
+                args.push(`--password=${config.password}`);
             }
 
             if (config.options) {
-                command += ` ${config.options}`;
+                const parts = config.options.match(/[^\s"']+|"([^"]*)"|'([^']*)'/g) || [];
+                for (const part of parts) {
+                    if (part.startsWith('"') && part.endsWith('"')) {
+                        args.push(part.slice(1, -1));
+                    } else if (part.startsWith("'") && part.endsWith("'")) {
+                        args.push(part.slice(1, -1));
+                    } else {
+                        args.push(part);
+                    }
+                }
             }
 
             if (dbs.length > 1) {
-                command += ` --databases ${dbs.join(' ')}`;
+                args.push('--databases', ...dbs);
             } else if (dbs.length === 1) {
-                command += ` ${dbs[0]}`;
+                args.push(dbs[0]);
             }
 
-            command += ` > "${destinationPath}"`;
+            args.push(`--result-file=${destinationPath}`);
 
-            logs.push(`Executing command: ${command.replace(/-p"[^"]*"/, '-p"*****"')}`);
+            // Mask password in logs
+            const logArgs = args.map(arg => arg.startsWith('--password=') ? '--password=*****' : arg);
+            logs.push(`Executing command: mysqldump ${logArgs.join(' ')}`);
 
-            const { stdout, stderr } = await execAsync(command);
+            const { stdout, stderr } = await execFileAsync('mysqldump', args);
 
             if (stderr) {
                 logs.push(`stderr: ${stderr}`);

@@ -1,11 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { scheduler } from "@/lib/scheduler";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
 
 export async function DELETE(
     req: NextRequest,
     props: { params: Promise<{ id: string }> }
 ) {
+    const session = await auth.api.getSession({
+        headers: await headers()
+    });
+
+    if (!session) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const params = await props.params;
     try {
         await prisma.job.delete({
@@ -22,6 +32,14 @@ export async function PUT(
     req: NextRequest,
     props: { params: Promise<{ id: string }> }
 ) {
+    const session = await auth.api.getSession({
+        headers: await headers()
+    });
+
+    if (!session) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const params = await props.params;
     try {
         const body = await req.json();

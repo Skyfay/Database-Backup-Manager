@@ -1,10 +1,10 @@
 import { DatabaseAdapter, BackupResult } from "@/lib/core/interfaces";
 import { PostgresSchema } from "@/lib/adapters/definitions";
-import { exec } from "child_process";
+import { execFile } from "child_process";
 import fs from "fs/promises";
 import util from "util";
 
-const execAsync = util.promisify(exec);
+const execFileAsync = util.promisify(execFile);
 
 export const PostgresAdapter: DatabaseAdapter = {
     id: "postgres",
@@ -23,19 +23,34 @@ export const PostgresAdapter: DatabaseAdapter = {
                 env.PGPASSWORD = config.password;
             }
 
-            let command = `pg_dump -h ${config.host} -p ${config.port} -U ${config.user}`;
+            const args: string[] = [
+                '-h', config.host,
+                '-p', String(config.port),
+                '-U', config.user
+            ];
 
             if (config.options) {
-                command += ` ${config.options}`;
+                 // Basic tokenization respecting quotes
+                 const parts = config.options.match(/[^\s"']+|"([^"]*)"|'([^']*)'/g) || [];
+                 for (const part of parts) {
+                     if (part.startsWith('"') && part.endsWith('"')) {
+                        args.push(part.slice(1, -1));
+                     } else if (part.startsWith("'") && part.endsWith("'")) {
+                        args.push(part.slice(1, -1));
+                     } else {
+                        args.push(part);
+                     }
+                 }
             }
 
             // Custom format is often better for restores, but plain text is more generic.
             // Let's stick to default or let user specify in options, but we redirect output.
-            command += ` -f "${destinationPath}" ${config.database}`;
+            args.push('-f', destinationPath);
+            args.push(config.database);
 
-            logs.push(`Executing command: ${command}`);
+            logs.push(`Executing command: pg_dump ${args.join(' ')}`);
 
-            const { stdout, stderr } = await execAsync(command, { env });
+            const { stdout, stderr } = await execFileAsync('pg_dump', args, { env });
 
             // pg_dump might output info to stderr even on success
             if (stderr) {
@@ -75,11 +90,17 @@ export const PostgresAdapter: DatabaseAdapter = {
                 env.PGPASSWORD = config.password;
             }
 
-            let command = `psql -h ${config.host} -p ${config.port} -U ${config.user} -d ${config.database} -f "${sourcePath}"`;
+            const args: string[] = [
+                '-h', config.host,
+                '-p', String(config.port),
+                '-U', config.user,
+                '-d', config.database,
+                '-f', sourcePath
+            ];
 
-            logs.push(`Executing restore command: ${command}`);
+            logs.push(`Executing restore command: psql ${args.join(' ')}`);
 
-            const { stdout, stderr } = await execAsync(command, { env });
+            const { stdout, stderr } = await execFileAsync('psql', args, { env });
              if (stderr) {
                 logs.push(`stderr: ${stderr}`);
             }
