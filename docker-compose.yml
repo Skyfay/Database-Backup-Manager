@@ -1,0 +1,19 @@
+services:
+  app:
+    build: .
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=file:/app/db/prod.db
+      - NEXTAUTH_SECRET=changeme_in_production
+      - BETTER_AUTH_URL=http://localhost:3000
+      - BETTER_AUTH_SECRET=changeme_in_production
+      # Add other env vars here
+    volumes:
+      # Persist backups
+      - ./backups:/backups
+      # Persist SQLite DB in a dedicated folder
+      - ./db-data:/app/db
+      # Persist Uploads/Avatars
+      - ./storage:/app/storage

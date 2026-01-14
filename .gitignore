@@ -42,9 +42,11 @@ next-env.d.ts
 
 # db
 prisma/dev.db
+db-data/
 
 # backups
 backups/
 
 # uploads
-storage/avatars/
+storage/avatars/*
+!storage/avatars/.gitkeepstorage/avatars/.gitkeep

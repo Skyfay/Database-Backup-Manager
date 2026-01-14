@@ -9,7 +9,7 @@ RUN apk add --no-cache \
     mysql-client \
     postgresql-client \
     mongodb-tools \
-    zi
+    zip
 
 # 1. Dependencies installieren
 FROM base AS deps
@@ -50,7 +50,10 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder /app/prisma ./prisma
 
 # Berechtigungen für Backup-Ordner (optional, falls lokal gespeichert wird)
-RUN mkdir -p /backups && chown nextjs:nodejs /backups
+# Auch storage Ordner für Avatare vorbereiten
+# db Ordner explizit für SQLite Persistence erstellen
+RUN mkdir -p /backups /app/storage/avatars /app/db && \
+    chown -R nextjs:nodejs /backups /app/storage /app/db
 
 USER nextjs
 
