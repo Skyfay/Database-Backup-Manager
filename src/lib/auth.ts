@@ -1,7 +1,7 @@
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import prisma from "./prisma";
-import { twoFactor } from "better-auth/plugins";
+import { twoFactor, passkey } from "better-auth/plugins";
 
 export const auth = betterAuth({
     database: prismaAdapter(prisma, {
@@ -23,6 +23,11 @@ export const auth = betterAuth({
                 type: "string",
                 required: false,
                 defaultValue: "p"
+            },
+            passkeyTwoFactor: {
+                type: "boolean",
+                required: false,
+                defaultValue: false
             }
         }
     },
@@ -31,7 +36,8 @@ export const auth = betterAuth({
         autoSignIn: true
     },
     plugins: [
-        twoFactor()
+        twoFactor(),
+        passkey()
     ],
     hooks: {
         before: async (ctx) => {

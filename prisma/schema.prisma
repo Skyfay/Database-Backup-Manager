@@ -73,6 +73,9 @@ model User {
   twoFactorEnabled Boolean?
   twoFactor        TwoFactor?
 
+  passkeys         Passkey[]
+  passkeyTwoFactor Boolean? @default(false)
+
   @@unique([email])
   @@map("user")
 }
@@ -84,6 +87,23 @@ model TwoFactor {
   userId      String
   user        User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   @@unique([userId])
+}
+
+model Passkey {
+  id             String    @id
+  name           String?
+  publicKey      String
+  userId         String
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  credentialID   String
+  counter        Int
+  deviceType     String
+  backedUp       Boolean
+  transports     String?
+  createdAt      DateTime?
+
+  @@unique([credentialID])
+  @@map("passkey")
 }
 
 model Session {

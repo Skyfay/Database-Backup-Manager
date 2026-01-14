@@ -19,7 +19,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
-import { Loader2 } from "lucide-react"
+import { Loader2, Fingerprint } from "lucide-react"
 
 const formSchema = z.object({
   email: z.string().email(),
@@ -38,6 +38,20 @@ export function LoginForm({ allowSignUp = true }: LoginFormProps) {
   const [twoFactorStep, setTwoFactorStep] = useState(false)
   const [totpCode, setTotpCode] = useState("")
   const [isBackupCode, setIsBackupCode] = useState(false)
+
+  const handlePasskeyLogin = async () => {
+        setLoading(true)
+        try {
+            const result = await signIn.passkey()
+             if (result?.error) {
+                toast.error(result.error.message || "Failed to sign in with passkey")
+            }
+        } catch (error) {
+            toast.error("Failed to sign in with passkey")
+        } finally {
+            setLoading(false)
+        }
+  }
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -147,7 +161,7 @@ export function LoginForm({ allowSignUp = true }: LoginFormProps) {
                <CardHeader>
                   <CardTitle>{isBackupCode ? "Backup Code" : "Two-Factor Authentication"}</CardTitle>
                   <CardDescription>
-                      {isBackupCode 
+                      {isBackupCode
                         ? "Enter one of your emergency backup codes."
                         : "Enter the code from your authenticator app."}
                   </CardDescription>
@@ -273,6 +287,30 @@ export function LoginForm({ allowSignUp = true }: LoginFormProps) {
             </Button>
           </form>
         </Form>
+        {isLogin && (
+            <div className="mt-4 space-y-4">
+                <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                        <span className="w-full border-t" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                        <span className="bg-background px-2 text-muted-foreground">
+                        Or
+                        </span>
+                    </div>
+                </div>
+                <Button
+                    variant="outline"
+                    type="button"
+                    className="w-full"
+                    onClick={handlePasskeyLogin}
+                    disabled={loading}
+                >
+                    <Fingerprint className="mr-2 h-4 w-4"/>
+                    Sign in with Passkey
+                </Button>
+            </div>
+        )}
       </CardContent>
       {allowSignUp && (
       <CardFooter className="flex justify-center">
