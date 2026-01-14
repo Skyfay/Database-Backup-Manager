@@ -285,13 +285,15 @@ export const MySQLAdapter: DatabaseAdapter = {
     },
 
     async ensureDatabase(config: any, dbName: string, user: string, pass: string | undefined, privileged: boolean, logs: string[]) {
-         const createCmd = `mysql -h ${config.host} -P ${config.port} -u ${user} --protocol=tcp ${pass ? `-p"${pass}"` : ''} -e 'CREATE DATABASE IF NOT EXISTS \`${dbName}\`'`;
+         const args = ['-h', config.host, '-P', String(config.port), '-u', user, '--protocol=tcp'];
+         if (pass) args.push(`-p${pass}`);
+
          try {
-            await execAsync(createCmd);
+            await execFileAsync('mysql', [...args, '-e', `CREATE DATABASE IF NOT EXISTS \`${dbName}\``]);
             logs.push(`Database '${dbName}' ensured.`);
             if (privileged) {
-                 const grantCmd = `mysql -h ${config.host} -P ${config.port} -u ${user} --protocol=tcp ${pass ? `-p"${pass}"` : ''} -e "GRANT ALL PRIVILEGES ON \\\`${dbName}\\\`.* TO '${config.user}'@'%'; GRANT ALL PRIVILEGES ON \\\`${dbName}\\\`.* TO '${config.user}'@'localhost'; FLUSH PRIVILEGES;"`;
-                 await execAsync(grantCmd);
+                 const grantQuery = `GRANT ALL PRIVILEGES ON \`${dbName}\`.* TO '${config.user}'@'%'; GRANT ALL PRIVILEGES ON \`${dbName}\`.* TO '${config.user}'@'localhost'; FLUSH PRIVILEGES;`;
+                 await execFileAsync('mysql', [...args, '-e', grantQuery]);
                  logs.push(`Permissions granted for '${dbName}'.`);
             }
          } catch(e: any) {
@@ -302,13 +304,13 @@ export const MySQLAdapter: DatabaseAdapter = {
     async test(config: any): Promise<{ success: boolean; message: string }> {
         try {
             // Force protocol=tcp to ensure we connect via network port (vital for Docker on localhost)
-            let command = `mysqladmin ping -h ${config.host} -P ${config.port} -u ${config.user} --protocol=tcp --connect-timeout=5`;
+            const args = ['ping', '-h', config.host, '-P', String(config.port), '-u', config.user, '--protocol=tcp', '--connect-timeout=5'];
+
              if (config.password) {
-                // Using MYSQL_PWD env var logic relative to exec might be safer but inline works for MVP
-                command += ` -p"${config.password}"`;
+                args.push(`-p${config.password}`);
             }
 
-            await execAsync(command);
+            await execFileAsync('mysqladmin', args);
             return { success: true, message: "Connection successful" };
         } catch (error: any) {
             return { success: false, message: "Connection failed: " + (error.stderr || error.message) };
@@ -316,8 +318,13 @@ export const MySQLAdapter: DatabaseAdapter = {
     },
 
     async getDatabases(config: any): Promise<string[]> {
-        const command = `mysql -h ${config.host} -P ${config.port} -u ${config.user} ${config.password ? `-p"${config.password}"` : ''} --protocol=tcp -e "SHOW DATABASES" --skip-column-names`;
-        const { stdout } = await execAsync(command);
+        const args = ['-h', config.host, '-P', String(config.port), '-u', config.user, '--protocol=tcp'];
+        if (config.password) {
+            args.push(`-p${config.password}`);
+        }
+        args.push('-e', 'SHOW DATABASES', '--skip-column-names');
+
+        const { stdout } = await execFileAsync('mysql', args);
         const sysDbs = ['information_schema', 'mysql', 'performance_schema', 'sys'];
         return stdout.split('\n').map(s => s.trim()).filter(s => s && !sysDbs.includes(s));
     }

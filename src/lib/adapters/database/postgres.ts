@@ -127,10 +127,9 @@ export const PostgresAdapter: DatabaseAdapter = {
     async test(config: any): Promise<{ success: boolean; message: string }> {
         try {
             const env = { ...process.env, PGPASSWORD: config.password };
-            // Simple query to check connection
-            const command = `psql -h ${config.host} -p ${config.port} -U ${config.user} -d postgres -c "SELECT 1"`;
+            const args = ['-h', config.host, '-p', String(config.port), '-U', config.user, '-d', 'postgres', '-c', 'SELECT 1'];
 
-            await execAsync(command, { env });
+            await execFileAsync('psql', args, { env });
             return { success: true, message: "Connection successful" };
         } catch (error: any) {
              return { success: false, message: "Connection failed: " + (error.stderr || error.message) };
@@ -140,9 +139,9 @@ export const PostgresAdapter: DatabaseAdapter = {
     async getDatabases(config: any): Promise<string[]> {
         const env = { ...process.env, PGPASSWORD: config.password };
         // -t = tuples only (no header/footer), -A = unaligned
-        const command = `psql -h ${config.host} -p ${config.port} -U ${config.user} -d postgres -t -A -c "SELECT datname FROM pg_database WHERE datistemplate = false;"`;
+        const args = ['-h', config.host, '-p', String(config.port), '-U', config.user, '-d', 'postgres', '-t', '-A', '-c', 'SELECT datname FROM pg_database WHERE datistemplate = false;'];
 
-        const { stdout } = await execAsync(command, { env });
+        const { stdout } = await execFileAsync('psql', args, { env });
         return stdout.split('\n').map(s => s.trim()).filter(s => s);
     }
 };
