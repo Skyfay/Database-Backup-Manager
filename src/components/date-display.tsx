@@ -29,7 +29,8 @@ export function DateDisplay({ date, format = "Pp", className }: DateDisplayProps
   // We override P, PP, PPP, PPPP and p, pp, ppp, pppp and combinations like Pp, PPpp
   const isLocalizedDate = /^[P]+$/.test(format);
   const isLocalizedTime = /^[p]+$/.test(format);
-  const isLocalizedBoth = /^[P]+[p]+$/.test(format);
+  // Allow optional whitespace between Date and Time parts (e.g. "PP p")
+  const isLocalizedBoth = /^[P]+\s*[p]+$/.test(format);
 
   if (isLocalizedBoth) {
       usedFormat = `${dateFormat} ${timeFormat}`;

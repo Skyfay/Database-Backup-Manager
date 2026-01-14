@@ -60,8 +60,12 @@ export async function RecentActivity() {
                                         <div className="space-y-1">
                                             <p className="text-sm font-medium leading-none">{displayName}</p>
                                             <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                                {meta.sourceName && <span>{meta.sourceName}</span>}
-                                                <span>•</span>
+                                                {meta.sourceName && (
+                                                    <>
+                                                        <span>{meta.sourceName}</span>
+                                                        <span>•</span>
+                                                    </>
+                                                )}
                                                 <span><DateDisplay date={execution.startedAt} format="PP p" /></span>
                                             </div>
                                         </div>
