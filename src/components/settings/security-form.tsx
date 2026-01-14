@@ -11,6 +11,7 @@ import { Loader2, CheckCircle2, AlertCircle, Fingerprint, Plus, Trash2, Smartpho
 import { QRCodeSVG } from "qrcode.react"
 import { toast } from "sonner"
 import { Switch } from "@/components/ui/switch"
+import { DateDisplay } from "@/components/date-display"
 import {
   Dialog,
   DialogContent,
@@ -21,7 +22,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { format } from "date-fns"
 import { togglePasskeyTwoFactor as togglePasskeyAction } from "@/app/actions/user"
 
 export function SecurityForm() {
@@ -435,7 +435,9 @@ export function SecurityForm() {
                                         {passkeys.map((pk) => (
                                             <TableRow key={pk.id}>
                                                 <TableCell className="font-medium">{pk.name || "Unnamed Passkey"}</TableCell>
-                                                <TableCell>{pk.createdAt ? format(new Date(pk.createdAt), 'PPP') : '-'}</TableCell>
+                                                <TableCell>
+                                                    {pk.createdAt ? <DateDisplay date={pk.createdAt} /> : '-'}
+                                                </TableCell>
                                                 <TableCell>
                                                     <Button variant="ghost" size="icon" onClick={() => handleDeletePasskey(pk.id)}>
                                                         <Trash2 className="h-4 w-4 text-destructive" />
