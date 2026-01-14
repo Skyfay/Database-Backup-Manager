@@ -198,8 +198,6 @@ export function SecurityForm() {
                     toast.success(checked ? "Passkey configured as 2FA" : "Passkey configured for login only")
                     // Force a session refresh
                     await refetch()
-                    // Reload to ensure state is consistent
-                    window.location.reload()
                 } else {
                      toast.error(result.error || "Failed to update settings")
                 }
