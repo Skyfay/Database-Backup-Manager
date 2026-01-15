@@ -1,16 +1,33 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { authLimiter, apiLimiter } from "./lib/rate-limit";
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
+    const ip = request.headers.get("x-forwarded-for") ?? "127.0.0.1";
+    const path = request.nextUrl.pathname;
+
+    // Rate Limiting Logic
+    try {
+        if (path.startsWith("/api/auth/sign-in")) {
+             // Strict limit for login endpoints
+             await authLimiter.consume(ip);
+        } else if (path.startsWith("/api/")) {
+             // General API limit
+             await apiLimiter.consume(ip);
+        }
+    } catch (rejRes) {
+        return new NextResponse("Too Many Requests", { status: 429 });
+    }
+
     const response = NextResponse.next();
-    
+
     // Add security headers to all responses
     response.headers.set("X-Frame-Options", "DENY");
     response.headers.set("X-Content-Type-Options", "nosniff");
     response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
     // Simple CSP to prevent common XSS
     response.headers.set(
-        "Content-Security-Policy", 
+        "Content-Security-Policy",
         "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self';"
     );
     response.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=(), browsing-topics=()");
@@ -21,10 +38,10 @@ export function middleware(request: NextRequest) {
         // "better-auth.session_token" is the default cookie name for better-auth
         // "better-auth.session_token.sig" might also exist
         const sessionToken = request.cookies.get("better-auth.session_token");
-        
-        // Also check if we are in a public asset that shouldn't be protected? 
+
+        // Also check if we are in a public asset that shouldn't be protected?
         // No, matcher handles excluding _next/static etc.
-        
+
         if (!sessionToken) {
             return NextResponse.redirect(new URL("/", request.url));
         }

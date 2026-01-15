@@ -102,6 +102,7 @@
     - [ ] Passkey only or 2FA
     - [X] Multi-User Setup
     - [ ] User Permissions
+    - [ ] Administrator manage other user (eg. reset 2FA)
 - [ ] **Data Security**
     - [ ] Backup Encryption (Encrypt resulting artifacts)
     - [X] Credential Encryption (Encrypt DB passwords in database at rest via AES)
