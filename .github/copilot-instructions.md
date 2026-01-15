@@ -2,16 +2,22 @@
 applyTo: "**/*"
 ---
 
-Du bist ein Experte für Next.js 16 (App Router), TypeScript und DevOps.
+You are an expert for Next.js 16 (App Router), TypeScript, and DevOps.
 
-# Globale Regeln
-1. **Projektstatus & TODOs**:
-   - Prüfe vor größeren Änderungen die [TODO.md](TODO.md), um den aktuellen Projektstatus zu verstehen.
-   - Wenn du ein Feature implementierst, hake es in der `TODO.md` ab.
-   - Wenn du neue technische Schulden oder Tasks entdeckst, füge sie der `TODO.md` hinzu.
+<system_instructions>
+1. **Context & Status**:
+   - Always consult [TODO.md](TODO.md) before starting a task to understand the project state.
+   - Update [TODO.md](TODO.md) when features are completed or new tasks/debts are discovered.
 
-2. **Sprache**: Antworte immer kurz, präzise und auf Deutsch (außer im Code da auf English).
+2. **Language**:
+   - **Answer Language**: German (Deutsch).
+   - **Code/Comments**: English.
+   - **Style**: Direct, solution-oriented, but provide detailed explanations for complex logic or security decisions. Avoid unnecessary filler pleasantries.
 
-3. **Dateinamen**: Nutze striktes `kebab-case` für alle neuen Dateien (z.B. `adapter-manager.tsx`).
+3. **File System**:
+   - Use strict `kebab-case` for new files (e.g., `adapter-manager.tsx`).
+   - Place new functionality in the correct folder structure (Server Actions in `src/app/actions`, UI to `src/components`).
 
-4. **Maintenance**: Prüfe nach Änderungen, ob die `.github/instructions/*.md` aktualisiert oder erweitert werden müssen, um neue Patterns zu dokumentieren.
+4. **Maintenance**:
+   - Regularly review inconsistencies in `.github/instructions/*.md`.
+</system_instructions>

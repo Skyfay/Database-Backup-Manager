@@ -2,24 +2,29 @@
 applyTo: "src/components/**/*.tsx, src/app/**/*.tsx"
 ---
 
-# UI & Frontend Standards
+# UI & Frontend Guidelines
 
-## Tech Stack
-- **Framework**: Next.js 16 App Router (nutze Server Components standardmäßig, `use client` nur wenn nötig).
-- **Styling**: Tailwind CSS (mobile-first).
-- **Komponenten**: Shadcn UI. Nutze existierende Primitive aus `src/components/ui/`.
-- **Formulare**: `react-hook-form` + `zod` für Schema-Validierung. Siehe [`src/components/adapter-manager.tsx`](src/components/adapter-manager.tsx) als Referenz.
+<rules>
+  <tech_stack>
+    - **Framework**: Next.js 16 App Router. Default to Server Components; use `use client` only when interactivity is required.
+    - **Styling**: Tailwind CSS (mobile-first).
+    - **Component Lib**: Shadcn UI. Reuse primitives from `src/components/ui/` whenever possible.
+    - **Forms**: `react-hook-form` + `zod`. Reference: [`src/components/adapter-manager.tsx`](src/components/adapter-manager.tsx).
+  </tech_stack>
 
-## Styling Regeln
-- Keine Inline-Styles. Nutze Tailwind Utility Classes.
-- Nutze `toast` für Benutzerfeedback (Success/Error) anstatt `alert()`.
+  <styling>
+    - Avoid inline styles. Use Tailwind utility classes.
+    - **Feedback**: Use `toast` (Sonner) for success/error notifications. Never use `alert()`.
+  </styling>
 
-## Datum & Zeit Darstellung
-- **VERBOTEN**: Nutze NIEMALS `new Date().toLocaleDateString()` oder manuelle Formatierung im JSX.
-- **PFLICHT**: Nutze IMMER die Komponente `<DateDisplay />` aus [`src/components/date-display.tsx`](src/components/date-display.tsx).
-  - Beispiel: `<DateDisplay date={backup.createdAt} />`
-  - Dies stellt sicher, dass die Zeitzone und das Format des Users aus der Session respektiert werden.
+  <formatting>
+    - **Dates**:
+      - ❌ Forbidden: `new Date().toLocaleDateS      - ❌ Forbidden: `new Date().toLocaleDateS      - ❌ Forbidden: `new Date().toLocaleDateS      - ❌ Forbidden: `new Date().toLocaleDateS      - ❌ Fosx).
+      - This ensures user timezone preferences are respected.
+  </formatting>
 
-## Architektur
-- Trenne Datenabruf (Server Actions/API) von der Präsentation.
-- Validiere Props mit TypeScript Interfaces (z.B. `interface AdapterFormProps`).
+  <architecture>
+    - **Separation**: Decouple data fetching (Server Actions) from presentation.
+    - **Props**: Validate all props with strict TypeScript Interfaces.
+  </architecture>
+</rules>

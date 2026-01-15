@@ -2,16 +2,21 @@
 applyTo: "**/*.test.ts, **/*.spec.ts, **/*.test.tsx"
 ---
 
-# Testing Standards
+# Testing Guidelines
 
-## Infrastruktur
-- Beachte [`docker-compose.test.yml`](docker-compose.test.yml) für Integrationstests.
-- Tests dürfen keine persistente Auswirkung auf die lokale Entwicklungs-DB haben (nutze Test-Container oder Transaktionen).
+<rules>
+  <infra>
+    - **Integration**: Refer to [`docker-compose.test.yml`](docker-compose.test.yml) for service definitions.
+    - **Isolation**: Tests must not leave persistent data in the local dev database. Use transactions or transient containers.
+  </infra>
 
-## Testing Pattern
-- **Unit Tests**: Mocke externe Aufrufe (z.B. API Calls, Dateisystem-Zugriffe).
-- **Integration Tests**: Teste gegen die echten Services definiert in der `docker-compose.test.yml` (MySQL, Postgres, Mongo), wenn möglich.
-- Nutze aussagekräftige `describe` und `it` Blöcke.
+  <patterns>
+    - **Unit Tests**: Mock strictly all external calls (API, File System).
+    - **Integration Tests**: Test against real services (MySQL, Postgres, Mongo) where possible.
+    - **Structure**: Use clear `describe` and `it` blocks explaining the business case.
+  </patterns>
 
-## Mocking
-- Wenn du `fetch` in Komponenten testest, mocke die Antwort immer so, dass sie der Struktur `{ success: boolean, ... }` entspricht.
+  <mocking>
+    - **Network**: When mocking `fetch`, ensure the response structure matches the API convention (e.g., `{ success: true, ... }`).
+  </mocking>
+</rules>
