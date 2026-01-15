@@ -10,14 +10,15 @@ const execFileAsync = util.promisify(execFile);
 
 async function ensureDatabase(config: any, dbName: string, user: string, pass: string | undefined, privileged: boolean, logs: string[]) {
     const args = ['-h', config.host, '-P', String(config.port), '-u', user, '--protocol=tcp'];
-    if (pass) args.push(`-p${pass}`);
+    const env = { ...process.env };
+    if (pass) env.MYSQL_PWD = pass;
 
     try {
-       await execFileAsync('mysql', [...args, '-e', `CREATE DATABASE IF NOT EXISTS \`${dbName}\``]);
+       await execFileAsync('mysql', [...args, '-e', `CREATE DATABASE IF NOT EXISTS \`${dbName}\``], { env });
        logs.push(`Database '${dbName}' ensured.`);
        if (privileged) {
             const grantQuery = `GRANT ALL PRIVILEGES ON \`${dbName}\`.* TO '${config.user}'@'%'; GRANT ALL PRIVILEGES ON \`${dbName}\`.* TO '${config.user}'@'localhost'; FLUSH PRIVILEGES;`;
-            await execFileAsync('mysql', [...args, '-e', grantQuery]);
+            await execFileAsync('mysql', [...args, '-e', grantQuery], { env });
             logs.push(`Permissions granted for '${dbName}'.`);
        }
     } catch(e: any) {
@@ -92,8 +93,9 @@ export const MySQLAdapter: DatabaseAdapter = {
                 '--protocol=tcp'
             ];
 
+            const env = { ...process.env };
             if (config.password) {
-                args.push(`--password=${config.password}`);
+                env.MYSQL_PWD = config.password;
             }
 
             if (config.options) {
@@ -117,10 +119,10 @@ export const MySQLAdapter: DatabaseAdapter = {
 
             args.push(`--result-file=${destinationPath}`);
 
-            // Mask password in logs
-            const logArgs = args.map(arg => arg.startsWith('--password=') ? '--password=*****' : arg);
-            logs.push(`Executing command: mysqldump ${logArgs.join(' ')}`);
+            // No password in args anymore
+            logs.push(`Executing command: mysqldump ${args.join(' ')}`);
 
+            const { stdout, stderr } = await execFileAsync('mysqldump', args, { env }
             const { stdout, stderr } = await execFileAsync('mysqldump', args);
 
             if (stderr) {
@@ -202,8 +204,8 @@ export const MySQLAdapter: DatabaseAdapter = {
                     '-P', String(config.port),
                     '-u', config.user,
                     '--protocol=tcp'
-                ];
-                if(config.password) args.push(`-p${config.password}`);
+                const env = { ...process.env };
+                if(config.password) env.MYSQL_PWD = config.password;
 
                 // If we are in "Single Target" mode, we connect directly to that DB
                 const singleTargetDb = (!dbMapping || dbMapping.length === 0) && config.database ? config.database : null;
@@ -211,6 +213,7 @@ export const MySQLAdapter: DatabaseAdapter = {
                      args.push(singleTargetDb);
                 }
 
+                const mysqlProc = spawn('mysql', args, { stdio: ['pipe', 'pipe', 'pipe'], env
                 const mysqlProc = spawn('mysql', args, { stdio: ['pipe', 'pipe', 'pipe'] });
 
                 mysqlProc.stderr.on('data', (d) => {
