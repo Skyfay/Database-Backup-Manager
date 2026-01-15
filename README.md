@@ -109,6 +109,12 @@ docker-compose -f docker-compose.test.yml up -d
 
 ## 📦 Release Preparation
 
+Before creating a release tag, verify that the application builds successfully:
+
+```bash
+pnpm run build
+```
+
 If you make changes to the database schema (`prisma/schema.prisma`), you must create a new migration before creating a release tag. This ensures that the production database is updated correctly.
 
 ```bash
