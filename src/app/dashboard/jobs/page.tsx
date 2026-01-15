@@ -325,7 +325,7 @@ function JobForm({ sources, destinations, notifications, initialData, onSuccess 
                                     return (
                                         <div key={id} className="bg-secondary text-secondary-foreground px-2 py-1 rounded text-xs flex items-center">
                                             {n?.name}
-                                            <button type="button" onClick={() => field.onChange(field.value.filter((x: string) => x !== id))} className="ml-1 hover:text-destructive">×</button>
+                                            <button type="button" onClick={() => field.onChange((field.value || []).filter((x: string) => x !== id))} className="ml-1 hover:text-destructive">×</button>
                                         </div>
                                     )
                                 })}
