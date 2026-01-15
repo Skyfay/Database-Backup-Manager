@@ -8,6 +8,23 @@ import util from "util";
 
 const execFileAsync = util.promisify(execFile);
 
+async function ensureDatabase(config: any, dbName: string, user: string, pass: string | undefined, privileged: boolean, logs: string[]) {
+    const args = ['-h', config.host, '-P', String(config.port), '-u', user, '--protocol=tcp'];
+    if (pass) args.push(`-p${pass}`);
+
+    try {
+       await execFileAsync('mysql', [...args, '-e', `CREATE DATABASE IF NOT EXISTS \`${dbName}\``]);
+       logs.push(`Database '${dbName}' ensured.`);
+       if (privileged) {
+            const grantQuery = `GRANT ALL PRIVILEGES ON \`${dbName}\`.* TO '${config.user}'@'%'; GRANT ALL PRIVILEGES ON \`${dbName}\`.* TO '${config.user}'@'localhost'; FLUSH PRIVILEGES;`;
+            await execFileAsync('mysql', [...args, '-e', grantQuery]);
+            logs.push(`Permissions granted for '${dbName}'.`);
+       }
+    } catch(e: any) {
+        logs.push(`Warning ensures DB '${dbName}': ${e.message}`);
+    }
+}
+
 export const MySQLAdapter: DatabaseAdapter = {
     id: "mysql",
     type: "database",
@@ -172,11 +189,11 @@ export const MySQLAdapter: DatabaseAdapter = {
                  const selectedDbs = dbMapping.filter(m => m.selected);
                  for (const db of selectedDbs) {
                     const targetName = db.targetName || db.originalName;
-                    await this.ensureDatabase(config, targetName, creationUser, creationPass, usePrivileged, logs);
+                    await ensureDatabase(config, targetName, creationUser, creationPass, usePrivileged, logs);
                  }
             } else if (config.database) {
                 // Ensure the single target database exists
-                await this.ensureDatabase(config, config.database, creationUser, creationPass, usePrivileged, logs);
+                await ensureDatabase(config, config.database, creationUser, creationPass, usePrivileged, logs);
             }
 
             return new Promise((resolve, reject) => {
@@ -282,23 +299,6 @@ export const MySQLAdapter: DatabaseAdapter = {
              logs.push(`Error: ${msg}`);
              return { success: false, logs, error: msg, startedAt, completedAt: new Date() };
         }
-    },
-
-    async ensureDatabase(config: any, dbName: string, user: string, pass: string | undefined, privileged: boolean, logs: string[]) {
-         const args = ['-h', config.host, '-P', String(config.port), '-u', user, '--protocol=tcp'];
-         if (pass) args.push(`-p${pass}`);
-
-         try {
-            await execFileAsync('mysql', [...args, '-e', `CREATE DATABASE IF NOT EXISTS \`${dbName}\``]);
-            logs.push(`Database '${dbName}' ensured.`);
-            if (privileged) {
-                 const grantQuery = `GRANT ALL PRIVILEGES ON \`${dbName}\`.* TO '${config.user}'@'%'; GRANT ALL PRIVILEGES ON \`${dbName}\`.* TO '${config.user}'@'localhost'; FLUSH PRIVILEGES;`;
-                 await execFileAsync('mysql', [...args, '-e', grantQuery]);
-                 logs.push(`Permissions granted for '${dbName}'.`);
-            }
-         } catch(e: any) {
-             logs.push(`Warning ensures DB '${dbName}': ${e.message}`);
-         }
     },
 
     async test(config: any): Promise<{ success: boolean; message: string }> {

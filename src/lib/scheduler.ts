@@ -1,9 +1,10 @@
 import cron from "node-cron";
+import type { ScheduledTask } from "node-cron";
 import prisma from "@/lib/prisma";
 import { runJob } from "@/lib/runner";
 
 export class BackupScheduler {
-    private tasks: Map<string, cron.ScheduledTask> = new Map();
+    private tasks: Map<string, ScheduledTask> = new Map();
 
     constructor() {
         this.tasks = new Map();
