@@ -318,7 +318,7 @@ function JobForm({ sources, destinations, notifications, initialData, onSuccess 
                                 {notifications.map((n: any) => <SelectItem key={n.id} value={n.id}>{n.name}</SelectItem>)}
                             </SelectContent>
                         </Select>
-                        {field.value?.length > 0 && (
+                        {field.value && field.value.length > 0 && (
                             <div className="flex gap-2 flex-wrap mt-2">
                                 {field.value.map((id: string) => {
                                     const n = notifications.find((x: any) => x.id === id);
