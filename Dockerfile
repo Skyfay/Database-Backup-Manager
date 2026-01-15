@@ -58,6 +58,9 @@ COPY --from=builder /app/prisma ./prisma
 RUN mkdir -p /backups /app/storage/avatars /app/db && \
     chown -R nextjs:nodejs /backups /app/storage /app/db
 
+# Install Prisma globally to run migrations at startup
+RUN npm install -g prisma
+
 USER nextjs
 
 EXPOSE 3000
@@ -65,4 +68,5 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-CMD ["node", "server.js"]
+# Run migrations before starting the app
+CMD ["/bin/sh", "-c", "prisma migrate deploy && node server.js"]
