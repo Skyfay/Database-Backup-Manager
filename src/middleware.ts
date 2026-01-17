@@ -15,7 +15,7 @@ export async function middleware(request: NextRequest) {
              // General API limit
              await apiLimiter.consume(ip);
         }
-    } catch (rejRes) {
+    } catch {
         return new NextResponse("Too Many Requests", { status: 429 });
     }
 
