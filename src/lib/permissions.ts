@@ -1,3 +1,4 @@
+
 export const PERMISSIONS = {
   USERS: {
     READ: "users:read",
@@ -7,14 +8,31 @@ export const PERMISSIONS = {
     READ: "groups:read",
     WRITE: "groups:write",
   },
-  BACKUPS: {
-    READ: "backups:read",
-    WRITE: "backups:write",
-    EXECUTE: "backups:execute",
+  SOURCES: {
+    READ: "sources:read",
+    WRITE: "sources:write",
   },
-  SETTINGS: {
-    READ: "settings:read",
-    WRITE: "settings:write",
+  DESTINATIONS: {
+    READ: "destinations:read",
+    WRITE: "destinations:write",
+  },
+  JOBS: {
+    READ: "jobs:read",
+    WRITE: "jobs:write",
+    EXECUTE: "jobs:execute",
+  },
+  STORAGE: {
+    READ: "storage:read",
+    DOWNLOAD: "storage:download",
+    RESTORE: "storage:restore",
+    DELETE: "storage:delete",
+  },
+  HISTORY: {
+    READ: "history:read",
+  },
+  NOTIFICATIONS: {
+    READ: "notifications:read",
+    WRITE: "notifications:write",
   },
 } as const;
 
@@ -23,20 +41,47 @@ export type Permission =
   | typeof PERMISSIONS.USERS.WRITE
   | typeof PERMISSIONS.GROUPS.READ
   | typeof PERMISSIONS.GROUPS.WRITE
-  | typeof PERMISSIONS.BACKUPS.READ
-  | typeof PERMISSIONS.BACKUPS.WRITE
-  | typeof PERMISSIONS.BACKUPS.EXECUTE
-  | typeof PERMISSIONS.SETTINGS.READ
-  | typeof PERMISSIONS.SETTINGS.WRITE;
+  | typeof PERMISSIONS.SOURCES.READ
+  | typeof PERMISSIONS.SOURCES.WRITE
+  | typeof PERMISSIONS.DESTINATIONS.READ
+  | typeof PERMISSIONS.DESTINATIONS.WRITE
+  | typeof PERMISSIONS.JOBS.READ
+  | typeof PERMISSIONS.JOBS.WRITE
+  | typeof PERMISSIONS.JOBS.EXECUTE
+  | typeof PERMISSIONS.STORAGE.READ
+  | typeof PERMISSIONS.STORAGE.DOWNLOAD
+  | typeof PERMISSIONS.STORAGE.RESTORE
+  | typeof PERMISSIONS.STORAGE.DELETE
+  | typeof PERMISSIONS.HISTORY.READ
+  | typeof PERMISSIONS.NOTIFICATIONS.READ
+  | typeof PERMISSIONS.NOTIFICATIONS.WRITE;
 
 export const AVAILABLE_PERMISSIONS = [
+  // Users & Groups
   { id: PERMISSIONS.USERS.READ, label: "View Users", category: "Users" },
   { id: PERMISSIONS.USERS.WRITE, label: "Manage Users", category: "Users" },
   { id: PERMISSIONS.GROUPS.READ, label: "View Groups", category: "Groups" },
   { id: PERMISSIONS.GROUPS.WRITE, label: "Manage Groups", category: "Groups" },
-  { id: PERMISSIONS.BACKUPS.READ, label: "View Jobs & Backups", category: "Backups" },
-  { id: PERMISSIONS.BACKUPS.WRITE, label: "Manage Jobs", category: "Backups" },
-  { id: PERMISSIONS.BACKUPS.EXECUTE, label: "Execute Backups", category: "Backups" },
-  { id: PERMISSIONS.SETTINGS.READ, label: "View Settings", category: "Settings" },
-  { id: PERMISSIONS.SETTINGS.WRITE, label: "Manage Settings", category: "Settings" },
+
+  // Resources
+  { id: PERMISSIONS.SOURCES.READ, label: "View Sources", category: "Sources" },
+  { id: PERMISSIONS.SOURCES.WRITE, label: "Manage Sources (Create/Edit/Delete)", category: "Sources" },
+  { id: PERMISSIONS.DESTINATIONS.READ, label: "View Destinations", category: "Destinations" },
+  { id: PERMISSIONS.DESTINATIONS.WRITE, label: "Manage Destinations (Create/Edit/Delete)", category: "Destinations" },
+
+  // Operations & Jobs
+  { id: PERMISSIONS.JOBS.READ, label: "View Jobs", category: "Jobs" },
+  { id: PERMISSIONS.JOBS.WRITE, label: "Manage Jobs (Create/Edit/Delete)", category: "Jobs" },
+  { id: PERMISSIONS.JOBS.EXECUTE, label: "Execute Jobs Manually", category: "Jobs" },
+
+  // Storage & History
+  { id: PERMISSIONS.STORAGE.READ, label: "Access Storage Explorer", category: "Storage" },
+  { id: PERMISSIONS.STORAGE.DOWNLOAD, label: "Download Backups", category: "Storage" },
+  { id: PERMISSIONS.STORAGE.RESTORE, label: "Restore Backups", category: "Storage" },
+  { id: PERMISSIONS.STORAGE.DELETE, label: "Delete Backups", category: "Storage" },
+  { id: PERMISSIONS.HISTORY.READ, label: "View Execution History", category: "History" },
+
+  // Notifications
+  { id: PERMISSIONS.NOTIFICATIONS.READ, label: "View Notifications", category: "Notifications" },
+  { id: PERMISSIONS.NOTIFICATIONS.WRITE, label: "Manage Notifications", category: "Notifications" },
 ];

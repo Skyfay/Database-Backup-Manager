@@ -3,6 +3,8 @@ import prisma from "@/lib/prisma";
 import { scheduler } from "@/lib/scheduler";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
+import { checkPermission } from "@/lib/access-control";
+import { PERMISSIONS } from "@/lib/permissions";
 
 export async function GET(req: NextRequest) {
     const session = await auth.api.getSession({
@@ -14,6 +16,8 @@ export async function GET(req: NextRequest) {
     }
 
     try {
+        await checkPermission(PERMISSIONS.JOBS.READ);
+
         const jobs = await prisma.job.findMany({
             include: {
                 source: true,
@@ -38,8 +42,11 @@ export async function POST(req: NextRequest) {
     }
 
     try {
+        await checkPermission(PERMISSIONS.JOBS.WRITE);
+
         const body = await req.json();
         const { name, schedule, sourceId, destinationId, notificationIds, enabled } = body;
+
 
         if (!name || !schedule || !sourceId || !destinationId) {
             return NextResponse.json({ error: "Missing required fields" }, { status: 400 });

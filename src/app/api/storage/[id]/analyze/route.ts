@@ -10,6 +10,8 @@ import os from "os";
 import fs from "fs";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
+import { checkPermission } from "@/lib/access-control";
+import { PERMISSIONS } from "@/lib/permissions";
 
 registerAdapters();
 
@@ -25,6 +27,8 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
     const params = await props.params;
     let tempFile: string | null = null;
     try {
+        await checkPermission(PERMISSIONS.STORAGE.RESTORE);
+
         const body = await req.json();
         const { file } = body;
 

@@ -7,6 +7,8 @@ import { decryptConfig } from "@/lib/crypto";
 import prisma from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
+import { checkPermission } from "@/lib/access-control";
+import { PERMISSIONS } from "@/lib/permissions";
 
 // Ensure adapters are registered in this route handler environment
 registerAdapters();
@@ -21,6 +23,8 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
     }
 
     try {
+        await checkPermission(PERMISSIONS.STORAGE.READ);
+
         const params = await props.params;
         const adapterConfig = await prisma.adapterConfig.findUnique({
             where: { id: params.id }

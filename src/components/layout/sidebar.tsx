@@ -30,12 +30,12 @@ import { PERMISSIONS } from "@/lib/permissions"
 
 const sidebarItems = [
     { icon: LayoutDashboard, label: "Overview", href: "/dashboard" },
-    { icon: Database, label: "Sources", href: "/dashboard/sources" },
-    { icon: HardDrive, label: "Destinations", href: "/dashboard/destinations" },
-    { icon: FolderOpen, label: "Storage Explorer", href: "/dashboard/storage" },
-    { icon: CalendarClock, label: "Jobs", href: "/dashboard/jobs", permission: PERMISSIONS.BACKUPS.READ },
-    { icon: History, label: "History", href: "/dashboard/history", permission: PERMISSIONS.BACKUPS.READ },
-    { icon: Bell, label: "Notifications", href: "/dashboard/notifications" },
+    { icon: Database, label: "Sources", href: "/dashboard/sources", permission: PERMISSIONS.SOURCES.READ },
+    { icon: HardDrive, label: "Destinations", href: "/dashboard/destinations", permission: PERMISSIONS.DESTINATIONS.READ },
+    { icon: FolderOpen, label: "Storage Explorer", href: "/dashboard/storage", permission: PERMISSIONS.STORAGE.READ },
+    { icon: CalendarClock, label: "Jobs", href: "/dashboard/jobs", permission: PERMISSIONS.JOBS.READ },
+    { icon: History, label: "History", href: "/dashboard/history", permission: PERMISSIONS.HISTORY.READ },
+    { icon: Bell, label: "Notifications", href: "/dashboard/notifications", permission: PERMISSIONS.NOTIFICATIONS.READ },
     { icon: Users, label: "Users", href: "/dashboard/users", permission: PERMISSIONS.USERS.READ },
     { icon: Settings, label: "Settings", href: "/dashboard/settings" },
 ]

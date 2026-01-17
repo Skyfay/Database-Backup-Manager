@@ -1,10 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { runJob } from "@/lib/runner";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
+import { checkPermission } from "@/lib/access-control";
+import { PERMISSIONS } from "@/lib/permissions";
 
 export async function POST(
     req: NextRequest,
     props: { params: Promise<{ id: string }> }
 ) {
+    const session = await auth.api.getSession({
+        headers: await headers()
+    });
+
+    if (!session) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const params = await props.params;
     const id = params.id;
 
@@ -19,6 +31,8 @@ export async function POST(
     // Let's await it for now to provide immediate feedback on success/fail for the "Test Run".
 
     try {
+        await checkPermission(PERMISSIONS.JOBS.EXECUTE);
+
         const result = await runJob(id);
         return NextResponse.json({ success: true, ...result });
     } catch (error: any) {

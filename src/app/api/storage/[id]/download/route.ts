@@ -10,6 +10,8 @@ import os from "os";
 import fs from "fs";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
+import { checkPermission } from "@/lib/access-control";
+import { PERMISSIONS } from "@/lib/permissions";
 
 registerAdapters();
 
@@ -26,6 +28,8 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
     let tempFile: string | null = null;
 
     try {
+        await checkPermission(PERMISSIONS.STORAGE.DOWNLOAD);
+
         const { searchParams } = new URL(req.url);
         const file = searchParams.get("file");
 

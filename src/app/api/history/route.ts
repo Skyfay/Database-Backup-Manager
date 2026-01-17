@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
+import { checkPermission } from "@/lib/access-control";
+import { PERMISSIONS } from "@/lib/permissions";
 
 export async function GET(req: NextRequest) {
     const session = await auth.api.getSession({
@@ -13,6 +15,8 @@ export async function GET(req: NextRequest) {
     }
 
     try {
+        await checkPermission(PERMISSIONS.HISTORY.READ);
+
         const executions = await prisma.execution.findMany({
             include: {
                 job: {

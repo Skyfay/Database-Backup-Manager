@@ -4,8 +4,8 @@ This document outlines the implementation of the Role-Based Access Control (RBAC
 
 ## 1. Architecture Overview
 
- The permission system revolves around **Users** and **Groups**.
-*   **Permissions** are granular strings (e.g., `users:read`, `backups:execute`).
+The permission system revolves around **Users** and **Groups**.
+*   **Permissions** are granular strings (e.g., `sources:read`, `jobs:execute`).
 *   **Groups** contain a list of permissions (stored as a JSON array).
 *   **Users** are assigned to exactly one **Group** (or no group).
 *   If a user has no group, they have **no permissions** by default (restricted access).
@@ -46,7 +46,18 @@ All available permissions are strictly typed and defined here. This is the sourc
 ```typescript
 export const PERMISSIONS = {
   USERS: { READ: "users:read", WRITE: "users:write" },
-  // ...
+  GROUPS: { READ: "groups:read", WRITE: "groups:write" },
+  SOURCES: { READ: "sources:read", WRITE: "sources:write" },
+  DESTINATIONS: { READ: "destinations:read", WRITE: "destinations:write" },
+  JOBS: { READ: "jobs:read", WRITE: "jobs:write", EXECUTE: "jobs:execute" },
+  STORAGE: {
+    READ: "storage:read",
+    DOWNLOAD: "storage:download",
+    RESTORE: "storage:restore",
+    DELETE: "storage:delete"
+  },
+  HISTORY: { READ: "history:read" },
+  NOTIFICATIONS: { READ: "notifications:read", WRITE: "notifications:write" },
 } as const;
 ```
 
@@ -54,10 +65,8 @@ export const PERMISSIONS = {
 This file contains the helper functions to verify permissions on both the server (Backend) and during page rendering.
 
 *   `checkPermission(permission: Permission)`:
-    *   Fetches the current session and user from the database (including the Group).
-    *   Throws an error if the user is not authenticated.
-    *   Throws an error if the user has no group.
-    *   Throws an error if the group does not contain the required permission.
+    *   Fetches the current session and user from the database.
+    *   Throws an error if the user is not authenticated or lacks the permission.
     *   **Usage**: Primarily in Server Actions.
 
 *   `hasPermission(permission: Permission)`:
@@ -68,20 +77,50 @@ This file contains the helper functions to verify permissions on both the server
     *   Returns `string[]` of all permissions the current user possesses.
     *   **Usage**: In Server Components (Pages) to pass down flags to Client Components.
 
-## 4. Implementation Guide
+## 4. Permission Reference
+
+### Users & Groups
+*   `users:read`: View user list and details.
+*   `users:write`: Create, invite, delete users.
+*   `groups:read`: View groups and their assigned permissions.
+*   `groups:write`: Create, edit, delete groups.
+
+### Resources (Sources / Destinations)
+*   `sources:read`: View configured database sources.
+*   `sources:write`: Add, edit, remove database sources.
+*   `destinations:read`: View configured backup destinations.
+*   `destinations:write`: Add, edit, remove backup destinations.
+
+### Jobs
+*   `jobs:read`: View scheduled jobs.
+*   `jobs:write`: Create, edit, delete backup jobs.
+*   `jobs:execute`: Manually trigger a job run immediately.
+
+### Storage & History
+*   `storage:read`: Access the Storage Explorer file browser.
+*   `storage:download`: Download backup files to local machine.
+*   `storage:restore`: Trigger a database restore from a backup file.
+*   `storage:delete`: Delete backup files from storage.
+*   `history:read`: View the execution log/history of jobs.
+
+### Notifications
+*   `notifications:read`: Access the notifications center.
+*   `notifications:write`: Manage notification settings or mark as read (if applicable).
+
+## 5. Implementation Guide
 
 ### Backend: Protecting Server Actions
 All Server Actions modifying data MUST utilize `checkPermission`.
 
 **Example:**
 ```typescript
-// src/app/actions/some-feature.ts
+// src/app/actions/source.ts
 import { checkPermission } from "@/lib/access-control";
 import { PERMISSIONS } from "@/lib/permissions";
 
-export async function deleteSomething() {
+export async function deleteSource() {
     // 1. Guard
-    await checkPermission(PERMISSIONS.SOME_FEATURE.WRITE);
+    await checkPermission(PERMISSIONS.SOURCES.WRITE);
 
     // 2. Logic
     // ...
@@ -93,49 +132,20 @@ To hide UI elements (buttons, links) for unauthorized users, fetch permissions i
 
 **Example (Page):**
 ```typescript
-// src/app/some-page/page.tsx
+// src/app/dashboard/sources/page.tsx
 export default async function Page() {
     const permissions = await getUserPermissions();
-    const canEdit = permissions.includes(PERMISSIONS.SOME_FEATURE.WRITE);
+    const canEdit = permissions.includes(PERMISSIONS.SOURCES.WRITE);
 
-    return <SomeComponent canEdit={canEdit} />;
+    return <SourcesTable canEdit={canEdit} />;
 }
 ```
 
-**Example (Component):**
-```typescript
-// src/components/some-component.tsx
-export function SomeComponent({ canEdit }: { canEdit: boolean }) {
-    return (
-        <div>
-            {canEdit && <button>Edit</button>}
-        </div>
-    );
-}
-```
-
-## 5. Adding New Permissions
-
-To introduce a new feature with access control:
-
-1.  **Define Permission**: Add keys to `PERMISSIONS` object in `src/lib/permissions.ts`.
-2.  **Add to UI List**: Add the permission to `AVAILABLE_PERMISSIONS` array in `src/lib/permissions.ts` (adds it to the Group creation form).
-3.  **Protect Actions**: Add `checkPermission(...)` to your detailed Server Actions.
-4.  **Update UI**: Implement conditional rendering in your React components.
-
-## 6. System Behaviors & Safeguards
+## 6. Access Control Rules
 
 ### Auto-Promotion (First User)
-The system includes a "Self-Healing" mechanism for the first user.
-*   If a user logs in (or accesses a protected resource) and:
-    1.  They have **no group assigned**.
-    2.  They are the **only user** in the database.
-*   Then:
-    *   The system automatically creates a **"SuperAdmin"** group (if missing) with ALL permissions.
-    *   The user is assigned to this group immediately.
+The first user registered in the system is automatically assigned to a "SuperAdmin" group containing ALL permissions.
 
 ### SuperAdmin Safeguards
-To prevent accidental lockouts, the system enforces the following rules in the Backend:
-1.  **Group Deletion**: The group named `"SuperAdmin"` cannot be deleted.
-2.  **User Deletion**: You cannot delete a user if they are the **last member** of the SuperAdmin group.
-3.  **Role Change**: You cannot remove the Last SuperAdmin from the group (or change their group) if no other SuperAdmins exist.
+1.  **Group Deletion**: The `"SuperAdmin"` group cannot be deleted.
+2.  **User Deletion**: You cannot delete the last user in the SuperAdmin group.
