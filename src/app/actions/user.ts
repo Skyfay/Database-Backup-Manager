@@ -23,12 +23,34 @@ export async function updateUserGroup(userId: string, groupId: string | null) {
     await checkPermission(PERMISSIONS.USERS.WRITE);
 
     try {
+        const targetGroupId = groupId === "none" ? null : groupId;
+
+        // Security check: Prevent removing the last SuperAdmin
+        const user = await prisma.user.findUnique({
+            where: { id: userId },
+            include: { group: true }
+        });
+
+        if (user?.group?.name === "SuperAdmin" && targetGroupId !== user.groupId) {
+            const superAdminCount = await prisma.user.count({
+                where: {
+                    group: {
+                        name: "SuperAdmin"
+                    }
+                }
+            });
+
+            if (superAdminCount <= 1) {
+                return { success: false, error: "Cannot remove the last user from the SuperAdmin group." };
+            }
+        }
+
         await prisma.user.update({
             where: {
                 id: userId
             },
             data: {
-                groupId: groupId === "none" ? null : groupId
+                groupId: targetGroupId
             }
         });
         revalidatePath("/dashboard/users");
@@ -43,6 +65,25 @@ export async function deleteUser(userId: string) {
     await checkPermission(PERMISSIONS.USERS.WRITE);
 
     try {
+        const user = await prisma.user.findUnique({
+            where: { id: userId },
+            include: { group: true }
+        });
+
+        // Check if user is the last SuperAdmin
+        if (user?.group?.name === "SuperAdmin") {
+             const superAdminCount = await prisma.user.count({
+                 where: {
+                     group: {
+                         name: "SuperAdmin"
+                     }
+                 }
+             });
+             if (superAdminCount <= 1) {
+                  return { success: false, error: "Cannot delete the last SuperAdmin user." };
+             }
+        }
+
         // Check if user is the last one? maybe not necessary for now but good practice
         const userCount = await prisma.user.count();
         if (userCount <= 1) {
@@ -57,8 +98,8 @@ export async function deleteUser(userId: string) {
         revalidatePath("/dashboard/users");
         revalidatePath("/dashboard/settings");
         return { success: true };
-    } catch (error) {
-        return { success: false, error: "Failed to update user" };
+    } catch (error: any) {
+        return { success: false, error: error.message || "Failed to delete user" };
     }
 }
 

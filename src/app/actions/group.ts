@@ -81,6 +81,14 @@ export async function deleteGroup(id: string) {
     await checkPermission(PERMISSIONS.GROUPS.WRITE);
 
     try {
+        const group = await prisma.group.findUnique({
+            where: { id }
+        });
+
+        if (group?.name === "SuperAdmin") {
+            return { success: false, error: "The SuperAdmin group cannot be deleted." };
+        }
+
         await prisma.group.delete({
             where: { id }
         });

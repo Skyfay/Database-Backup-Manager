@@ -132,7 +132,7 @@ export function CreateGroupDialog() {
                         <FormField
                             control={form.control}
                             name="permissions"
-                            render={() => (
+                            render={({ field }) => (
                                 <FormItem>
                                     <div className="mb-4">
                                         <FormLabel className="text-base">Permissions</FormLabel>
@@ -158,40 +158,31 @@ export function CreateGroupDialog() {
                                                     </div>
                                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                                         {permissions.map((permission) => (
-                                                            <FormField
+                                                            <FormItem
                                                                 key={permission.id}
-                                                                control={form.control}
-                                                                name="permissions"
-                                                                render={({ field }) => {
-                                                                    return (
-                                                                        <FormItem
-                                                                            key={permission.id}
-                                                                            className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-3 shadow-sm hover:bg-accent/50 transition-colors"
-                                                                            onClick={() => togglePermission(permission.id)}
-                                                                        >
-                                                                            <FormControl>
-                                                                                <Checkbox
-                                                                                    checked={field.value?.includes(permission.id)}
-                                                                                    onCheckedChange={(checked) => {
-                                                                                        return checked
-                                                                                            ? field.onChange([...field.value, permission.id])
-                                                                                            : field.onChange(
-                                                                                                field.value?.filter(
-                                                                                                    (value) => value !== permission.id
-                                                                                                )
-                                                                                            )
-                                                                                    }}
-                                                                                />
-                                                                            </FormControl>
-                                                                            <div className="space-y-1 leading-none cursor-pointer">
-                                                                                <FormLabel className="font-normal cursor-pointer">
-                                                                                    {permission.label}
-                                                                                </FormLabel>
-                                                                            </div>
-                                                                        </FormItem>
-                                                                    )
-                                                                }}
-                                                            />
+                                                                className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-3 shadow-sm hover:bg-accent/50 transition-colors"
+                                                                onClick={() => togglePermission(permission.id)}
+                                                            >
+                                                                <FormControl>
+                                                                    <Checkbox
+                                                                        checked={field.value?.includes(permission.id)}
+                                                                        onCheckedChange={(checked) => {
+                                                                            return checked
+                                                                                ? field.onChange([...field.value, permission.id])
+                                                                                : field.onChange(
+                                                                                    field.value?.filter(
+                                                                                        (value) => value !== permission.id
+                                                                                    )
+                                                                                )
+                                                                        }}
+                                                                    />
+                                                                </FormControl>
+                                                                <div className="space-y-1 leading-none cursor-pointer">
+                                                                    <FormLabel className="font-normal cursor-pointer">
+                                                                        {permission.label}
+                                                                    </FormLabel>
+                                                                </div>
+                                                            </FormItem>
                                                         ))}
                                                     </div>
                                                 </div>
