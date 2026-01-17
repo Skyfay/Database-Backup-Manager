@@ -99,7 +99,7 @@
     - [x] Setup Better-Auth (Clean implementation)
     - [ ] Auth via OIDC
     - [X] TOTP for 2FA
-    - [ ] Passkey only or 2FA
+    - [X] Passkey only or 2FA
     - [X] Multi-User Setup
     - [x] **User Permissions (RBAC)**
     - [x] **Database Schema**: Create `Group` model (Permissions as JSON) & add relation to `User`.
@@ -107,7 +107,7 @@
     - [x] **Group Management**: CRUD for Groups + Permission definitions.
     - [x] **User Assignment**: Assign users to specific groups.
     - [x] **Access Control**: Implement permission guards (Server Actions & Components).
-    - [ ] Administrator manage other user (eg. reset 2FA)
+    - [x] Administrator manage other user (eg. reset 2FA)
 - [ ] **Data Security**
     - [ ] Backup Encryption (Encrypt resulting artifacts)
     - [X] Credential Encryption (Encrypt DB passwords in database at rest via AES)

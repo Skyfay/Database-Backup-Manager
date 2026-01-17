@@ -16,6 +16,7 @@ import {
     FormItem,
     FormLabel,
     FormMessage,
+    FormDescription
 } from "@/components/ui/form"
 import {
     Select,
@@ -30,8 +31,8 @@ import { useForm } from "react-hook-form"
 import * as z from "zod"
 import { useState, useEffect } from "react"
 import { toast } from "sonner"
-import { Loader2 } from "lucide-react"
-import { updateUser, updateUserGroup } from "@/app/actions/user"
+import { Loader2, ShieldAlert } from "lucide-react"
+import { updateUser, updateUserGroup, resetUserTwoFactor } from "@/app/actions/user"
 import { User } from "@prisma/client"
 import { GroupWithStats } from "@/types"
 
@@ -50,6 +51,7 @@ export interface EditUserDialogProps {
 
 export function EditUserDialogComponent({ user, groups, open, onOpenChange }: EditUserDialogProps) {
     const [loading, setLoading] = useState(false)
+    const [resetting2FA, setResetting2FA] = useState(false)
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -104,6 +106,24 @@ export function EditUserDialogComponent({ user, groups, open, onOpenChange }: Ed
             setLoading(false)
         }
     }
+
+    const handleReset2FA = async () => {
+        if (!user) return;
+        setResetting2FA(true);
+        try {
+            const res = await resetUserTwoFactor(user.id);
+            if (res.success) {
+                toast.success("2FA has been disabled for this user.");
+                onOpenChange(false);
+            } else {
+                toast.error(res.error || "Failed to reset 2FA.");
+            }
+        } catch {
+            toast.error("An error occurred.");
+        } finally {
+            setResetting2FA(false);
+        }
+    };
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -173,7 +193,24 @@ export function EditUserDialogComponent({ user, groups, open, onOpenChange }: Ed
                             )}
                         />
 
-                        <DialogFooter>
+                        <DialogFooter className="sm:justify-between">
+                            {(user?.twoFactorEnabled || user?.passkeyTwoFactor) ? (
+                                <Button
+                                    type="button"
+                                    variant="destructive"
+                                    onClick={handleReset2FA}
+                                    disabled={resetting2FA || loading}
+                                >
+                                    {resetting2FA ? (
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    ) : (
+                                        <ShieldAlert className="mr-2 h-4 w-4" />
+                                    )}
+                                    Reset 2FA
+                                </Button>
+                            ) : (
+                                <div /> /* Spacer to keep Save button on right if 2FA not enabled, or just let standard behavior handle it */
+                            )}
                             <Button type="submit" disabled={loading}>
                                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                 Save Changes

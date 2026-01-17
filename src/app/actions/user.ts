@@ -93,6 +93,31 @@ export async function updateUserGroup(userId: string, groupId: string | null) {
     }
 }
 
+export async function resetUserTwoFactor(userId: string) {
+    await checkPermission(PERMISSIONS.USERS.WRITE);
+
+    try {
+        await prisma.$transaction([
+            prisma.user.update({
+                where: { id: userId },
+                data: {
+                    twoFactorEnabled: false,
+                    passkeyTwoFactor: false
+                }
+            }),
+            // Use deleteMany in case no record exists - safer than delete
+            prisma.twoFactor.deleteMany({
+                where: { userId }
+            })
+        ]);
+
+        return { success: true };
+    } catch (error) {
+        console.error("Failed to reset 2FA:", error);
+        return { success: false, error: "Failed to reset 2FA" };
+    }
+}
+
 export async function deleteUser(userId: string) {
     await checkPermission(PERMISSIONS.USERS.WRITE);
 
@@ -154,7 +179,7 @@ export async function togglePasskeyTwoFactor(userId: string, enabled: boolean) {
                 twoFactorEnabled: enabled // Force enable native 2FA flag to trigger 2FA flow
             }
         });
-        
+
         revalidatePath("/dashboard/settings");
         return { success: true };
     } catch (error) {
