@@ -5,9 +5,15 @@ import { redirect } from "next/navigation";
 import { LoginForm } from "@/components/auth/login-form";
 
 export default async function Home() {
-    const session = await auth.api.getSession({
-        headers: await headers()
-    });
+    const headersList = await headers();
+    let session = null;
+    try {
+        session = await auth.api.getSession({
+            headers: headersList
+        });
+    } catch (error) {
+        // Silently fail if session check fails on home, just show login
+    }
 
     if (session) {
         redirect("/dashboard");

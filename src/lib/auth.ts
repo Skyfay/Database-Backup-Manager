@@ -40,35 +40,5 @@ export const auth = betterAuth({
     plugins: [
         twoFactor(),
         passkey()
-    ],
-    hooks: {
-        after: async (ctx) => {
-            if (ctx.request?.url) {
-                const url = new URL(ctx.request.url);
-                if (url.pathname.includes("/sign-up/email")) {
-                    const userCount = await prisma.user.count();
-                    if (userCount === 1) {
-                        const user = await prisma.user.findFirst();
-                        if (user) {
-                            const allPermissions = Object.values(PERMISSIONS).flatMap(group => Object.values(group));
-
-                            const group = await prisma.group.upsert({
-                                where: { name: "SuperAdmin" },
-                                update: { permissions: JSON.stringify(allPermissions) },
-                                create: {
-                                    name: "SuperAdmin",
-                                    permissions: JSON.stringify(allPermissions)
-                                }
-                            });
-
-                            await prisma.user.update({
-                                where: { id: user.id },
-                                data: { groupId: group.id }
-                            });
-                        }
-                    }
-                }
-            }
-        }
-    }
+    ]
 });

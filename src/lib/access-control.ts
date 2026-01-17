@@ -1,21 +1,52 @@
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
-import { Permission } from "@/lib/permissions";
+import { PERMISSIONS, Permission } from "@/lib/permissions";
 import prisma from "@/lib/prisma";
 
 export async function getCurrentUserWithGroup() {
-    const session = await auth.api.getSession({
-        headers: await headers()
-    });
+    // Wrap to prevent crash if headers/session fails significantly
+    let session;
+    try {
+        session = await auth.api.getSession({
+            headers: await headers()
+        });
+    } catch (e) {
+        console.error("Session check failed in access-control:", e);
+        return null;
+    }
 
     if (!session?.user) {
         return null;
     }
 
-    const user = await prisma.user.findUnique({
+    let user = await prisma.user.findUnique({
         where: { id: session.user.id },
         include: { group: true }
     });
+
+    // Auto-promote first user logic (Self-Healing)
+    if (user && !user.groupId) {
+        const userCount = await prisma.user.count();
+        if (userCount === 1) {
+            console.log("Auto-promoting first user to SuperAdmin...");
+            const allPermissions = Object.values(PERMISSIONS).flatMap(group => Object.values(group));
+            
+            const group = await prisma.group.upsert({
+                where: { name: "SuperAdmin" },
+                update: { permissions: JSON.stringify(allPermissions) },
+                create: {
+                    name: "SuperAdmin",
+                    permissions: JSON.stringify(allPermissions)
+                }
+            });
+
+            user = await prisma.user.update({
+                where: { id: user.id },
+                data: { groupId: group.id },
+                include: { group: true }
+            });
+        }
+    }
 
     return user;
 }
