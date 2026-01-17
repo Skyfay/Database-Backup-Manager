@@ -1,10 +1,14 @@
 import { getUsers } from "@/app/actions/user";
+import { getGroups } from "@/app/actions/group";
 import { UserTable } from "./user-table";
+import { GroupTable } from "./group-table";
 import { CreateUserDialog } from "./create-user-dialog";
+import { CreateGroupDialog } from "./create-group-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default async function UsersPage() {
     const users = await getUsers();
+    const groups = await getGroups();
 
     return (
         <div className="space-y-6">
@@ -29,10 +33,10 @@ export default async function UsersPage() {
                     <UserTable data={users} />
                 </TabsContent>
                 <TabsContent value="groups" className="space-y-4">
-                    {/* Groups content will be implemented in the next step */}
-                    <div className="flex items-center justify-center p-8 border border-dashed rounded-lg">
-                        <p className="text-muted-foreground">Groups management coming soon...</p>
+                    <div className="flex justify-end">
+                        <CreateGroupDialog />
                     </div>
+                    <GroupTable data={groups} />
                 </TabsContent>
             </Tabs>
         </div>
