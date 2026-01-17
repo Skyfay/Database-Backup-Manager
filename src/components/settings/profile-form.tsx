@@ -66,7 +66,11 @@ export function ProfileForm({ user }: ProfileFormProps) {
     const [previewUrl, setPreviewUrl] = useState<string | null>(user.image);
     const [openTimezone, setOpenTimezone] = useState(false)
 
-    const timezones = Intl.supportedValuesOf('timeZone')
+    // Ensure UTC is available and at the top
+    const systemTimezones = Intl.supportedValuesOf('timeZone');
+    const timezones = systemTimezones.includes("UTC")
+        ? systemTimezones
+        : ["UTC", ...systemTimezones];
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -259,7 +263,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
                                                     )}
                                                 >
                                                     {field.value
-                                                        ? timezones.find((timezone) => timezone === field.value)
+                                                        ? (timezones.find((timezone) => timezone === field.value) || field.value)
                                                         : "Select timezone"}
                                                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                                 </Button>
