@@ -101,7 +101,12 @@
     - [X] TOTP for 2FA
     - [ ] Passkey only or 2FA
     - [X] Multi-User Setup
-    - [ ] User Permissions
+    - [ ] **User Permissions (RBAC)**
+    - [ ] **Database Schema**: Create `Group` model (Permissions as JSON) & add relation to `User`.
+    - [ ] **UI Restructure**: Convert `dashboard/users` to Tab-View (Users | Groups).
+    - [ ] **Group Management**: CRUD for Groups + Permission definitions.
+    - [ ] **User Assignment**: Assign users to specific groups.
+    - [ ] **Access Control**: Implement permission guards (Server Actions & Components).
     - [ ] Administrator manage other user (eg. reset 2FA)
 - [ ] **Data Security**
     - [ ] Backup Encryption (Encrypt resulting artifacts)
