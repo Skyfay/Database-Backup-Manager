@@ -67,7 +67,19 @@ model User {
   passkeys         Passkey[]
   sessions         Session[]
 
+  groupId String?
+  group   Group?  @relation(fields: [groupId], references: [id])
+
   @@map("user")
+}
+
+model Group {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  permissions String // Stored as JSON
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  users       User[]
 }
 
 model TwoFactor {

@@ -102,7 +102,7 @@
     - [ ] Passkey only or 2FA
     - [X] Multi-User Setup
     - [ ] **User Permissions (RBAC)**
-    - [ ] **Database Schema**: Create `Group` model (Permissions as JSON) & add relation to `User`.
+    - [x] **Database Schema**: Create `Group` model (Permissions as JSON) & add relation to `User`.
     - [ ] **UI Restructure**: Convert `dashboard/users` to Tab-View (Users | Groups).
     - [ ] **Group Management**: CRUD for Groups + Permission definitions.
     - [ ] **User Assignment**: Assign users to specific groups.
