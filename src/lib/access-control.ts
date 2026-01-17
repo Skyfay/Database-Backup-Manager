@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
-import { PERMISSIONS, Permission } from "@/lib/permissions";
+import { PERMISSIONS, Permission, AVAILABLE_PERMISSIONS } from "@/lib/permissions";
 import prisma from "@/lib/prisma";
 
 export async function getCurrentUserWithGroup() {
@@ -30,7 +30,7 @@ export async function getCurrentUserWithGroup() {
         if (userCount === 1) {
             console.log("Auto-promoting first user to SuperAdmin...");
             const allPermissions = Object.values(PERMISSIONS).flatMap(group => Object.values(group));
-            
+
             const group = await prisma.group.upsert({
                 where: { name: "SuperAdmin" },
                 update: { permissions: JSON.stringify(allPermissions) },
@@ -62,6 +62,11 @@ export async function checkPermission(permission: Permission) {
         throw new Error(`Forbidden: No group assigned. Missing permission: ${permission}`);
     }
 
+    // SuperAdmin always has all permissions
+    if (user.group.name === "SuperAdmin") {
+        return user;
+    }
+
     let permissions: string[] = [];
     try {
         permissions = JSON.parse(user.group.permissions);
@@ -79,6 +84,11 @@ export async function checkPermission(permission: Permission) {
 export async function getUserPermissions(): Promise<string[]> {
     const user = await getCurrentUserWithGroup();
     if (!user || !user.group) return [];
+
+    // SuperAdmin always has all permissions
+    if (user.group.name === "SuperAdmin") {
+        return AVAILABLE_PERMISSIONS.map(p => p.id);
+    }
 
     try {
         return JSON.parse(user.group.permissions);

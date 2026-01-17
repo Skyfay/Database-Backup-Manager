@@ -81,32 +81,33 @@ export function GroupTable({ data, canManage }: GroupTableProps) {
 
                 if (!canManage) return null;
 
+                // Protect SuperAdmin group
+                const isSuperAdmin = group.name === "SuperAdmin";
+
                 return (
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
+                            <Button variant="ghost" className="h-8 w-8 p-0" disabled={isSuperAdmin}>
                                 <span className="sr-only">Open menu</span>
                                 <MoreHorizontal className="h-4 w-4" />
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                                onClick={() => navigator.clipboard.writeText(group.id)}
-                            >
-                                Copy Group ID
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => setEditingGroup(group)}>
-                                <Pencil className="mr-2 h-4 w-4" />
-                                Edit Group
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                                className="text-destructive focus:text-destructive"
-                                onClick={() => handleDelete(group.id)}
-                            >
-                                <Trash className="mr-2 h-4 w-4" />
-                                Delete Group
-                            </DropdownMenuItem>
+                            {!isSuperAdmin && (
+                                <>
+                                    <DropdownMenuItem onClick={() => setEditingGroup(group)}>
+                                        <Pencil className="mr-2 h-4 w-4" />
+                                        Edit Group
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        className="text-destructive focus:text-destructive"
+                                        onClick={() => handleDelete(group.id)}
+                                    >
+                                        <Trash className="mr-2 h-4 w-4" />
+                                        Delete Group
+                                    </DropdownMenuItem>
+                                </>
+                            )}
                         </DropdownMenuContent>
                     </DropdownMenu>
                 )

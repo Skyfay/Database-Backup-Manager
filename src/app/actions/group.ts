@@ -61,6 +61,15 @@ export async function updateGroup(id: string, data: GroupFormValues) {
     try {
         const validated = groupSchema.parse(data);
 
+        // Check if group is SuperAdmin
+        const existingGroup = await prisma.group.findUnique({
+            where: { id }
+        });
+
+        if (existingGroup?.name === "SuperAdmin") {
+             return { success: false, error: "The SuperAdmin group cannot be edited manually." };
+        }
+
         await prisma.group.update({
             where: { id },
             data: {
