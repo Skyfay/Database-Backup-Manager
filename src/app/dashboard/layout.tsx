@@ -3,6 +3,7 @@ import { Header } from "@/components/layout/header"
 import { auth } from "@/lib/auth"
 import { headers } from "next/headers"
 import { redirect } from "next/navigation"
+import { getUserPermissions } from "@/lib/access-control"
 
 export default async function DashboardLayout({
     children,
@@ -22,9 +23,11 @@ export default async function DashboardLayout({
         redirect("/")
     }
 
+    const permissions = await getUserPermissions();
+
     return (
         <div className="flex min-h-screen">
-            <Sidebar />
+            <Sidebar permissions={permissions} />
             <div className="flex-1 flex flex-col min-h-screen">
                 <Header />
                 <main className="flex-1 overflow-y-auto bg-muted/10 p-6">

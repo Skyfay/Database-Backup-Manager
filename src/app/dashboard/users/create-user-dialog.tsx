@@ -25,7 +25,8 @@ import * as z from "zod"
 import { useState } from "react"
 import { toast } from "sonner"
 import { Loader2, Plus } from "lucide-react"
-import { signUp } from "@/lib/auth-client"
+import { createUser } from "@/app/actions/user"
+import { useRouter } from "next/navigation"
 
 const formSchema = z.object({
     name: z.string().min(2, "Name must be at least 2 characters."),
@@ -36,6 +37,7 @@ const formSchema = z.object({
 export function CreateUserDialog() {
     const [open, setOpen] = useState(false)
     const [loading, setLoading] = useState(false)
+    const router = useRouter()
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -49,26 +51,17 @@ export function CreateUserDialog() {
     async function onSubmit(values: z.infer<typeof formSchema>) {
         setLoading(true)
         try {
-            await signUp.email({
-                email: values.email,
-                password: values.password,
-                name: values.name,
-                fetchOptions: {
-                    onSuccess: () => {
-                        toast.success("User created successfully")
-                        setOpen(false)
-                        form.reset()
-                        // Force refresh to show new user in list
-                        window.location.reload();
-                    },
-                    onError: (ctx) => {
-                        toast.error(ctx.error.message)
-                    }
-                }
-            })
+            const result = await createUser(values)
+            if (result.success) {
+                toast.success("User created successfully")
+                setOpen(false)
+                form.reset()
+                router.refresh()
+            } else {
+                toast.error(result.error)
+            }
         } catch (error) {
-            console.error(error)
-             // Error handled in onError callback usually
+            toast.error("An unexpected error occurred")
         } finally {
             setLoading(false)
         }

@@ -122,3 +122,20 @@ To introduce a new feature with access control:
 2.  **Add to UI List**: Add the permission to `AVAILABLE_PERMISSIONS` array in `src/lib/permissions.ts` (adds it to the Group creation form).
 3.  **Protect Actions**: Add `checkPermission(...)` to your detailed Server Actions.
 4.  **Update UI**: Implement conditional rendering in your React components.
+
+## 6. System Behaviors & Safeguards
+
+### Auto-Promotion (First User)
+The system includes a "Self-Healing" mechanism for the first user.
+*   If a user logs in (or accesses a protected resource) and:
+    1.  They have **no group assigned**.
+    2.  They are the **only user** in the database.
+*   Then:
+    *   The system automatically creates a **"SuperAdmin"** group (if missing) with ALL permissions.
+    *   The user is assigned to this group immediately.
+
+### SuperAdmin Safeguards
+To prevent accidental lockouts, the system enforces the following rules in the Backend:
+1.  **Group Deletion**: The group named `"SuperAdmin"` cannot be deleted.
+2.  **User Deletion**: You cannot delete a user if they are the **last member** of the SuperAdmin group.
+3.  **Role Change**: You cannot remove the Last SuperAdmin from the group (or change their group) if no other SuperAdmins exist.

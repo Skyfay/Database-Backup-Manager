@@ -158,13 +158,13 @@ export function CreateGroupDialog() {
                                                     </div>
                                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                                         {permissions.map((permission) => (
-                                                            <FormItem
+                                                            <div
                                                                 key={permission.id}
                                                                 className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-3 shadow-sm hover:bg-accent/50 transition-colors"
-                                                                onClick={() => togglePermission(permission.id)}
                                                             >
                                                                 <FormControl>
                                                                     <Checkbox
+                                                                        id={`permission-${permission.id}`}
                                                                         checked={field.value?.includes(permission.id)}
                                                                         onCheckedChange={(checked) => {
                                                                             return checked
@@ -177,12 +177,15 @@ export function CreateGroupDialog() {
                                                                         }}
                                                                     />
                                                                 </FormControl>
-                                                                <div className="space-y-1 leading-none cursor-pointer">
-                                                                    <FormLabel className="font-normal cursor-pointer">
+                                                                <div className="space-y-1 leading-none">
+                                                                    <label
+                                                                        htmlFor={`permission-${permission.id}`}
+                                                                        className="text-sm font-normal cursor-pointer leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                                                    >
                                                                         {permission.label}
-                                                                    </FormLabel>
+                                                                    </label>
                                                                 </div>
-                                                            </FormItem>
+                                                            </div>
                                                         ))}
                                                     </div>
                                                 </div>

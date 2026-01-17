@@ -7,14 +7,24 @@ import { CreateGroupDialog } from "./create-group-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getUserPermissions } from "@/lib/access-control";
 import { PERMISSIONS } from "@/lib/permissions";
+import { redirect } from "next/navigation";
 
 export default async function UsersPage() {
-    const users = await getUsers();
-    const groups = await getGroups();
     const permissions = await getUserPermissions();
+
+    const hasReadUsers = permissions.includes(PERMISSIONS.USERS.READ);
+    const hasReadGroups = permissions.includes(PERMISSIONS.GROUPS.READ);
+
+    if (!hasReadUsers && !hasReadGroups) {
+        redirect("/dashboard");
+    }
 
     const canManageUsers = permissions.includes(PERMISSIONS.USERS.WRITE);
     const canManageGroups = permissions.includes(PERMISSIONS.GROUPS.WRITE);
+
+    // Fetch data only if permission is granted, otherwise provide empty array to avoid server action errors
+    const users = hasReadUsers ? await getUsers() : [];
+    const groups = hasReadGroups ? await getGroups() : [];
 
     return (
         <div className="space-y-6">
@@ -27,27 +37,31 @@ export default async function UsersPage() {
                 </div>
             </div>
 
-            <Tabs defaultValue="users" className="space-y-4">
+            <Tabs defaultValue={hasReadUsers ? "users" : "groups"} className="space-y-4">
                 <TabsList>
-                    <TabsTrigger value="users">Users</TabsTrigger>
-                    <TabsTrigger value="groups">Groups</TabsTrigger>
+                    {hasReadUsers && <TabsTrigger value="users">Users</TabsTrigger>}
+                    {hasReadGroups && <TabsTrigger value="groups">Groups</TabsTrigger>}
                 </TabsList>
-                <TabsContent value="users" className="space-y-4">
-                    {canManageUsers && (
-                        <div className="flex justify-end">
-                            <CreateUserDialog />
-                        </div>
-                    )}
-                    <UserTable data={users} groups={groups} canManage={canManageUsers} />
-                </TabsContent>
-                <TabsContent value="groups" className="space-y-4">
-                    {canManageGroups && (
-                        <div className="flex justify-end">
-                            <CreateGroupDialog />
-                        </div>
-                    )}
-                    <GroupTable data={groups} canManage={canManageGroups} />
-                </TabsContent>
+                {hasReadUsers && (
+                    <TabsContent value="users" className="space-y-4">
+                        {canManageUsers && (
+                            <div className="flex justify-end">
+                                <CreateUserDialog />
+                            </div>
+                        )}
+                        <UserTable data={users} groups={groups} canManage={canManageUsers} />
+                    </TabsContent>
+                )}
+                {hasReadGroups && (
+                    <TabsContent value="groups" className="space-y-4">
+                        {canManageGroups && (
+                            <div className="flex justify-end">
+                                <CreateGroupDialog />
+                            </div>
+                        )}
+                        <GroupTable data={groups} canManage={canManageGroups} />
+                    </TabsContent>
+                )}
             </Tabs>
         </div>
     );

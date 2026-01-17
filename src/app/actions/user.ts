@@ -5,6 +5,38 @@ import { User } from "better-auth";
 import { revalidatePath } from "next/cache";
 import { checkPermission, getCurrentUserWithGroup } from "@/lib/access-control";
 import { PERMISSIONS } from "@/lib/permissions";
+import { auth } from "@/lib/auth";
+
+export async function createUser(data: { name: string; email: string; password: string }) {
+    await checkPermission(PERMISSIONS.USERS.WRITE);
+
+    try {
+        await auth.api.signUpEmail({
+            body: {
+                name: data.name,
+                email: data.email,
+                password: data.password,
+            },
+            // We do not pass headers, to avoid setting cookies on the current response (hopefully)
+            // Or we can explicitly tell it not to sign in if supported, but signUpEmail usually signs in.
+            // Since we are in a Server Action, unless we manually forward Set-Cookie headers,
+            // the implicit session creation (DB side) won't affect the browser's cookie jar
+            // unless better-auth magic hooks into Next.js headers() automatically.
+        });
+
+        revalidatePath("/dashboard/users");
+        return { success: true };
+    } catch (error: any) {
+        // Better auth error handling
+        let errorMessage = "Failed to create user";
+        if (error?.body?.message) {
+            errorMessage = error.body.message;
+        } else if (error?.message) {
+            errorMessage = error.message;
+        }
+        return { success: false, error: errorMessage };
+    }
+}
 
 export async function getUsers() {
     await checkPermission(PERMISSIONS.USERS.READ);
