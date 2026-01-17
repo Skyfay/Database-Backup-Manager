@@ -56,6 +56,7 @@ interface AdapterManagerProps {
     type: 'database' | 'storage' | 'notification';
     title: string;
     description: string;
+    canManage?: boolean;
 }
 
 interface AdapterConfig {
@@ -67,7 +68,7 @@ interface AdapterConfig {
     createdAt: string;
 }
 
-export function AdapterManager({ type, title, description }: AdapterManagerProps) {
+export function AdapterManager({ type, title, description, canManage = true }: AdapterManagerProps) {
     const [configs, setConfigs] = useState<AdapterConfig[]>([]);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [availableAdapters, setAvailableAdapters] = useState<AdapterDefinition[]>([]);
@@ -86,6 +87,9 @@ export function AdapterManager({ type, title, description }: AdapterManagerProps
             if (res.ok) {
                 const data = await res.json();
                 setConfigs(data);
+            } else {
+                 const data = await res.json();
+                 toast.error(data.error || "Failed to load configurations");
             }
         } catch (error) {
             toast.error("Failed to load configurations");
@@ -124,9 +128,11 @@ export function AdapterManager({ type, title, description }: AdapterManagerProps
                     <h2 className="text-3xl font-bold tracking-tight">{title}</h2>
                     <p className="text-muted-foreground">{description}</p>
                 </div>
-                <Button onClick={() => { setEditingId(null); setIsDialogOpen(true); }}>
-                    <Plus className="mr-2 h-4 w-4" /> Add New
-                </Button>
+                {canManage && (
+                    <Button onClick={() => { setEditingId(null); setIsDialogOpen(true); }}>
+                        <Plus className="mr-2 h-4 w-4" /> Add New
+                    </Button>
+                )}
             </div>
 
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -137,13 +143,14 @@ export function AdapterManager({ type, title, description }: AdapterManagerProps
                         definition={ADAPTER_DEFINITIONS.find(d => d.id === config.adapterId)!}
                         onDelete={() => handleDelete(config.id)}
                         onEdit={() => { setEditingId(config.id); setIsDialogOpen(true); }}
+                        canManage={canManage}
                     />
                 ))}
             </div>
 
             {configs.length === 0 && (
                  <div className="rounded-md border p-8 text-center text-muted-foreground bg-muted/10">
-                    No configurations found. Click "Add New" to get started.
+                    {canManage ? 'No configurations found. Click "Add New" to get started.' : 'No configurations found.'}
                 </div>
             )}
 
@@ -193,7 +200,7 @@ function getAdapterIcon(adapterId: string) {
     return Disc;
 }
 
-function AdapterCard({ config, definition, onDelete, onEdit }: { config: AdapterConfig, definition: AdapterDefinition, onDelete: () => void, onEdit: () => void }) {
+function AdapterCard({ config, definition, onDelete, onEdit, canManage }: { config: AdapterConfig, definition: AdapterDefinition, onDelete: () => void, onEdit: () => void, canManage: boolean }) {
     const parsedConfig = JSON.parse(config.config);
     const Icon = getAdapterIcon(definition?.id || config.adapterId);
 
@@ -213,14 +220,16 @@ function AdapterCard({ config, definition, onDelete, onEdit }: { config: Adapter
 
     return (
         <Card className="group relative overflow-hidden transition-all hover:shadow-md border-muted-foreground/20">
-             <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-background/50 backdrop-blur-sm rounded-md p-0.5">
-                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onEdit}>
-                    <Edit className="h-3.5 w-3.5" />
-                </Button>
-                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={onDelete}>
-                    <Trash2 className="h-3.5 w-3.5" />
-                </Button>
-            </div>
+            {canManage && (
+                <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-background/50 backdrop-blur-sm rounded-md p-0.5">
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onEdit}>
+                        <Edit className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={onDelete}>
+                        <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                </div>
+            )}
 
             <CardHeader className="flex flex-row items-center gap-4 pb-2">
                 <div className="flex h-10 w-10 items-center justify-center rounded-md bg-muted text-muted-foreground">

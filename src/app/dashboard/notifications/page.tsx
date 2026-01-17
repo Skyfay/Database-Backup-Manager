@@ -1,11 +1,17 @@
 import { AdapterManager } from "@/components/adapter-manager";
+import { getUserPermissions } from "@/lib/access-control";
+import { PERMISSIONS } from "@/lib/permissions";
 
-export default function NotificationsPage() {
+export default async function NotificationsPage() {
+    const permissions = await getUserPermissions();
+    const canManage = permissions.includes(PERMISSIONS.NOTIFICATIONS.WRITE);
+
     return (
-         <AdapterManager
+        <AdapterManager
             type="notification"
             title="Notifications"
             description="Configure channels to receive alerts about your backups."
+            canManage={canManage}
         />
     )
 }

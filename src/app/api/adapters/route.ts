@@ -73,8 +73,8 @@ export async function GET(req: NextRequest) {
         });
 
         return NextResponse.json(decryptedAdapters);
-    } catch (error) {
-        return NextResponse.json({ error: "Failed to fetch adapters" }, { status: 500 });
+    } catch (error: any) {
+        return NextResponse.json({ error: error.message || "Failed to fetch adapters" }, { status: 500 });
     }
 }
 
@@ -124,8 +124,8 @@ export async function POST(req: NextRequest) {
         });
 
         return NextResponse.json(newAdapter, { status: 201 });
-    } catch (error) {
+    } catch (error: any) {
         console.error("Create error:", error);
-        return NextResponse.json({ error: "Failed to create adapter" }, { status: 500 });
+        return NextResponse.json({ error: error.message || "Failed to create adapter" }, { status: 500 });
     }
 }

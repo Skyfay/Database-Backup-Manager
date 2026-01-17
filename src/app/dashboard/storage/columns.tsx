@@ -29,9 +29,12 @@ interface ColumnsProps {
     onRestore: (file: FileInfo) => void;
     onDownload: (file: FileInfo) => void;
     onDelete: (file: FileInfo) => void;
+    canDownload: boolean;
+    canRestore: boolean;
+    canDelete: boolean;
 }
 
-export const createColumns = ({ onRestore, onDownload, onDelete }: ColumnsProps): ColumnDef<FileInfo>[] => [
+export const createColumns = ({ onRestore, onDownload, onDelete, canDownload, canRestore, canDelete }: ColumnsProps): ColumnDef<FileInfo>[] => [
     {
         accessorKey: "name",
         header: ({ column }) => {
@@ -135,38 +138,44 @@ export const createColumns = ({ onRestore, onDownload, onDelete }: ColumnsProps)
 
             return (
                 <div className="flex items-center justify-end gap-2">
-                    <TooltipProvider>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onDownload(file)}>
-                                    <Download className="h-4 w-4" />
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>Download</TooltipContent>
-                        </Tooltip>
-                    </TooltipProvider>
+                    {canDownload && (
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onDownload(file)}>
+                                        <Download className="h-4 w-4" />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Download</TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+                    )}
 
-                    <TooltipProvider>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onRestore(file)}>
-                                    <RotateCcw className="h-4 w-4" />
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>Restore</TooltipContent>
-                        </Tooltip>
-                    </TooltipProvider>
+                    {canRestore && (
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onRestore(file)}>
+                                        <RotateCcw className="h-4 w-4" />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Restore</TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+                    )}
 
-                     <TooltipProvider>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => onDelete(file)}>
-                                    <Trash2 className="h-4 w-4" />
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>Delete</TooltipContent>
-                        </Tooltip>
-                    </TooltipProvider>
+                    {canDelete && (
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => onDelete(file)}>
+                                        <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Delete</TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+                    )}
                 </div>
             );
         },
