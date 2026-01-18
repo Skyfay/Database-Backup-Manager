@@ -93,7 +93,7 @@ export function CreateGroupDialog() {
 
         if (allSelected) {
             // Deselect all
-            form.setValue("permissions", current.filter(p => !categoryPermissions.includes(p)));
+            form.setValue("permissions", current.filter(p => !categoryPermissions.includes(p as any)));
         } else {
             // Select all
             const newPermissions = [...new Set([...current, ...categoryPermissions])];

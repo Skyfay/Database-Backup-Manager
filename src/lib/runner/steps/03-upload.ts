@@ -93,11 +93,11 @@ export async function stepUpload(ctx: RunnerContext) {
         try {
             const inputFile = ctx.tempFile;
 
-            await pipeline(
+            await pipeline([
                 createReadStream(inputFile),
                 ...transformStreams,
                 createWriteStream(currentFile)
-            );
+            ]);
 
             // Cleanup old file
             await fs.unlink(inputFile);

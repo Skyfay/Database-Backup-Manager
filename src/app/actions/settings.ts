@@ -17,7 +17,7 @@ export async function updateSystemSettings(data: z.infer<typeof settingsSchema>)
 
     const result = settingsSchema.safeParse(data);
     if (!result.success) {
-        return { success: false, error: result.error.errors[0].message };
+        return { success: false, error: result.error.issues[0].message };
     }
 
     try {

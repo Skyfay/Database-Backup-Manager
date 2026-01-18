@@ -27,6 +27,6 @@ export interface RunnerContext {
     dumpSize?: number;
     metadata?: any;
 
-    status: "Success" | "Failed";
+    status: "Success" | "Failed" | "Running";
     startedAt: Date;
 }

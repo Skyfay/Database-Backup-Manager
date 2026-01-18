@@ -33,7 +33,7 @@ export function SystemSettingsForm({ initialMaxConcurrentJobs }: SystemSettingsF
     const [isPending, setIsPending] = useState(false)
 
     const form = useForm<z.infer<typeof formSchema>>({
-        resolver: zodResolver(formSchema),
+        resolver: zodResolver(formSchema) as any,
         defaultValues: {
             maxConcurrentJobs: initialMaxConcurrentJobs,
         },

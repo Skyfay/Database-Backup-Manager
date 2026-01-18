@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { deleteUser } from "@/app/actions/user"
 import { toast } from "sonner"
-import { User } from "@prisma/client"
+import { User, Group } from "@prisma/client"
 import { DataTable } from "@/components/ui/data-table"
 import { useState } from "react"
 import { EditUserDialogComponent as EditUserDialog } from "@/app/dashboard/users/edit-user-dialog"
@@ -23,7 +23,7 @@ import { GroupWithStats } from "@/types"
 
 // Create an extended User type that includes the group relation
 type UserWithGroup = User & {
-    group?: GroupWithStats | null
+    group?: Group | null
 }
 
 interface UserTableProps {

@@ -47,7 +47,8 @@ export default async function ProfilePage() {
                             timeFormat: session.user.timeFormat || "p",
                             passkeyTwoFactor: session.user.passkeyTwoFactor || false,
                             twoFactorEnabled: session.user.twoFactorEnabled || false,
-                            image: session.user.image || null
+                            image: session.user.image || null,
+                            groupId: (session.user as any).groupId || null
                         }}
                         canUpdateName={canUpdateName}
                         canUpdateEmail={canUpdateEmail}

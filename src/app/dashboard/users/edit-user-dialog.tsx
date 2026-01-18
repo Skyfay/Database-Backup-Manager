@@ -33,7 +33,7 @@ import { useState, useEffect } from "react"
 import { toast } from "sonner"
 import { Loader2, ShieldAlert } from "lucide-react"
 import { updateUser, updateUserGroup, resetUserTwoFactor } from "@/app/actions/user"
-import { User } from "@prisma/client"
+import { User, Group } from "@prisma/client"
 import { GroupWithStats } from "@/types"
 
 const formSchema = z.object({
@@ -43,7 +43,7 @@ const formSchema = z.object({
 })
 
 export interface EditUserDialogProps {
-    user: User & { group?: GroupWithStats | null } | null;
+    user: User & { group?: Group | null } | null;
     groups: GroupWithStats[];
     open: boolean;
     onOpenChange: (open: boolean) => void;

@@ -33,8 +33,8 @@ export async function POST(
     try {
         await checkPermission(PERMISSIONS.JOBS.EXECUTE);
 
-        const result = await backupService.executeJob(id);
-        return NextResponse.json({ success: true, ...result });
+        await backupService.executeJob(id);
+        return NextResponse.json({ success: true, message: 'Job finished' });
     } catch (error: any) {
         return NextResponse.json(
             { success: false, error: error.message },

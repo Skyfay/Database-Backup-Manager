@@ -118,7 +118,7 @@ node decrypt_backup.js <file.enc> <hex_key>
         const sanitizedName = profile.name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
         const filename = `recovery_kit_${sanitizedName}.zip`;
 
-        return new NextResponse(zipBuffer, {
+        return new NextResponse(zipBuffer as any, {
             status: 200,
             headers: {
                 "Content-Type": "application/zip",
