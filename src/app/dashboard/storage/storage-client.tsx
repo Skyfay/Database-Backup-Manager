@@ -1,13 +1,21 @@
 "use client";
 
 import { useEffect, useState, useMemo, useCallback } from "react";
+import { Check, ChevronsUpDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue
-} from "@/components/ui/select";
+    Command,
+    CommandEmpty,
+    CommandGroup,
+    CommandInput,
+    CommandItem,
+    CommandList,
+} from "@/components/ui/command";
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -41,6 +49,7 @@ export function StorageClient({ canDownload, canRestore, canDelete }: StorageCli
     const [destinations, setDestinations] = useState<AdapterConfig[]>([]);
     const [sources, setSources] = useState<AdapterConfig[]>([]);
     const [selectedDestination, setSelectedDestination] = useState<string>("");
+    const [open, setOpen] = useState(false);
 
     const [files, setFiles] = useState<FileInfo[]>([]);
     const [loading, setLoading] = useState(false);
@@ -177,17 +186,50 @@ export function StorageClient({ canDownload, canRestore, canDelete }: StorageCli
             <h2 className="text-3xl font-bold tracking-tight">Storage Explorer</h2>
 
             <div className="flex items-center space-x-4">
-                <div className="w-75">
-                    <Select value={selectedDestination} onValueChange={setSelectedDestination}>
-                        <SelectTrigger>
-                            <SelectValue placeholder="Select Destination" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {destinations.map(d => (
-                                <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+                <div className="w-[300px]">
+                    <Popover open={open} onOpenChange={setOpen}>
+                        <PopoverTrigger asChild>
+                            <Button
+                                variant="outline"
+                                role="combobox"
+                                aria-expanded={open}
+                                className="w-full justify-between"
+                            >
+                                {selectedDestination
+                                    ? destinations.find((dest) => dest.id === selectedDestination)?.name
+                                    : "Select Destination..."}
+                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[300px] p-0">
+                            <Command>
+                                <CommandInput placeholder="Search destination..." />
+                                <CommandList>
+                                    <CommandEmpty>No destination found.</CommandEmpty>
+                                    <CommandGroup>
+                                        {destinations.map((destination) => (
+                                            <CommandItem
+                                                key={destination.id}
+                                                value={destination.name}
+                                                onSelect={() => {
+                                                    setSelectedDestination(destination.id === selectedDestination ? "" : destination.id);
+                                                    setOpen(false);
+                                                }}
+                                            >
+                                                <Check
+                                                    className={cn(
+                                                        "mr-2 h-4 w-4",
+                                                        selectedDestination === destination.id ? "opacity-100" : "opacity-0"
+                                                    )}
+                                                />
+                                                {destination.name}
+                                            </CommandItem>
+                                        ))}
+                                    </CommandGroup>
+                                </CommandList>
+                            </Command>
+                        </PopoverContent>
+                    </Popover>
                 </div>
             </div>
 
