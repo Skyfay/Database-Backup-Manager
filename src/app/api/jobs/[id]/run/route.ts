@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { runJob } from "@/lib/runner";
+import { backupService } from "@/services/backup-service";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { checkPermission } from "@/lib/access-control";
@@ -33,7 +33,7 @@ export async function POST(
     try {
         await checkPermission(PERMISSIONS.JOBS.EXECUTE);
 
-        const result = await runJob(id);
+        const result = await backupService.executeJob(id);
         return NextResponse.json({ success: true, ...result });
     } catch (error: any) {
         return NextResponse.json(
