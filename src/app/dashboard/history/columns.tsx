@@ -56,12 +56,21 @@ export const createColumns = (onViewLogs: (execution: Execution) => void): Colum
             const status = row.getValue("status") as string;
             let variant: "default" | "secondary" | "destructive" | "outline" = "default";
 
-            if (status === "Success") variant = "secondary"; // Green-ish in shadcn default theme usually, or we can customize
+            if (status === "Success") variant = "secondary";
             else if (status === "Failed") variant = "destructive";
-            else if (status === "Running") variant = "outline"; // Or use a custom class for Blue/Yellow
+
+            // For running, we use a clean blue badge (not outline to avoid double border look)
+            // Using "secondary" as base prevents outline border conflict if we override
+            if (status === "Running") {
+                 return (
+                    <Badge className="bg-blue-500 hover:bg-blue-600 text-white border-transparent">
+                        Running
+                    </Badge>
+                );
+            }
 
             return (
-                <Badge variant={variant} className={status === "Running" ? "bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 border-blue-200" : ""}>
+                <Badge variant={variant}>
                     {status}
                 </Badge>
             );

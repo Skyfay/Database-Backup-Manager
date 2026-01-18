@@ -2,8 +2,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import prisma from "@/lib/prisma";
 import { formatDuration } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-import { Database, HardDrive } from "lucide-react";
+import { Database, HardDrive, Loader2 } from "lucide-react";
 import { DateDisplay } from "@/components/date-display";
+import Link from "next/link";
 
 export async function RecentActivity() {
     const activities = await prisma.execution.findMany({
@@ -30,7 +31,6 @@ export async function RecentActivity() {
                         <div className="text-sm text-muted-foreground">No recent executions found.</div>
                     ) : (
                         activities.map((execution) => {
-                            const isSuccess = execution.status === "Success";
                             const duration = execution.endedAt ? execution.endedAt.getTime() - execution.startedAt.getTime() : 0;
 
                             // Try to get metadata for accurate display
@@ -47,40 +47,77 @@ export async function RecentActivity() {
                             // If job was deleted, fallback to Manual or Unknown
                             const displayName = meta.jobName || (execution.jobId ? "Deleted Job" : "Manual Action");
 
+                            // Status Logic
+                            const isRunning = execution.status === "Running";
+                            const isSuccess = execution.status === "Success";
+                            const isFailed = execution.status === "Failed";
+
+                            let iconColor = isSuccess ? 'text-green-600' : 'text-red-600';
+                            let iconBg = isSuccess ? 'border-green-200 bg-green-100' : 'border-red-200 bg-red-100';
+                            let badgeVariant: "outline" | "destructive" | "default" | "secondary" = isSuccess ? "outline" : "destructive";
+
+                            if (isRunning) {
+                                iconColor = 'text-blue-600';
+                                iconBg = 'border-blue-200 bg-blue-100';
+                                // We'll handle badge manually or use a variant if available
+                            }
+
                             return (
-                                <div key={execution.id} className="flex items-center justify-between border-b pb-4 last:border-0 last:pb-0">
-                                    <div className="flex items-center gap-4">
-                                        <div className={`flex h-9 w-9 items-center justify-center rounded-full border ${isSuccess ? 'border-green-200 bg-green-100' : 'border-red-200 bg-red-100'}`}>
-                                            {meta.sourceType === 'database' ? (
-                                                <Database className={`h-4 w-4 ${isSuccess ? 'text-green-600' : 'text-red-600'}`} />
-                                            ) : (
-                                                <HardDrive className={`h-4 w-4 ${isSuccess ? 'text-green-600' : 'text-red-600'}`} />
-                                            )}
-                                        </div>
-                                        <div className="space-y-1">
-                                            <p className="text-sm font-medium leading-none">{displayName}</p>
-                                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                                {meta.sourceName && (
-                                                    <>
-                                                        <span>{meta.sourceName}</span>
-                                                        <span>•</span>
-                                                    </>
+                                <Link
+                                    href={`/dashboard/history?executionId=${execution.id}`}
+                                    key={execution.id}
+                                    className="block group cursor-pointer"
+                                >
+                                    <div className="flex items-center justify-between border-b pb-4 last:border-0 last:pb-0 group-hover:bg-muted/50 p-2 -mx-2 rounded-md transition-colors">
+                                        <div className="flex items-center gap-4">
+                                            <div className={`flex h-9 w-9 items-center justify-center rounded-full border ${iconBg}`}>
+                                                {isRunning ? (
+                                                    <Loader2 className={`h-4 w-4 animate-spin ${iconColor}`} />
+                                                ) : (
+                                                    meta.sourceType === 'database' ? (
+                                                        <Database className={`h-4 w-4 ${iconColor}`} />
+                                                    ) : (
+                                                        <HardDrive className={`h-4 w-4 ${iconColor}`} />
+                                                    )
                                                 )}
-                                                <span><DateDisplay date={execution.startedAt} format="PP p" /></span>
+                                            </div>
+                                            <div className="space-y-1">
+                                                <p className="text-sm font-medium leading-none">{displayName}</p>
+                                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                                    {meta.sourceName && (
+                                                        <>
+                                                            <span>{meta.sourceName}</span>
+                                                            <span>•</span>
+                                                        </>
+                                                    )}
+                                                    <span><DateDisplay date={execution.startedAt} format="PP p" /></span>
+                                                </div>
                                             </div>
                                         </div>
+                                        <div className="flex flex-col items-end gap-1">
+                                            {isRunning ? (
+                                                 <Badge className="bg-blue-500 hover:bg-blue-600 text-white border-transparent">
+                                                    Running
+                                                </Badge>
+                                            ) : (
+                                                <Badge variant={badgeVariant}>
+                                                    {execution.status}
+                                                </Badge>
+                                            )}
+
+                                            {duration > 0 && !isRunning && (
+                                                <span className="text-xs text-muted-foreground font-mono">
+                                                    {formatDuration(duration)}
+                                                </span>
+                                            )}
+                                             {isRunning && (
+                                                <span className="text-xs text-blue-500 font-medium animate-pulse">
+                                                    Live
+                                                </span>
+                                            )}
+                                        </div>
                                     </div>
-                                    <div className="flex flex-col items-end gap-1">
-                                        <Badge variant={isSuccess ? "outline" : "destructive"}>
-                                            {execution.status}
-                                        </Badge>
-                                        {duration > 0 && (
-                                            <span className="text-xs text-muted-foreground font-mono">
-                                                {formatDuration(duration)}
-                                            </span>
-                                        )}
-                                    </div>
-                                </div>
+                                </Link>
                             )
                         })
                     )}
