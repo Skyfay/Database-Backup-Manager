@@ -8,25 +8,24 @@
 
 A robust, self-hosted solution for automating database backups. Manage sources, destinations, and backup schedules through a modern web interface.
 
+![Dashboard Preview](docs/images/overview.png)
+
 ## 🚀 Features
 
-- **Multi-Database Support**: Backup **MySQL**, **PostgreSQL**, and **MongoDB**. (Additional databases planned)
-- **Flexible Storage**: Store backups on **Local Filesystem**. (S3, Cloud Providers, and FTP coming soon)
+- **Multi-Database Support**: Backup **MySQL**, **PostgreSQL**, and **MongoDB**.
+- **Bank-Grade Security**:
+  - **Encryption Vault**: Secure your backups with **AES-256-GCM** encryption.
+  - **Encryption Profiles**: Manage multiple keys and rotate secrets easily.
+  - **Recovery Kits**: Download standalone, offline decryption tools to ensure you can always recover your data, even without this application.
+- **Storage Optimization**: Built-in **GZIP** and **Brotli** compression to save storage space and bandwidth.
+- **Flexible Storage**: Store backups on the **Local Filesystem**. (S3, Cloud Providers, and FTP coming soon)
 - **Automated Scheduling**: Configure cron-based backup schedules for your jobs.
+- **Live Activity Monitoring**: Watch backup and restore processes in real-time with detailed step-by-step logs and visual progress bars.
+- **Granular Access Control**: Define custom user groups with precise permissions for every resource and action (RBAC).
 - **Notifications**: Get alerts via **Discord** or **Email** when backups succeed or fail.
 - **Restore & Management**: Browse backup history, view logs, and restore databases directly from the UI.
 - **Modern Dashboard**: Built with Next.js 16, Shadcn UI, and Tailwind CSS.
-- **Secure**: Validation for database connections and credential management.
 
-## � Preview
-
-| Dashboard | Configuration |
-|:---:|:---:|
-| ![Dashboard](docs/images/overview.png) | ![Configuration](docs/images/edit-configuration.png) |
-
-| Storage Explorer |
-|:---:|
-| ![Storage Explorer](docs/images/storage-explorer.png) |
 
 ## �🛠️ Tech Stack
 
@@ -35,7 +34,7 @@ A robust, self-hosted solution for automating database backups. Manage sources, 
 - **UI Components**: [shadcn/ui](https://ui.shadcn.com)
 - **Styling**: Tailwind CSS
 - **Scheduler**: Custom Node-based scheduler
-
+- **Streaming**: Native Node.js streams for efficient, low-memory piping of encryption and compression.
 ## 📦 Getting Started
 
 ### Prerequisites
@@ -67,7 +66,8 @@ A robust, self-hosted solution for automating database backups. Manage sources, 
    BETTER_AUTH_SECRET="your-super-secret-key-here"
    BETTER_AUTH_URL="http://localhost:3000" # Set to your domain in production
 
-   # Data Encryption (AES-256-GCM)
+   # System Encryption Key (AES-256-GCM)
+   # Allows encryption of sensitive DB connections and wraps your Backup Vault keys.
    ENCRYPTION_KEY="your-64-char-hex-key-here"
    ```
 
@@ -127,6 +127,27 @@ git add prisma/migrations
 git commit -m "chore: add db migration for feature xyz"
 ```
 
-## 📝 License
+## � Gallery
+
+| Backup Jobs | Storage Explorer |
+|:---:|:---:|
+| ![Jobs](docs/images/jobs.png) | ![Storage](docs/images/storage-explorer.png) |
+
+| Execution History | Encryption Vault |
+|:---:|:---:|
+| ![History](docs/images/history.png) | ![Vault](docs/images/vault.png) |
+
+| Group Permissions | Configuration |
+|:---:|:---:|
+| ![Permissions](docs/images/group-permission.png) | ![Config](docs/images/edit-configuration.png) |
+
+| User Profile | Light Mode |
+|:---:|:---:|
+| ![Profile](docs/images/profile.png) | ![Light Mode](docs/images/dashboard-light-theme.png) |
+
+<!-- Security Settings -->
+![Security](docs/images/security.png)
+
+## �📝 License
 
 [GNU GENERAL PUBLIC LICENSE](LICENSE)
