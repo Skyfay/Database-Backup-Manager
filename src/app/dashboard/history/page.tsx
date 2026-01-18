@@ -15,6 +15,7 @@ import { createColumns, Execution } from "./columns";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { DateDisplay } from "@/components/date-display";
 
 export default function HistoryPage() {
     return (
@@ -126,7 +127,7 @@ function HistoryContent() {
                              Execution Logs - {selectedLog?.job?.name || selectedLog?.type || "Unknown Activity"}
                         </DialogTitle>
                         <DialogDescription>
-                            {selectedLog?.startedAt && format(new Date(selectedLog.startedAt), "PPpp")}
+                            {selectedLog?.startedAt && <DateDisplay date={selectedLog.startedAt} format="PPpp" />}
                             {selectedLog?.status === "Running" && " (Live)"}
                         </DialogDescription>
                     </DialogHeader>

@@ -3,35 +3,47 @@
 This guide describes how to implement a new `DatabaseAdapter` for the Database Backup Manager.
 To ensure full compatibility with features like **Live Progress**, **Streaming**, and **Selective Restore**, please follow these guidelines strictly.
 
-## 1. Interface Implementation
+## 1. File Structure
+
+To keep the codebase maintainable, we enforce a split-file structure for Database Adapters.
+Do **not** put everything in a single file if it exceeds ~150 lines.
+
+**Recommended Structure:**
+```
+src/lib/adapters/database/<adapter-id>/
+├── index.ts        # Exports functionality as DatabaseAdapter object
+├── connection.ts   # Connection testing & utils (execFileAsync, getDatabases etc.)
+├── dump.ts         # The dump() implementation
+├── restore.ts      # The restore() implementation
+└── analyze.ts      # The analyzeDump() implementation (optional)
+```
+
+## 2. Interface Implementation
 
 All database adapters must implement `DatabaseAdapter` from `@/lib/core/interfaces`.
 
+**`index.ts` Example:**
 ```typescript
-export interface DatabaseAdapter extends BaseAdapter {
-    type: 'database';
+import { DatabaseAdapter } from "@/lib/core/interfaces";
+import { MySchema } from "@/lib/adapters/definitions";
+import { dump } from "./dump";
+import { restore, prepareRestore } from "./restore";
+import { test, getDatabases } from "./connection";
 
-    // Core methods
-    dump(config: any, destPath: string, onLog?: (msg: string) => void, onProgress?: (percentage: number) => void): Promise<BackupResult>;
-    restore(config: any, sourcePath: string, onLog?: (msg: string) => void, onProgress?: (p: number) => void): Promise<BackupResult>;
-
-    // Verification methods
-    test(config: any): Promise<{ success: boolean; message: string }>;
-    getDatabases(config: any): Promise<string[]>;
-
-    // Advanced features (Optional but recommended)
-    /**
-     * Pre-flight check before restore.
-     * Use this to verify if the user has permissions to create the target databases.
-     * If this fails with a permission error, the UI will prompt for privileged credentials.
-     */
-    prepareRestore?(config: any, databases: string[]): Promise<void>;
-
-    analyzeDump?(sourcePath: string): Promise<string[]>;
-}
+export const MyAdapter: DatabaseAdapter = {
+    id: "my-db",
+    type: "database",
+    name: "My Database",
+    configSchema: MySchema,
+    dump,
+    restore,
+    prepareRestore,
+    test,
+    getDatabases
+};
 ```
 
-## 2. Implementing `restore` (Critical for UX)
+## 3. Implementing `restore` (Critical for UX)
 
 The `restore` method is the most complex part because it drives the "Live Activity" UI.
 
