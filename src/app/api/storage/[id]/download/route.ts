@@ -1,10 +1,6 @@
-
 import { NextRequest, NextResponse } from "next/server";
-import { registry } from "@/lib/core/registry";
 import { registerAdapters } from "@/lib/adapters";
-import { StorageAdapter } from "@/lib/core/interfaces";
-import { decryptConfig } from "@/lib/crypto";
-import prisma from "@/lib/prisma";
+import { storageService } from "@/services/storage-service";
 import path from "path";
 import os from "os";
 import fs from "fs";
@@ -37,32 +33,25 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
              return NextResponse.json({ error: "Missing file param" }, { status: 400 });
         }
 
-        const adapterConfig = await prisma.adapterConfig.findUnique({
-            where: { id: params.id }
-        });
-
-        if (!adapterConfig || adapterConfig.type !== "storage") {
-            return NextResponse.json({ error: "not found" }, { status: 404 });
-        }
-
-        const adapter = registry.get(adapterConfig.adapterId) as StorageAdapter;
-        const config = decryptConfig(JSON.parse(adapterConfig.config));
-
         const tempDir = os.tmpdir();
-        tempFile = path.join(tempDir, path.basename(file));
+        // Use random suffix to avoid collision if multiple downloads happen
+        const tempName = `${path.basename(file)}_${Date.now()}`;
+        tempFile = path.join(tempDir, tempName);
 
-        const success = await adapter.download(config, file, tempFile);
+        // Delegate logic to Service
+        // Note: storageService handles config retrieval, decryption and adapter lookup
+        const success = await storageService.downloadFile(params.id, file, tempFile);
+
         if (!success) {
+             if (fs.existsSync(tempFile)) fs.unlinkSync(tempFile);
              return NextResponse.json({ error: "Download failed" }, { status: 500 });
         }
 
         // Stream file back
+        // For large files, it's better to stream, but for simplicity readSync is used here as consistent with prev implementation
         const fileBuffer = fs.readFileSync(tempFile);
 
-        // Clean up immediately? No, need to send it.
-        // readFileSync loads into memory. Not efficient for large files, but easiest for Next.js Route Handlers currently without streams overhead.
-
-        fs.unlinkSync(tempFile); // We have buffer
+        fs.unlinkSync(tempFile);
 
         return new NextResponse(fileBuffer, {
             headers: {
@@ -75,6 +64,14 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
         if (tempFile && fs.existsSync(tempFile)) {
              try { fs.unlinkSync(tempFile); } catch {}
         }
-        return NextResponse.json({ error: error.message }, { status: 500 });
+
+        console.error("Download error:", error);
+         const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+
+         if (errorMessage.includes("not found")) {
+             return NextResponse.json({ error: errorMessage }, { status: 404 });
+         }
+
+        return NextResponse.json({ error: errorMessage }, { status: 500 });
     }
 }

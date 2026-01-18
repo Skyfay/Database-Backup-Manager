@@ -1,0 +1,276 @@
+import prisma from "@/lib/prisma";
+import { registry } from "@/lib/core/registry";
+import { StorageAdapter, FileInfo, BackupMetadata } from "@/lib/core/interfaces";
+import { decryptConfig } from "@/lib/crypto";
+
+export type RichFileInfo = FileInfo & {
+    jobName?: string;
+    sourceName?: string;
+    sourceType?: string;
+    dbInfo?: { count: string | number; label: string };
+};
+
+export class StorageService {
+    /**
+     * Lists files from a specific storage adapter configuration.
+     * @param adapterConfigId The ID of the AdapterConfig in the database.
+     * @param subPath Optional subpath to list.
+     */
+    async listFiles(adapterConfigId: string, subPath: string = ""): Promise<FileInfo[]> {
+        const adapterConfig = await prisma.adapterConfig.findUnique({
+            where: { id: adapterConfigId }
+        });
+
+        if (!adapterConfig) {
+            throw new Error(`Storage configuration with ID ${adapterConfigId} not found.`);
+        }
+
+        if (adapterConfig.type !== "storage") {
+            throw new Error(`Adapter configuration ${adapterConfigId} is not a storage adapter.`);
+        }
+
+        const adapter = registry.get(adapterConfig.adapterId) as StorageAdapter;
+        if (!adapter) {
+            throw new Error(`Storage adapter implementation '${adapterConfig.adapterId}' not found in registry.`);
+        }
+
+        // Decrypt and parse config
+        let config: any;
+        try {
+            config = decryptConfig(JSON.parse(adapterConfig.config));
+        } catch (e) {
+            throw new Error(`Failed to decrypt configuration for ${adapterConfigId}: ${(e as Error).message}`);
+        }
+
+        return await adapter.list(config, subPath);
+    }
+
+    /**
+     * Lists files and enriches them with metadata from sidecars and database history.
+     */
+    async listFilesWithMetadata(adapterConfigId: string): Promise<RichFileInfo[]> {
+        const adapterConfig = await prisma.adapterConfig.findUnique({
+            where: { id: adapterConfigId }
+        });
+
+        if (!adapterConfig) {
+            throw new Error(`Storage configuration with ID ${adapterConfigId} not found.`);
+        }
+
+        if (adapterConfig.type !== "storage") {
+            throw new Error(`Adapter configuration ${adapterConfigId} is not a storage adapter.`);
+        }
+
+        const adapter = registry.get(adapterConfig.adapterId) as StorageAdapter;
+        if (!adapter) {
+            throw new Error(`Storage adapter implementation '${adapterConfig.adapterId}' not found in registry.`);
+        }
+
+        let config: any;
+        try {
+            config = decryptConfig(JSON.parse(adapterConfig.config));
+        } catch (e) {
+            throw new Error(`Failed to decrypt configuration for ${adapterConfigId}: ${(e as Error).message}`);
+        }
+
+        const allFiles = await adapter.list(config, "");
+
+        // Filter Backups vs Metadata
+        const backups = allFiles.filter(f => !f.name.endsWith('.meta.json'));
+        const metadataFiles = allFiles.filter(f => f.name.endsWith('.meta.json'));
+
+        // Load Sidecar Metadata
+        const metadataMap = new Map<string, BackupMetadata>();
+        if (adapter.read) {
+            // Parallel read
+            const metaReads = metadataFiles.map(async (metaFile) => {
+                try {
+                    const content = await adapter.read!(config, metaFile.path);
+                    if (content) {
+                        const meta = JSON.parse(content) as BackupMetadata;
+                        const originalName = metaFile.name.substring(0, metaFile.name.length - 10);
+                        metadataMap.set(originalName, meta);
+                    }
+                } catch (e) {
+                    // ignore read errors
+                }
+            });
+            await Promise.all(metaReads);
+        }
+
+        // Fetch jobs for fallback logic
+        const allJobs = await prisma.job.findMany({
+             include: { source: true }
+        });
+
+        const jobMap = new Map();
+        allJobs.forEach(j => {
+             const sanitized = j.name.replace(/[^a-z0-9]/gi, '_');
+             jobMap.set(sanitized, j);
+             jobMap.set(j.name, j);
+        });
+
+        // Fetch executions for metadata
+        const executions = await prisma.execution.findMany({
+            where: {
+                status: 'Success',
+                path: { not: null }
+            },
+            select: {
+                path: true,
+                metadata: true
+            }
+        });
+
+        const executionMap = new Map();
+        executions.forEach(ex => {
+            if (ex.path) {
+                executionMap.set(ex.path, ex.metadata);
+                if (ex.path.startsWith('/')) {
+                     executionMap.set(ex.path.substring(1), ex.metadata);
+                }
+                if (!ex.path.startsWith('/')) {
+                     executionMap.set('/' + ex.path, ex.metadata);
+                }
+            }
+        });
+
+        return backups.map(file => {
+             // 1. Check Sidecar Metadata (Primary Source of Truth)
+             const sidecar = metadataMap.get(file.name);
+             if (sidecar) {
+                 const count = typeof sidecar.databases === 'object' ? (sidecar.databases as any).count : (typeof sidecar.databases === 'number' ? sidecar.databases : 0);
+                 const label = count === 0 ? "Unknown" : (count === 1 ? "Single DB" : `${count} DBs`);
+
+                 return {
+                     ...file,
+                     jobName: sidecar.jobName,
+                     sourceName: sidecar.sourceName,
+                     sourceType: sidecar.sourceType,
+                     dbInfo: { count, label }
+                 };
+             }
+
+             // 2. Fallback to Execution History / Regex Logic
+             let potentialJobName = null;
+             const parts = file.path.split('/');
+              if (parts.length > 2 && parts[0] === 'backups') {
+                 potentialJobName = parts[1];
+             } else if (parts.length > 1 && parts[0] !== 'backups') {
+                 potentialJobName = parts[0];
+             } else {
+                 const match = file.name.match(/^(.+?)_\d{4}-\d{2}-\d{2}/);
+                 if (match) potentialJobName = match[1];
+             }
+
+             const job = potentialJobName ? jobMap.get(potentialJobName) : null;
+
+             let dbInfo: { count: string | number; label: string } = { count: 'Unknown', label: '' };
+
+             // 1. Try to get metadata from Execution record
+             const metaStr = executionMap.get(file.path);
+             if (metaStr) {
+                 try {
+                     const meta = JSON.parse(metaStr);
+                     if (meta.label) {
+                         dbInfo = { count: meta.count || '?', label: meta.label };
+                     }
+                     if (meta.jobName) {
+                         const realType = meta.adapterId || meta.sourceType;
+                         return {
+                             ...file,
+                             jobName: meta.jobName,
+                             sourceName: meta.sourceName,
+                             sourceType: realType,
+                             dbInfo
+                         }
+                     }
+                 } catch {}
+             }
+
+             // 2. Existing Job Fallback
+             if (job) {
+                 return {
+                     ...file,
+                     jobName: job.name,
+                     sourceName: job.source.name,
+                     sourceType: job.source.type, // e.g. 'database'
+                     dbInfo
+                 }
+             }
+
+             // 3. Regex Fallback
+             return {
+                 ...file,
+                 jobName: potentialJobName || 'Unknown',
+                 sourceName: 'Unknown',
+                 sourceType: 'unknown',
+                 dbInfo
+             };
+        });
+    }
+
+    /**
+     * Deletes a file via a specific storage adapter configuration.
+     */
+    async deleteFile(adapterConfigId: string, filePath: string): Promise<boolean> {
+         const adapterConfig = await prisma.adapterConfig.findUnique({
+            where: { id: adapterConfigId }
+        });
+
+        if (!adapterConfig) {
+            throw new Error(`Storage configuration with ID ${adapterConfigId} not found.`);
+        }
+
+        if (adapterConfig.type !== "storage") {
+             throw new Error(`Adapter configuration ${adapterConfigId} is not a storage adapter.`);
+        }
+
+        const adapter = registry.get(adapterConfig.adapterId) as StorageAdapter;
+        if (!adapter) {
+            throw new Error(`Storage adapter implementation '${adapterConfig.adapterId}' not found in registry.`);
+        }
+
+         let config: any;
+        try {
+            config = decryptConfig(JSON.parse(adapterConfig.config));
+        } catch (e) {
+            throw new Error(`Failed to decrypt configuration for ${adapterConfigId}: ${(e as Error).message}`);
+        }
+
+        return await adapter.delete(config, filePath);
+    }
+
+    /**
+     * Downloads a file from storage to a local path.
+     */
+    async downloadFile(adapterConfigId: string, remotePath: string, localDestination: string): Promise<boolean> {
+        const adapterConfig = await prisma.adapterConfig.findUnique({
+           where: { id: adapterConfigId }
+       });
+
+       if (!adapterConfig) {
+           throw new Error(`Storage configuration with ID ${adapterConfigId} not found.`);
+       }
+
+       if (adapterConfig.type !== "storage") {
+            throw new Error(`Adapter configuration ${adapterConfigId} is not a storage adapter.`);
+       }
+
+       const adapter = registry.get(adapterConfig.adapterId) as StorageAdapter;
+       if (!adapter) {
+           throw new Error(`Storage adapter implementation '${adapterConfig.adapterId}' not found in registry.`);
+       }
+
+        let config: any;
+       try {
+           config = decryptConfig(JSON.parse(adapterConfig.config));
+       } catch (e) {
+           throw new Error(`Failed to decrypt configuration for ${adapterConfigId}: ${(e as Error).message}`);
+       }
+
+       return await adapter.download(config, remotePath, localDestination);
+    }
+}
+
+export const storageService = new StorageService();
