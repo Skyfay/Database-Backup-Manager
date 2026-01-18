@@ -233,10 +233,22 @@ export const MySQLAdapter: DatabaseAdapter = {
                 const env = { ...process.env };
                 if(config.password) env.MYSQL_PWD = config.password;
 
-                // If we are in "Single Target" mode, we connect directly to that DB
-                const singleTargetDb = (!dbMapping || dbMapping.length === 0) && config.database ? config.database : null;
-                if (singleTargetDb) {
-                     args.push(singleTargetDb);
+                // Determine effective target database for CLI context
+                let effectiveTargetDb: string | null = null;
+
+                if (dbMapping && dbMapping.length > 0) {
+                     const selected = dbMapping.filter(m => m.selected);
+                     if (selected.length === 1) {
+                         // If exactly one DB is selected via mapping, use it as initial context
+                         // This fixes restores of single-DB dumps that lack 'USE db;' statements
+                         effectiveTargetDb = selected[0].targetName || selected[0].originalName;
+                     }
+                } else if (config.database) {
+                     effectiveTargetDb = config.database;
+                }
+
+                if (effectiveTargetDb) {
+                     args.push(effectiveTargetDb);
                 }
 
                 const mysqlProc = spawn('mysql', args, { stdio: ['pipe', 'pipe', 'pipe'], env });
@@ -280,7 +292,11 @@ export const MySQLAdapter: DatabaseAdapter = {
                         updateProgress(chunk.length);
 
                         // 2. Filter Logic (if needed)
-                        if (!dbMapping && !singleTargetDb) {
+                        // If we used effectiveTargetDb because of single mapping, we still need to filter/rewrite (e.g. to catch USE statements that might switch away)
+                        // But singleTargetDb variable is gone. We used effectiveTargetDb logic.
+                        const useRawPass = !dbMapping && config.database; // legacy mode without mapping
+
+                        if (useRawPass) {
                             // Direct Pass-through (Fastest)
                             this.push(chunk);
                             callback();
@@ -317,7 +333,7 @@ export const MySQLAdapter: DatabaseAdapter = {
                                          output.push(line);
                                      }
                                      continue;
-                                 } else if (singleTargetDb) {
+                                 } else if (effectiveTargetDb) {
                                      // Ignore USE in single target mode
                                     continue;
                                  }
@@ -329,7 +345,7 @@ export const MySQLAdapter: DatabaseAdapter = {
                                 if (dbMapping) {
                                     const map = dbMapping.find(m => m.originalName === originalDb);
                                     if (map && !map.selected) continue; // Skip create
-                                } else if (singleTargetDb) {
+                                } else if (effectiveTargetDb) {
                                     continue; // Skip create in single target
                                 }
                              }
