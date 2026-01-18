@@ -51,8 +51,11 @@ describe('RestoreService', () => {
 
         // Spy on FS methods instead of full module mock to avoid import issues
         vi.spyOn(fs, 'existsSync').mockReturnValue(true);
+        vi.spyOn(fs, 'statSync').mockReturnValue({ size: 1024 } as any);
         vi.spyOn(fs, 'unlinkSync').mockImplementation(() => {});
     });
+
+    const flushPromises = () => new Promise(resolve => setTimeout(resolve, 20));
 
     it('should execute full restore flow successfully', async () => {
         // Arrange
@@ -68,14 +71,18 @@ describe('RestoreService', () => {
         // DB Mocks
         prismaMock.execution.create.mockResolvedValue({ id: executionId } as any);
         prismaMock.execution.update.mockResolvedValue({} as any);
+
+        // Mocks for: 1. Pre-flight Target Check, 2. Run Process Storage, 3. Run Process Target
         prismaMock.adapterConfig.findUnique
-            .mockResolvedValueOnce(mockStorageConfig as any) // 1. Storage
-            .mockResolvedValueOnce(mockSourceConfig as any); // 2. Source
+            .mockResolvedValueOnce(mockSourceConfig as any) // 1. Target (Pre-flight)
+            .mockResolvedValueOnce(mockStorageConfig as any) // 2. Storage (Run)
+            .mockResolvedValueOnce(mockSourceConfig as any); // 3. Source (Run)
 
         // Registry Mocks
         vi.mocked(registry.get)
-            .mockReturnValueOnce(mockStorageAdapter) // 1. Storage
-            .mockReturnValueOnce(mockDbAdapter);     // 2. Source
+            .mockReturnValueOnce(mockDbAdapter)     // 1. Target
+            .mockReturnValueOnce(mockStorageAdapter) // 2. Storage
+            .mockReturnValueOnce(mockDbAdapter);     // 3. Source
 
         // Act
         const result = await service.restore({
@@ -84,7 +91,11 @@ describe('RestoreService', () => {
             targetSourceId: 'source-1'
         });
 
+        // Wait for background process
+        await flushPromises();
+
         // Assert
+        expect(result.success).toBe(true);
         expect(prismaMock.execution.create).toHaveBeenCalledWith(expect.objectContaining({
             data: expect.objectContaining({ type: 'Restore', status: 'Running' })
         }));
@@ -94,7 +105,6 @@ describe('RestoreService', () => {
             where: { id: executionId },
             data: expect.objectContaining({ status: 'Success' })
         });
-        expect(result.success).toBe(true);
         expect(fs.unlinkSync).toHaveBeenCalled(); // Cleanup
     });
 
@@ -104,20 +114,28 @@ describe('RestoreService', () => {
             download: vi.fn().mockResolvedValue(false), // Fail
         } as unknown as StorageAdapter;
 
+        const mockDbAdapter = {} as any;
+
         prismaMock.execution.create.mockResolvedValue({ id: executionId } as any);
+
+        // Mocks: 1. Target, 2. Storage, 3. Source
         prismaMock.adapterConfig.findUnique
+            .mockResolvedValueOnce(mockSourceConfig as any)
             .mockResolvedValueOnce(mockStorageConfig as any)
             .mockResolvedValueOnce(mockSourceConfig as any);
 
         vi.mocked(registry.get)
+            .mockReturnValueOnce(mockDbAdapter)
             .mockReturnValueOnce(mockStorageAdapter)
-            .mockReturnValueOnce({} as any);
+            .mockReturnValueOnce(mockDbAdapter);
 
-        await expect(service.restore({
+        await service.restore({
             storageConfigId: 'storage-1',
             file: 'backup.sql',
             targetSourceId: 'source-1'
-        })).rejects.toThrow('Failed to download file from storage');
+        });
+
+        await flushPromises();
 
         expect(prismaMock.execution.update).toHaveBeenCalledWith(expect.objectContaining({
             where: { id: executionId },
@@ -136,8 +154,16 @@ describe('RestoreService', () => {
         } as unknown as DatabaseAdapter;
 
         prismaMock.execution.create.mockResolvedValue({ id: executionId } as any);
-        prismaMock.adapterConfig.findUnique.mockResolvedValueOnce(mockStorageConfig as any).mockResolvedValueOnce(mockSourceConfig as any);
-        vi.mocked(registry.get).mockReturnValueOnce(mockStorageAdapter).mockReturnValueOnce(mockDbAdapter);
+
+        prismaMock.adapterConfig.findUnique
+            .mockResolvedValueOnce(mockSourceConfig as any)
+            .mockResolvedValueOnce(mockStorageConfig as any)
+            .mockResolvedValueOnce(mockSourceConfig as any);
+
+        vi.mocked(registry.get)
+            .mockReturnValueOnce(mockDbAdapter)
+            .mockReturnValueOnce(mockStorageAdapter)
+            .mockReturnValueOnce(mockDbAdapter);
 
         const result = await service.restore({
             storageConfigId: 'storage-1',
@@ -145,24 +171,28 @@ describe('RestoreService', () => {
             targetSourceId: 'source-1'
         });
 
-        expect(result.success).toBe(false);
-        expect(result.error).toBe('Oops');
-         expect(prismaMock.execution.update).toHaveBeenCalledWith(expect.objectContaining({
+        await flushPromises();
+
+        // The public method returns success (queued)
+        expect(result.success).toBe(true);
+
+        // The background process should mark it failed
+        expect(prismaMock.execution.update).toHaveBeenCalledWith(expect.objectContaining({
             where: { id: executionId },
             data: expect.objectContaining({ status: 'Failed' })
         }));
+
         // Ensure cleanup still happens
         expect(fs.unlinkSync).toHaveBeenCalled();
     });
 
-    it('should throw if storage config missing', async () => {
-        prismaMock.execution.create.mockResolvedValue({ id: '1' } as any);
+    it('should throw if target source missing (Pre-flight check)', async () => {
         prismaMock.adapterConfig.findUnique.mockResolvedValue(null); // Not found
 
         await expect(service.restore({
-            storageConfigId: 'missing',
+            storageConfigId: 'storage-1',
             file: 'f',
-            targetSourceId: 's'
-        })).rejects.toThrow('Storage adapter not found');
+            targetSourceId: 'missing-source'
+        })).rejects.toThrow('Target source not found');
     });
 });

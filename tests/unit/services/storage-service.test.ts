@@ -202,7 +202,7 @@ describe('StorageService', () => {
            const result = await service.downloadFile('conf-123', 'remote.sql', '/local/path.sql');
 
            expect(mockAdapterImplementation.download).toHaveBeenCalledWith({ bucket: 'b' }, 'remote.sql', '/local/path.sql');
-           expect(result).toBe(true);
+           expect(result).toMatchObject({ success: true, isZip: false });
         });
    });
 });

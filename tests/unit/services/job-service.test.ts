@@ -53,6 +53,8 @@ describe('JobService', () => {
                     sourceId: input.sourceId,
                     destinationId: input.destinationId,
                     enabled: input.enabled,
+                    encryptionProfileId: null,
+                    compression: "NONE",
                     notifications: {
                         connect: [{ id: 'notif-1' }]
                     }
@@ -90,6 +92,12 @@ describe('JobService', () => {
                     source: true,
                     destination: true,
                     notifications: true,
+                    encryptionProfile: {
+                        select: {
+                            id: true,
+                            name: true,
+                        }
+                    },
                 },
                 orderBy: { createdAt: 'desc' }
             });
