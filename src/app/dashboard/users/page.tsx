@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getUserPermissions } from "@/lib/access-control";
 import { PERMISSIONS } from "@/lib/permissions";
 import { redirect } from "next/navigation";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default async function UsersPage() {
     const permissions = await getUserPermissions();
@@ -44,22 +45,38 @@ export default async function UsersPage() {
                 </TabsList>
                 {hasReadUsers && (
                     <TabsContent value="users" className="space-y-4">
-                        {canManageUsers && (
-                            <div className="flex justify-end">
-                                <CreateUserDialog />
-                            </div>
-                        )}
-                        <UserTable data={users} groups={groups} canManage={canManageUsers} />
+                        <Card>
+                            <CardHeader>
+                                <div className="flex justify-between items-center">
+                                    <div>
+                                        <CardTitle>Users</CardTitle>
+                                        <CardDescription>Manage system users and their assignments.</CardDescription>
+                                    </div>
+                                    {canManageUsers && <CreateUserDialog />}
+                                </div>
+                            </CardHeader>
+                            <CardContent>
+                                <UserTable data={users} groups={groups} canManage={canManageUsers} />
+                            </CardContent>
+                        </Card>
                     </TabsContent>
                 )}
                 {hasReadGroups && (
                     <TabsContent value="groups" className="space-y-4">
-                        {canManageGroups && (
-                            <div className="flex justify-end">
-                                <CreateGroupDialog />
-                            </div>
-                        )}
-                        <GroupTable data={groups} canManage={canManageGroups} />
+                        <Card>
+                            <CardHeader>
+                                <div className="flex justify-between items-center">
+                                    <div>
+                                        <CardTitle>Groups</CardTitle>
+                                        <CardDescription>Manage permission groups.</CardDescription>
+                                    </div>
+                                    {canManageGroups && <CreateGroupDialog />}
+                                </div>
+                            </CardHeader>
+                            <CardContent>
+                                <GroupTable data={groups} canManage={canManageGroups} />
+                            </CardContent>
+                        </Card>
                     </TabsContent>
                 )}
             </Tabs>

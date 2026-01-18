@@ -13,6 +13,8 @@ import { Loader2, Lock, Plus, Trash2, AlertTriangle, ShieldCheck, Key, Download,
 import { EncryptionProfile } from "@prisma/client"
 import { createEncryptionProfile, deleteEncryptionProfile, getEncryptionProfiles, revealMasterKey } from "@/app/actions/encryption"
 import { DateDisplay } from "@/components/utils/date-display"
+import { DataTable } from "@/components/ui/data-table"
+import { ColumnDef } from "@tanstack/react-table"
 
 export function EncryptionProfilesList() {
     const [profiles, setProfiles] = useState<EncryptionProfile[]>([])
@@ -229,6 +231,60 @@ try {
         URL.revokeObjectURL(scriptUrl);
     }
 
+    const columns: ColumnDef<EncryptionProfile>[] = [
+        {
+            accessorKey: "name",
+            header: "Profile Name",
+            cell: ({ row }) => {
+                const profile = row.original;
+                return (
+                    <div>
+                        <div className="font-medium flex items-center gap-2">
+                             {profile.name}
+                        </div>
+                        {profile.description && (
+                            <div className="text-xs text-muted-foreground">{profile.description}</div>
+                        )}
+                    </div>
+                );
+            }
+        },
+        {
+            accessorKey: "createdAt",
+            header: "Created",
+            cell: ({ row }) => (
+                <DateDisplay date={row.getValue("createdAt")} />
+            ),
+        },
+        {
+            id: "actions",
+            header: () => <div className="text-right">Actions</div>,
+            cell: ({ row }) => {
+                const profile = row.original;
+                return (
+                    <div className="flex justify-end gap-1">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleRevealKey(profile.id, profile.name)}
+                            title="Reveal Master Key & Recovery Options"
+                        >
+                            {isRevealing && revealedKey?.id !== profile.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                                <Eye className="h-4 w-4" />
+                            )}
+                        </Button>
+
+                        <Button variant="ghost" size="icon" onClick={() => setProfileToDelete(profile)}>
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                    </div>
+                );
+            },
+        },
+    ];
+
     return (
         <Card>
             <CardHeader>
@@ -290,63 +346,15 @@ try {
             </CardHeader>
             <CardContent>
                 {loading ? (
-                    <div className="flex justify-center p-4"><Loader2 className="animate-spin" /></div>
-                ) : profiles.length === 0 ? (
-                    <div className="text-center p-8 text-muted-foreground bg-muted/20 rounded-lg border border-dashed">
-                        <ShieldCheck className="mx-auto h-10 w-10 mb-2 opacity-50" />
-                        <p>No encryption profiles found.</p>
-                        <p className="text-sm">Create one to start encrypting your backups.</p>
+                    <div className="flex justify-center p-8">
+                        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                     </div>
                 ) : (
-                    <div className="rounded-md border">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Profile Name</TableHead>
-                                    <TableHead>Created</TableHead>
-                                    <TableHead className="text-right">Actions</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {profiles.map((profile) => (
-                                    <TableRow key={profile.id}>
-                                        <TableCell>
-                                            <div className="font-medium flex items-center gap-2">
-                                                <Key className="h-4 w-4 text-amber-500" />
-                                                {profile.name}
-                                            </div>
-                                            {profile.description && (
-                                                <div className="text-xs text-muted-foreground">{profile.description}</div>
-                                            )}
-                                        </TableCell>
-                                        <TableCell>
-                                            <DateDisplay date={profile.createdAt} />
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            <div className="flex justify-end gap-1">
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    onClick={() => handleRevealKey(profile.id, profile.name)}
-                                                    title="Reveal Master Key & Recovery Options"
-                                                >
-                                                    {isRevealing && revealedKey?.id !== profile.id ? (
-                                                        <Loader2 className="h-4 w-4 animate-spin" />
-                                                    ) : (
-                                                        <Eye className="h-4 w-4" />
-                                                    )}
-                                                </Button>
-
-                                                <Button variant="ghost" size="icon" onClick={() => setProfileToDelete(profile)}>
-                                                    <Trash2 className="h-4 w-4 text-destructive" />
-                                                </Button>
-                                            </div>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </div>
+                    <DataTable
+                        columns={columns}
+                        data={profiles}
+                        searchKey="name"
+                    />
                 )}
             </CardContent>
 

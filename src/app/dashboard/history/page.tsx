@@ -16,6 +16,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { DateDisplay } from "@/components/utils/date-display";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 
 export default function HistoryPage() {
     return (
@@ -115,13 +116,21 @@ function HistoryContent() {
                 </div>
             </div>
 
-            <DataTable
-                columns={columns}
-                data={executions}
-                searchKey="jobName"
-                filterableColumns={filterableColumns}
-                autoResetPageIndex={false}
-            />
+            <Card>
+                <CardHeader>
+                    <CardTitle>Activity Logs</CardTitle>
+                    <CardDescription>Comprehensive list of all system activities and their status.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <DataTable
+                        columns={columns}
+                        data={executions}
+                        searchKey="jobName"
+                        filterableColumns={filterableColumns}
+                        autoResetPageIndex={false}
+                    />
+                </CardContent>
+            </Card>
 
             <Dialog open={!!selectedLog} onOpenChange={(open) => { if(!open) setSelectedLog(null); }}>
                 <DialogContent className="max-w-[80vw] w-full max-h-[80vh] overflow-hidden flex flex-col">
