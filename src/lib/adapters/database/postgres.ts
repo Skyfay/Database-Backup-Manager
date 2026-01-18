@@ -390,23 +390,41 @@ export const PostgresAdapter: DatabaseAdapter = {
     },
 
     async test(config: any): Promise<{ success: boolean; message: string }> {
-        try {
-            const env = { ...process.env, PGPASSWORD: config.password };
-            const args = ['-h', config.host, '-p', String(config.port), '-U', config.user, '-d', 'postgres', '-c', 'SELECT 1'];
+        const dbsToTry = ['postgres', 'template1'];
+        if (typeof config.database === 'string' && config.database) dbsToTry.push(config.database);
 
-            await execFileAsync('psql', args, { env });
-            return { success: true, message: "Connection successful" };
-        } catch (error: any) {
-             return { success: false, message: "Connection failed: " + (error.stderr || error.message) };
+        const env = { ...process.env, PGPASSWORD: config.password };
+        let lastError: any;
+
+        for (const db of dbsToTry) {
+            try {
+                const args = ['-h', config.host, '-p', String(config.port), '-U', config.user, '-d', db, '-c', 'SELECT 1'];
+                await execFileAsync('psql', args, { env });
+                return { success: true, message: "Connection successful" };
+            } catch (error: any) {
+                lastError = error;
+            }
         }
+        return { success: false, message: "Connection failed: " + (lastError?.stderr || lastError?.message) };
     },
 
     async getDatabases(config: any): Promise<string[]> {
-        const env = { ...process.env, PGPASSWORD: config.password };
-        // -t = tuples only (no header/footer), -A = unaligned
-        const args = ['-h', config.host, '-p', String(config.port), '-U', config.user, '-d', 'postgres', '-t', '-A', '-c', 'SELECT datname FROM pg_database WHERE datistemplate = false;'];
+        const dbsToTry = ['postgres', 'template1'];
+        if (typeof config.database === 'string' && config.database) dbsToTry.push(config.database);
 
-        const { stdout } = await execFileAsync('psql', args, { env });
-        return stdout.split('\n').map(s => s.trim()).filter(s => s);
+        const env = { ...process.env, PGPASSWORD: config.password };
+        let lastError: any;
+
+        for (const db of dbsToTry) {
+            try {
+                // -t = tuples only (no header/footer), -A = unaligned
+                const args = ['-h', config.host, '-p', String(config.port), '-U', config.user, '-d', db, '-t', '-A', '-c', 'SELECT datname FROM pg_database WHERE datistemplate = false;'];
+                const { stdout } = await execFileAsync('psql', args, { env });
+                return stdout.split('\n').map(s => s.trim()).filter(s => s);
+            } catch (error: any) {
+                lastError = error;
+            }
+        }
+        throw lastError;
     }
 };

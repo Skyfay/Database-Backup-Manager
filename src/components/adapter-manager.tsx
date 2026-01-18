@@ -314,9 +314,27 @@ function AdapterForm({ type, adapters, onSuccess, initialData }: { type: string,
              const data = await res.json();
 
              if(data.success) {
-                 setAvailableDatabases(data.databases);
+                 const newDbs = data.databases;
+                 setAvailableDatabases(newDbs);
                  setConnectionError(null);
-                 toast.success(`Loaded ${data.databases.length} databases`);
+
+                 // Sync Logic: Check currently selected DBs. If any are NOT in the new list, remove them.
+                 // This handles the case where DBs were deleted on the server side.
+                 const currentConfig = form.getValues().config;
+                 const currentSelected = currentConfig.database;
+
+                 if (Array.isArray(currentSelected) && currentSelected.length > 0) {
+                     const validSelection = currentSelected.filter((db: string) => newDbs.includes(db));
+
+                     if (validSelection.length !== currentSelected.length) {
+                         form.setValue('config.database', validSelection, { shouldDirty: true });
+
+                         const removedCount = currentSelected.length - validSelection.length;
+                         toast.warning(`Removed ${removedCount} unavailable database(s) from selection.`);
+                     }
+                 }
+
+                 toast.success(`Loaded ${newDbs.length} databases`);
                  setIsDbListOpen(true);
              } else {
                  toast.error("Failed to list databases: " + (data.error || "Unknown"));
