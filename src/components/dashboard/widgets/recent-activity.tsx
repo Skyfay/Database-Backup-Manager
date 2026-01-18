@@ -68,7 +68,7 @@ export async function RecentActivity() {
                                     key={execution.id}
                                     className="block group cursor-pointer"
                                 >
-                                    <div className="flex items-center justify-between border-b pb-4 last:border-0 last:pb-0 group-hover:bg-muted/50 p-2 -mx-2 rounded-md transition-colors">
+                                    <div className="flex items-center justify-between border-b last:border-0 group-hover:bg-muted/50 px-2 py-3 -mx-2 rounded-md transition-colors">
                                         <div className="flex items-center gap-4">
                                             <div className={`flex h-9 w-9 items-center justify-center rounded-full border ${iconBg}`}>
                                                 {isRunning ? (
