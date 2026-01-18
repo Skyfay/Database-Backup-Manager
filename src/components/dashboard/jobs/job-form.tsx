@@ -60,7 +60,7 @@ export function JobForm({ sources, destinations, notifications, encryptionProfil
             schedule: initialData?.schedule || "0 0 * * *",
             sourceId: initialData?.sourceId || "",
             destinationId: initialData?.destinationId || "",
-            encryptionProfileId: initialData?.encryptionProfileId || "",
+            encryptionProfileId: initialData?.encryptionProfileId || "no-encryption",
             notificationIds: initialData?.notifications?.map((n) => n.id) || [],
             enabled: initialData?.enabled ?? true,
         }
@@ -71,10 +71,16 @@ export function JobForm({ sources, destinations, notifications, encryptionProfil
             const url = initialData ? `/api/jobs/${initialData.id}` : '/api/jobs';
             const method = initialData ? 'PUT' : 'POST';
 
+            // Clean payload
+            const payload = {
+                ...data,
+                encryptionProfileId: data.encryptionProfileId === "no-encryption" ? "" : data.encryptionProfileId
+            };
+
             const res = await fetch(url, {
                 method,
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
+                body: JSON.stringify(payload)
             });
 
             if (res.ok) {
@@ -132,10 +138,10 @@ export function JobForm({ sources, destinations, notifications, encryptionProfil
                             <Lock className="h-3 w-3" />
                             Encryption (Optional)
                         </FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value || ""}>
+                        <Select onValueChange={field.onChange} defaultValue={field.value || "no-encryption"}>
                             <FormControl><SelectTrigger><SelectValue placeholder="No Encryption" /></SelectTrigger></FormControl>
                             <SelectContent>
-                                <SelectItem value="">None (Unencrypted)</SelectItem>
+                                <SelectItem value="no-encryption">None (Unencrypted)</SelectItem>
                                 {encryptionProfiles.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
                             </SelectContent>
                         </Select>

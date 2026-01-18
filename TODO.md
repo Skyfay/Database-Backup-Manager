@@ -19,7 +19,20 @@
     - [x] Refactor User Logic to Service Layer
 
 
-## 📦 Deployment & Maintenance
+## � Security & Encryption
+- [x] **Vault / Encryption Profiles**
+    - [x] Database Schema for Profiles
+    - [x] UI for Managing Keys
+    - [x] Server Actions & Service Layer
+- [x] **Backup Encryption**
+    - [x] Implement AES-256-GCM Streaming
+    - [x] Integrate with Backup Runner
+    - [x] Job Configuration UI
+- [x] **Restore Decryption**
+    - [x] Detect Encrypted Backups (.enc / .meta.json)
+    - [x] Decrypt Stream on Restore/Download
+
+## �📦 Deployment & Maintenance
 - [ ] **Containerization**
     - [ ] Dockerfile optimization
     - [ ] docker-compose setup
