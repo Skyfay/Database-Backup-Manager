@@ -11,7 +11,7 @@ export const LocalFileSystemAdapter: StorageAdapter = {
     name: "Local Filesystem",
     configSchema: LocalStorageSchema,
 
-    async upload(config: { basePath: string }, localPath: string, remotePath: string): Promise<boolean> {
+    async upload(config: { basePath: string }, localPath: string, remotePath: string, onProgress?: (percent: number) => void): Promise<boolean> {
         try {
             const destPath = path.join(config.basePath, remotePath);
             const destDir = path.dirname(destPath);
@@ -20,7 +20,22 @@ export const LocalFileSystemAdapter: StorageAdapter = {
                 await fs.mkdir(destDir, { recursive: true });
             }
 
-            await fs.copyFile(localPath, destPath);
+            // fs.copyFile does not support progress, so we use streams
+            const size = statSync(localPath).size;
+            let processed = 0;
+
+            const sourceStream = createReadStream(localPath);
+            const destStream = createWriteStream(destPath);
+
+            if (onProgress) {
+                sourceStream.on('data', (chunk) => {
+                    processed += chunk.length;
+                    const percent = size > 0 ? Math.round((processed / size) * 100) : 0;
+                    onProgress(percent);
+                });
+            }
+
+            await pipeline(sourceStream, destStream);
             return true;
         } catch (error) {
             console.error("Local upload failed:", error);

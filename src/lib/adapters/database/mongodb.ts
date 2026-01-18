@@ -12,7 +12,7 @@ export const MongoDBAdapter: DatabaseAdapter = {
     name: "MongoDB",
     configSchema: MongoDBSchema,
 
-    async dump(config: any, destinationPath: string): Promise<BackupResult> {
+    async dump(config: any, destinationPath: string, onLog?: (msg: string) => void, onProgress?: (percentage: number) => void): Promise<BackupResult> {
         const startedAt = new Date();
         const logs: string[] = [];
 

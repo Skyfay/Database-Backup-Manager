@@ -2,6 +2,7 @@ import { RunnerContext } from "../types";
 import { decryptConfig } from "@/lib/crypto";
 import path from "path";
 import os from "os";
+import fs from "fs/promises";
 
 export async function stepExecuteDump(ctx: RunnerContext) {
     if (!ctx.job || !ctx.sourceAdapter) throw new Error("Context not initialized");
@@ -84,7 +85,26 @@ export async function stepExecuteDump(ctx: RunnerContext) {
 
     // 3. Execute Dump
     // Ensure config has required fields passed from the Source entity logic if needed
-    const dumpResult = await sourceAdapter.dump(sourceConfig, tempFile);
+    let dumpResult;
+
+    // Start monitoring file size for progress updates
+    const watcher = setInterval(async () => {
+             // Check if file exists and get size
+             try {
+                 // Note: tempFile might change if adapter appends extension, but initially it starts here
+                 const stats = await fs.stat(tempFile).catch(() => null);
+                 if (stats && stats.size > 0) {
+                     const sizeMB = (stats.size / 1024 / 1024).toFixed(2);
+                     ctx.updateProgress(0, `Dumping Database (${sizeMB} MB...)`);
+                 }
+             } catch {}
+    }, 800);
+
+    try {
+        dumpResult = await sourceAdapter.dump(sourceConfig, tempFile, (msg) => ctx.log(msg));
+    } finally {
+        clearInterval(watcher);
+    }
 
     if (!dumpResult.success) {
         throw new Error(`Dump failed: ${dumpResult.error}`);

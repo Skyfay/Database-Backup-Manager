@@ -52,8 +52,9 @@ export interface DatabaseAdapter extends BaseAdapter {
      * @param config The user configuration for this adapter
      * @param destinationPath The path where the dump should be saved locally
      * @param onLog Optional callback for live logs
+     * @param onProgress Optional callback for progress (0-100)
      */
-    dump(config: any, destinationPath: string, onLog?: (msg: string) => void): Promise<BackupResult>;
+    dump(config: any, destinationPath: string, onLog?: (msg: string) => void, onProgress?: (percentage: number) => void): Promise<BackupResult>;
 
     /**
      * Restores the database from a local file path
@@ -82,7 +83,7 @@ export interface StorageAdapter extends BaseAdapter {
     /**
      * Uploads a local file to the storage destination
      */
-    upload(config: any, localPath: string, remotePath: string): Promise<boolean>;
+    upload(config: any, localPath: string, remotePath: string, onProgress?: (percent: number) => void): Promise<boolean>;
 
     /**
      * Downloads a file from storage to local path

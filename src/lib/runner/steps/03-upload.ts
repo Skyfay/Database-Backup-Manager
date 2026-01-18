@@ -46,11 +46,21 @@ export async function stepUpload(ctx: RunnerContext) {
 
         // Try to delete temp metadata file
         await fs.unlink(metaPath).catch(() => {});
+
     } catch (e: any) {
         ctx.log(`Warning: Failed to generate/upload metadata: ${e.message}`);
+        // If metadata fail, we still try basic upload?
+        // My previous code put main upload INSIDE the try block.
+        // If metadata fails, we might still want to upload the backup.
+        // But currently the main upload is INSIDE the try block for metadata?
+        // Let's move it out or fix the structure.
     }
 
-    const uploadSuccess = await destAdapter.upload(destConfig, ctx.tempFile, remotePath);
+    // Main Upload
+    ctx.updateProgress(0, "Uploading Backup...");
+    const uploadSuccess = await destAdapter.upload(destConfig, ctx.tempFile, remotePath, (percent) => {
+           ctx.updateProgress(percent, `Uploading Backup (${percent}%)`);
+    });
 
     if (!uploadSuccess) {
         throw new Error("Upload failed (Adapter returned false)");
