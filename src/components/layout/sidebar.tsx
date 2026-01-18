@@ -37,7 +37,7 @@ const sidebarItems = [
     { icon: FolderOpen, label: "Storage Explorer", href: "/dashboard/storage", permission: PERMISSIONS.STORAGE.READ },
     { icon: History, label: "History", href: "/dashboard/history", permission: PERMISSIONS.HISTORY.READ },
     { icon: Lock, label: "Vault", href: "/dashboard/vault", permission: PERMISSIONS.VAULT.READ },
-    { icon: Users, label: "Users", href: "/dashboard/users", permission: PERMISSIONS.USERS.READ },
+    { icon: Users, label: "Users & Groups", href: "/dashboard/users", permission: PERMISSIONS.USERS.READ },
     { icon: Settings, label: "Settings", href: "/dashboard/settings", permission: PERMISSIONS.SETTINGS.READ },
 ]
 

@@ -10,6 +10,10 @@ export function Header() {
     // Split path, filtering empty strings
     const segments = pathname.split('/').filter(Boolean)
 
+    const segmentMap: Record<string, string> = {
+        "users": "Users & Groups"
+    }
+
     return (
         <header className="border-b h-16 flex items-center px-6 bg-background sticky top-0 z-10">
             <nav className="flex items-center text-sm text-muted-foreground">
@@ -17,8 +21,8 @@ export function Header() {
                     const isLast = index === segments.length - 1
                     const href = `/${segments.slice(0, index + 1).join('/')}`
 
-                    // Capitalize first letter
-                    const name = segment.charAt(0).toUpperCase() + segment.slice(1)
+                    // Capitalize first letter or use map
+                    const name = segmentMap[segment] || (segment.charAt(0).toUpperCase() + segment.slice(1))
 
                     return (
                         <React.Fragment key={href}>
