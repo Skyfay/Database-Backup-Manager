@@ -6,8 +6,12 @@ import { LocalFileSystemAdapter } from "./storage/local";
 import { DiscordAdapter } from "./notification/discord";
 import { EmailAdapter } from "./notification/email";
 
+let initialized = false;
+
 // Register all available adapters here
 export function registerAdapters() {
+    if (initialized) return;
+
     registry.register(MySQLAdapter);
     registry.register(PostgresAdapter);
     registry.register(MongoDBAdapter);
@@ -17,5 +21,6 @@ export function registerAdapters() {
     registry.register(DiscordAdapter);
     registry.register(EmailAdapter);
 
+    initialized = true;
     console.log("Adapters registered:", registry.getAll().map(a => a.id));
 }
