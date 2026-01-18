@@ -1,10 +1,10 @@
 import { DatabaseAdapter, StorageAdapter } from "@/lib/core/interfaces";
-import { Job, Source, Destination, Execution, Notification } from "@prisma/client";
+import { Job, AdapterConfig, Execution } from "@prisma/client";
 
 export type JobWithRelations = Job & {
-    source: Source;
-    destination: Destination;
-    notifications: Source[]; // Assuming notifications are linked to Source entities (which act as channels)
+    source: AdapterConfig;
+    destination: AdapterConfig;
+    notifications: AdapterConfig[];
 };
 
 export interface RunnerContext {
