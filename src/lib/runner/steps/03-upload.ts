@@ -146,12 +146,17 @@ export async function stepUpload(ctx: RunnerContext) {
 
     } catch (e: any) {
         ctx.log(`Warning: Failed to generate/upload metadata: ${e.message}`);
-           ctx.updateProgress(percent, `Uploading Backup (${percent}%)`);
+    }
+
+    // Main Upload
+    ctx.updateProgress(0, "Uploading Backup...");
+    const uploadSuccess = await destAdapter.upload(destConfig, ctx.tempFile, remotePath, (percent) => {
+        ctx.updateProgress(percent, `Uploading Backup (${percent}%)`);
     });
 
     if (!uploadSuccess) {
-        throw new Error("Upload failed (Adapter returned false)");
+        throw new Error("Upload failed (adapter returned false).");
     }
 
-    ctx.log(`Upload successful to ${remotePath}`);
+    ctx.log(`Upload complete: ${remotePath}`);
 }

@@ -1,6 +1,7 @@
 const fs = require('fs');
 const crypto = require('crypto');
 const path = require('path');
+const zlib = require('zlib');
 
 // Usage: node decrypt_backup.js <input_file.enc> <hex_key>
 // Or:    node decrypt_backup.js <input_file.enc> <hex_key> <output_file>
@@ -15,7 +16,7 @@ if (args.length < 2) {
     console.error('  hex_key          The 64-character hex string exported from the Backup Manager Vault');
     console.error('                   (Can be found in Settings -> Encryption Profiles -> Reveal Key)');
     console.error('  output_file      (Optional) Path for the decrypted output.');
-    console.error('                   Default: removes .enc extension or appends .dec');
+    console.error('                   Default: removes .enc extension, converts .gz/.br if compressed, or appends .dec');
     console.error('');
     console.error('Note: The script expects a .meta.json file next to the .enc file to verify integrity (AuthTag/IV).');
     process.exit(1);
@@ -36,14 +37,38 @@ if (!fs.existsSync(metaFile)) {
     process.exit(1);
 }
 
+// Read Metadata
+let meta;
+try {
+    const metaContent = fs.readFileSync(metaFile, 'utf8');
+    meta = JSON.parse(metaContent);
+} catch (err) {
+    console.error('Error reading metadata file:', err.message);
+    process.exit(1);
+}
+
+// Determine compression
+const compression = meta.compression || 'NONE';
+
 // Determine output filename
 let outputFile = args[2];
 if (!outputFile) {
-    if (inputFile.endsWith('.enc')) {
-        outputFile = inputFile.substring(0, inputFile.length - 4);
+    let tempName = inputFile;
+    // 1. Remove .enc
+    if (tempName.endsWith('.enc')) {
+        tempName = tempName.substring(0, tempName.length - 4);
     } else {
-        outputFile = inputFile + '.dec';
+        tempName = tempName + '.dec';
     }
+
+    // 2. Remove compression extension if we are going to decompress
+    if (compression === 'GZIP' && tempName.endsWith('.gz')) {
+        tempName = tempName.substring(0, tempName.length - 3);
+    } else if (compression === 'BROTLI' && tempName.endsWith('.br')) {
+        tempName = tempName.substring(0, tempName.length - 3);
+    }
+
+    outputFile = tempName;
 }
 
 // Validate Key
@@ -53,18 +78,15 @@ if (hexKey.length !== 64) {
 }
 
 try {
-    const metaContent = fs.readFileSync(metaFile, 'utf8');
-    const meta = JSON.parse(metaContent);
-
     if (!meta.encryption || !meta.encryption.iv || !meta.encryption.authTag) {
         console.error('Error: valid encryption metadata (iv, authTag) not found in .meta.json');
         process.exit(1);
     }
 
-    console.log('Starting decryption...');
-    console.log(`Input:  ${inputFile}`);
-    console.log(`Meta:   ${metaFile}`);
-    console.log(`Output: ${outputFile}`);
+    console.log('Starting processing...');
+    console.log(`Input:       ${inputFile}`);
+    console.log(`Compression: ${compression}`);
+    console.log(`Output:      ${outputFile}`);
 
     const masterKey = Buffer.from(hexKey, 'hex');
     const iv = Buffer.from(meta.encryption.iv, 'hex');
@@ -73,23 +95,42 @@ try {
     const decipher = crypto.createDecipheriv('aes-256-gcm', masterKey, iv);
     decipher.setAuthTag(authTag);
 
+    // Prepare streams
     const input = fs.createReadStream(inputFile);
     const output = fs.createWriteStream(outputFile);
 
-    input.pipe(decipher).pipe(output);
+    let pipeline = input.pipe(decipher);
+
+    // Add decompression if needed
+    if (compression === 'GZIP') {
+        const gunzip = zlib.createGunzip();
+        pipeline = pipeline.pipe(gunzip);
+    } else if (compression === 'BROTLI') {
+        // Node.js < 12 doesn't have brotli, but we assume modern env
+        const brotliDecompress = zlib.createBrotliDecompress();
+        pipeline = pipeline.pipe(brotliDecompress);
+    }
+
+    pipeline.pipe(output);
 
     output.on('finish', () => {
-        console.log('Decryption successful! ✅');
+        console.log('Process completed successfully! ✅');
     });
 
+    // Error handling for all streams is a bit tricky with simple pipes,
+    // but we attach listeners to the key components.
     decipher.on('error', (err) => {
-        console.error('Decryption failed! ❌');
-        console.error('Common causes: Wrong key, corrupted file, or modified metadata.');
-        console.error('Details:', err.message);
-        // Clean up partial file
-        fs.unlink(outputFile, () => {});
-        process.exit(1);
+        console.error('Decryption failed! ❌ (Bad key or AuthTag mismatch)');
+        cleanup();
     });
+
+    input.on('error', (err) => { console.error('Input Error:', err.message); cleanup(); });
+    output.on('error', (err) => { console.error('Output Error:', err.message); cleanup(); });
+
+    function cleanup() {
+         try { fs.unlinkSync(outputFile); } catch(e){}
+         process.exit(1);
+    }
 
 } catch (err) {
     console.error('Unexpected error:', err.message);
