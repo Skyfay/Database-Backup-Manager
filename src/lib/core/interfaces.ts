@@ -17,6 +17,7 @@ export interface BackupMetadata {
     timestamp: string;
     originalFileName: string;
     sourceId: string;
+    compression?: 'GZIP' | 'BROTLI';
     encryption?: {
         enabled: boolean;
         profileId: string;

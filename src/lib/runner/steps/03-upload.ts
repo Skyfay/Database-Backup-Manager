@@ -2,63 +2,110 @@ import { RunnerContext } from "../types";
 import { decryptConfig } from "@/lib/crypto";
 import path from "path";
 import fs from "fs/promises";
-import { createReadStream, createWriteStream } from "fs";
+import { createReadStream, createWriteStream, statSync } from "fs";
 import { pipeline } from "stream/promises";
 import { BackupMetadata } from "@/lib/core/interfaces";
 import { getProfileMasterKey } from "@/services/encryption-service";
 import { createEncryptionStream } from "@/lib/crypto-stream";
+import { getCompressionStream, getCompressionExtension, CompressionType } from "@/lib/compression";
+import { ProgressMonitorStream } from "@/lib/streams/progress-monitor";
+import { formatBytes } from "@/lib/utils";
 
 export async function stepUpload(ctx: RunnerContext) {
     if (!ctx.job || !ctx.destAdapter || !ctx.tempFile) throw new Error("Context not ready for upload");
 
     const job = ctx.job;
+    // Cast job to any because Prisma Client types might lag slightly in IDE or strict checks
+    const compression = (job as any).compression as CompressionType;
     const destAdapter = ctx.destAdapter;
 
     ctx.log(`Starting Upload to ${job.destination.name} (${job.destination.type})...`);
 
-    // --- ENCRYPTION PROCESS ---
+    // --- PIPELINE CONSTRUCTION ---
+    // We construct a pipeline: Source -> [Compression] -> [Encryption] -> NewTempFile
+
+    let currentFile = ctx.tempFile;
+    const transformStreams: any[] = [];
+
+    // 0. Progress Monitor for Local Processing
+    const sourceSize = statSync(ctx.tempFile).size;
+    const progressMonitor = new ProgressMonitorStream(sourceSize, (processed, total, percent) => {
+        ctx.updateProgress(percent, `Processing (${formatBytes(processed)} / ${formatBytes(total)})`);
+    });
+    // Add monitor FIRST
+    // Only if we actually have transforms. If no compression/encryption, we skip local processing.
+
+    // 1. Compression Step
+    let compressionMeta: CompressionType | undefined = undefined;
+    if (compression && compression !== 'NONE') {
+        const compStream = getCompressionStream(compression);
+        if (compStream) {
+            ctx.log(`Compression enabled: ${compression}`);
+            transformStreams.push(compStream);
+            currentFile += getCompressionExtension(compression);
+            compressionMeta = compression;
+        }
+    }
+
+    // 2. Encryption Step
     let encryptionMeta: BackupMetadata['encryption'] = undefined;
+    let getAuthTagCallback: (() => Buffer) | null = null;
+
     if (job.encryptionProfileId) {
         try {
             ctx.log(`Encryption enabled. Profile ID: ${job.encryptionProfileId}`);
-            ctx.updateProgress(0, "Encrypting Backup...");
 
             const masterKey = await getProfileMasterKey(job.encryptionProfileId);
             const { stream: encryptStream, getAuthTag, iv } = createEncryptionStream(masterKey);
 
-            const encryptedTempFile = ctx.tempFile + ".enc";
+            transformStreams.push(encryptStream);
+            currentFile += ".enc";
 
-            // Stream: TempFile -> Encrypt -> EncryptedTempFile
-            await pipeline(
-                createReadStream(ctx.tempFile),
-                encryptStream,
-                createWriteStream(encryptedTempFile)
-            );
-
-            // Get Auth Tag (only available after stream finish)
-            const authTag = getAuthTag();
+            getAuthTagCallback = getAuthTag;
 
             encryptionMeta = {
                 enabled: true,
                 profileId: job.encryptionProfileId,
                 algorithm: 'aes-256-gcm',
                 iv: iv.toString('hex'),
-                authTag: authTag.toString('hex')
+                authTag: '' // Will be filled after stream
             };
 
-            ctx.log(`Encryption successful.`);
-
-            // Cleanup original unencrypted file
-            await fs.unlink(ctx.tempFile);
-
-            // Point context to the new encrypted file
-            ctx.tempFile = encryptedTempFile;
-
         } catch (error: any) {
-            throw new Error(`Encryption failed: ${error.message}`);
+            throw new Error(`Encryption setup failed: ${error.message}`);
         }
     }
-    // --- END ENCRYPTION PROCESS ---
+
+    // EXECUTE PIPELINE
+    if (transformStreams.length > 0) {
+        ctx.updateProgress(0, "Processing Backup (Compression/Encryption)...");
+        ctx.log(`Processing pipeline -> ${path.basename(currentFile)}`);
+
+        // Inject Progress Monitor at the start
+        transformStreams.unshift(progressMonitor);
+
+        try {
+            const inputFile = ctx.tempFile;
+
+            await pipeline(
+                createReadStream(inputFile),
+                ...transformStreams,
+                createWriteStream(currentFile)
+            );
+
+            // Cleanup old file
+            await fs.unlink(inputFile);
+            ctx.tempFile = currentFile;
+
+            // Finalize Metadata
+            if (encryptionMeta && getAuthTagCallback) {
+                encryptionMeta.authTag = getAuthTagCallback().toString('hex');
+                ctx.log("Encryption successful (AuthTag generated).");
+            }
+        } catch (e: any) {
+            throw new Error(`Pipeline processing failed: ${e.message}`);
+        }
+    }
 
     const destConfig = decryptConfig(JSON.parse(job.destination.config));
 
@@ -82,6 +129,7 @@ export async function stepUpload(ctx: RunnerContext) {
             },
             timestamp: new Date().toISOString(),
             originalFileName: path.basename(ctx.tempFile),
+            compression: compressionMeta,
             encryption: encryptionMeta
         };
 
@@ -98,16 +146,6 @@ export async function stepUpload(ctx: RunnerContext) {
 
     } catch (e: any) {
         ctx.log(`Warning: Failed to generate/upload metadata: ${e.message}`);
-        // If metadata fail, we still try basic upload?
-        // My previous code put main upload INSIDE the try block.
-        // If metadata fails, we might still want to upload the backup.
-        // But currently the main upload is INSIDE the try block for metadata?
-        // Let's move it out or fix the structure.
-    }
-
-    // Main Upload
-    ctx.updateProgress(0, "Uploading Backup...");
-    const uploadSuccess = await destAdapter.upload(destConfig, ctx.tempFile, remotePath, (percent) => {
            ctx.updateProgress(percent, `Uploading Backup (${percent}%)`);
     });
 

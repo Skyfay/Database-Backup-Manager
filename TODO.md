@@ -31,7 +31,13 @@
 - [x] **Restore Decryption**
     - [x] Detect Encrypted Backups (.enc / .meta.json)
     - [x] Decrypt Stream on Restore/Download
-
+## 🗜️ Compression & Optimization
+- [x] **Backup Compression**
+    - [x] Database Schema (Job config)
+    - [x] UI Configuration (Gzip, Brotli)
+    - [x] Streaming Pipeline Integration
+    - [x] Decompression in Restore
+    - [x] Progress Tracking for Compression/Encryption
 ## �📦 Deployment & Maintenance
 - [ ] **Containerization**
     - [ ] Dockerfile optimization

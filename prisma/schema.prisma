@@ -39,6 +39,7 @@ model Job {
   destinationId       String
   encryptionProfileId String?
   encryptionProfile   EncryptionProfile? @relation(fields: [encryptionProfileId], references: [id])
+  compression         String             @default("NONE")
   createdAt           DateTime           @default(now())
   updatedAt           DateTime           @updatedAt
   executions          Execution[]

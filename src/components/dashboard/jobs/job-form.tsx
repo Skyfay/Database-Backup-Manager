@@ -19,6 +19,7 @@ export interface JobData {
     sourceId: string;
     destinationId: string;
     encryptionProfileId?: string;
+    compression: string;
     notifications: { id: string, name: string }[];
 }
 
@@ -39,6 +40,7 @@ const jobSchema = z.object({
     sourceId: z.string().min(1, "Source is required"),
     destinationId: z.string().min(1, "Destination is required"),
     encryptionProfileId: z.string().optional(),
+    compression: z.enum(["NONE", "GZIP", "BROTLI"]).default("NONE"),
     notificationIds: z.array(z.string()).optional(),
     enabled: z.boolean().default(true),
 });
@@ -61,6 +63,7 @@ export function JobForm({ sources, destinations, notifications, encryptionProfil
             sourceId: initialData?.sourceId || "",
             destinationId: initialData?.destinationId || "",
             encryptionProfileId: initialData?.encryptionProfileId || "no-encryption",
+            compression: (initialData?.compression as "NONE" | "GZIP" | "BROTLI") || "NONE",
             notificationIds: initialData?.notifications?.map((n) => n.id) || [],
             enabled: initialData?.enabled ?? true,
         }
@@ -148,6 +151,26 @@ export function JobForm({ sources, destinations, notifications, encryptionProfil
                         <FormDescription>
                             Select a key to encrypt the backup. Backups can only be restored if this key exists.
                         </FormDescription>
+                        <FormMessage />
+                    </FormItem>
+                )} />
+
+                <FormField control={form.control} name="compression" render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Compression</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select compression" />
+                                </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                                <SelectItem value="NONE">None (Fastest)</SelectItem>
+                                <SelectItem value="GZIP">Gzip (Standard)</SelectItem>
+                                <SelectItem value="BROTLI">Brotli (Best Compression)</SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <FormDescription>Compress the backup file to save storage space.</FormDescription>
                         <FormMessage />
                     </FormItem>
                 )} />

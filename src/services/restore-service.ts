@@ -11,6 +11,7 @@ import { pipeline } from "stream/promises";
 import { createReadStream, createWriteStream } from "fs";
 import { getProfileMasterKey } from "@/services/encryption-service";
 import { createDecryptionStream } from "@/lib/crypto-stream";
+import { getDecompressionStream, CompressionType } from "@/lib/compression";
 
 // Ensure adapters are loaded
 registerAdapters();
@@ -153,31 +154,46 @@ export class RestoreService {
 
             const sConf = decryptConfig(JSON.parse(storageConfig.config));
 
-            // --- DECRYPTION PRE-CHECK ---
+            // --- METADATA & COMPRESSION/ENCRYPTION CHECK ---
             let isEncrypted = false;
             let encryptionMeta: BackupMetadata['encryption'] = undefined;
+            let compressionMeta: CompressionType | undefined = undefined;
 
             try {
                 const metaRemotePath = file + ".meta.json";
                 const tempMetaPath = path.join(os.tmpdir(), "meta_" + Date.now() + ".json");
 
-                // Try to download metadata to check for encryption keys
+                // Try to download metadata to check for encryption/compression
                 const metaDownSuccess = await storageAdapter.download(sConf, metaRemotePath, tempMetaPath, () => {}).catch(() => false);
 
                 if (metaDownSuccess) {
                     const metaContent = await fs.promises.readFile(tempMetaPath, 'utf-8');
                     const metadata = JSON.parse(metaContent);
+
                     if (metadata.encryption && metadata.encryption.enabled) {
                         isEncrypted = true;
                         encryptionMeta = metadata.encryption;
                         log("Detected encrypted backup.");
                     }
+                    if (metadata.compression && metadata.compression !== 'NONE') {
+                        compressionMeta = metadata.compression;
+                        log(`Detected ${compressionMeta} compression.`);
+                    }
                     await fs.promises.unlink(tempMetaPath).catch(() => {});
                 }
             } catch (e: any) {
-                log(`Warning: Failed to check metadata: ${e.message}`);
+                log(`Warning: Failed to check sidecar metadata: ${e.message}`);
+
+                // Fallback: Extension based detection
+                if (file.endsWith('.enc')) {
+                    log("Fallback: Detected encryption via .enc extension");
+                    // We can't proceed with fallback encryption as we need IV/AuthTag from metadata
+                    throw new Error("Encrypted file detected but metadata missing. Cannot decrypt without IV/AuthTag.");
+                }
+                if (file.endsWith('.gz')) compressionMeta = 'GZIP';
+                if (file.endsWith('.br')) compressionMeta = 'BROTLI';
             }
-            // --- END PRE-CHECK ---
+            // --- END METADATA CHECK ---
 
 
             const downloadSuccess = await storageAdapter.download(sConf, file, tempFile, (processed, total) => {
@@ -203,7 +219,7 @@ export class RestoreService {
 
                     const decryptStream = createDecryptionStream(masterKey, iv, authTag);
 
-                    // Logic to determine output filename (strip .enc or append .dec)
+                    // Logic to determine output filename (strip .enc)
                     let decryptedTempFile = tempFile;
                     if (tempFile.endsWith('.enc')) {
                         decryptedTempFile = tempFile.slice(0, -4);
@@ -222,7 +238,7 @@ export class RestoreService {
                     // Cleanup encrypted file
                     await fs.promises.unlink(tempFile);
 
-                    // Switch to decrypted file for restore
+                    // Switch to decrypted file for restore/decompression
                     tempFile = decryptedTempFile;
 
                 } catch (e: any) {
@@ -231,8 +247,45 @@ export class RestoreService {
             }
             // --- END DECRYPTION EXECUTION ---
 
+            // --- DECOMPRESSION EXECUTION ---
+            if (compressionMeta && compressionMeta !== 'NONE') {
+                try {
+                    log(`Decompressing backup (${compressionMeta})...`);
+                    updateProgress(0, "Decompressing Backup...");
+
+                    const decompStream = getDecompressionStream(compressionMeta);
+                    if (decompStream) {
+                        let unpackedFile = tempFile;
+                        // Strip extension if present
+                        if (tempFile.endsWith('.gz') || tempFile.endsWith('.br')) {
+                            unpackedFile = tempFile.slice(0, -3); // remove .gz or .br
+                        } else {
+                            unpackedFile = tempFile + ".unpacked";
+                        }
+
+                        await pipeline(
+                            createReadStream(tempFile),
+                            decompStream,
+                            createWriteStream(unpackedFile)
+                        );
+
+                        log("Decompression successful.");
+
+                        // Cleanup compressed file
+                        await fs.promises.unlink(tempFile);
+
+                        // Switch file pointer
+                        tempFile = unpackedFile;
+                    }
+                } catch (e: any) {
+                    throw new Error(`Decompression failed: ${e.message}`);
+                }
+            }
+            // --- END DECOMPRESSION EXECUTION ---
+
             // 4. Restore
             log(`Starting database restore on ${sourceConfig.name}...`);
+
             const totalSize = fs.statSync(tempFile).size;
             updateProgress(0, `Restoring (0 B / ${formatBytes(totalSize)})...`);
 
