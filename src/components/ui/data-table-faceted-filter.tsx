@@ -90,8 +90,27 @@ export function DataTableFacetedFilter<TData, TValue>({
           <CommandList>
             <CommandEmpty>No results found.</CommandEmpty>
             <CommandGroup>
-              {options.map((option) => {
+              {options
+                .sort((a, b) => {
+                  // Sort Logic: Selected first, then by count (desc), then alphabetically
+                  const aSelected = selectedValues.has(a.value);
+                  const bSelected = selectedValues.has(b.value);
+                  if (aSelected && !bSelected) return -1;
+                  if (!aSelected && bSelected) return 1;
+
+                  const countA = facets?.get(a.value) || 0;
+                  const countB = facets?.get(b.value) || 0;
+
+                  if (countA !== countB) return countB - countA;
+                  return a.label.localeCompare(b.label);
+                })
+                .map((option) => {
                 const isSelected = selectedValues.has(option.value)
+                const count = facets?.get(option.value)
+
+                // Optional: Hide options with 0 results if they are not selected
+                // if (!isSelected && !count) return null;
+
                 return (
                   <CommandItem
                     key={option.value}
@@ -106,6 +125,7 @@ export function DataTableFacetedFilter<TData, TValue>({
                         filterValues.length ? filterValues : undefined
                       )
                     }}
+                    className={!count && !isSelected ? "opacity-50 grayscale" : ""}
                   >
                     <div
                       className={cn(
