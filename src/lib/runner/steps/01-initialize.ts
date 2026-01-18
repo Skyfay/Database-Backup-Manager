@@ -31,16 +31,18 @@ export async function stepInitialize(ctx: RunnerContext) {
     ctx.job = job as any; // Cast for now, types aligned in interface
 
     // 2. Create Execution Record
-    const execution = await prisma.execution.create({
-        data: {
-            jobId: job.id,
-            status: "Running",
-            logs: "[]",
-            startedAt: ctx.startedAt,
-        }
-    });
-
-    ctx.execution = execution;
+    // Check if execution already provided (e.g. from Queue)
+    if (!ctx.execution) {
+        const execution = await prisma.execution.create({
+            data: {
+                jobId: job.id,
+                status: "Running",
+                logs: "[]",
+                startedAt: ctx.startedAt,
+            }
+        });
+        ctx.execution = execution;
+    }
 
     // 3. Resolve Adapters
     const sourceAdapter = registry.get(job.source.adapterId) as DatabaseAdapter;

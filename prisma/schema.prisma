@@ -150,3 +150,9 @@ model Verification {
 
   @@map("verification")
 }
+
+model SystemSetting {
+  key   String @id
+  value String
+}
+

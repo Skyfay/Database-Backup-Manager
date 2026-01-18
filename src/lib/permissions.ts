@@ -41,6 +41,10 @@ export const PERMISSIONS = {
     MANAGE_2FA: "profile:manage_2fa",
     MANAGE_PASSKEYS: "profile:manage_passkeys",
   },
+  SETTINGS: {
+    READ: "settings:read",
+    WRITE: "settings:write",
+  },
 } as const;
 
 export type Permission =
@@ -103,4 +107,8 @@ export const AVAILABLE_PERMISSIONS = [
   { id: PERMISSIONS.PROFILE.UPDATE_PASSWORD, label: "Update Own Password", category: "Profile" },
   { id: PERMISSIONS.PROFILE.MANAGE_2FA, label: "Manage 2FA", category: "Profile" },
   { id: PERMISSIONS.PROFILE.MANAGE_PASSKEYS, label: "Manage Passkeys", category: "Profile" },
+
+  // Settings
+  { id: PERMISSIONS.SETTINGS.READ, label: "View System Settings", category: "Settings" },
+  { id: PERMISSIONS.SETTINGS.WRITE, label: "Manage System Settings", category: "Settings" },
 ];

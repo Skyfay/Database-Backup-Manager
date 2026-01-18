@@ -37,7 +37,7 @@ const sidebarItems = [
     { icon: History, label: "History", href: "/dashboard/history", permission: PERMISSIONS.HISTORY.READ },
     { icon: Bell, label: "Notifications", href: "/dashboard/notifications", permission: PERMISSIONS.NOTIFICATIONS.READ },
     { icon: Users, label: "Users", href: "/dashboard/users", permission: PERMISSIONS.USERS.READ },
-    { icon: Settings, label: "Settings", href: "/dashboard/settings" },
+    { icon: Settings, label: "Settings", href: "/dashboard/settings", permission: PERMISSIONS.SETTINGS.READ },
 ]
 
 export function Sidebar({ permissions = [] }: { permissions?: string[] }) {
@@ -144,7 +144,7 @@ export function Sidebar({ permissions = [] }: { permissions?: string[] }) {
                             </DropdownMenuLabel>
                             <DropdownMenuSeparator />
                              <DropdownMenuGroup>
-                                <DropdownMenuItem onClick={() => router.push('/dashboard/settings')}>
+                                <DropdownMenuItem onClick={() => router.push('/dashboard/profile')}>
                                     <User className="mr-2 h-4 w-4" />
                                     <span>Profile</span>
                                 </DropdownMenuItem>
