@@ -1,270 +1,26 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-    Command,
-    CommandEmpty,
-    CommandGroup,
-    CommandInput,
-    CommandItem,
-    CommandList,
-} from "@/components/ui/command";
-import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-} from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { ADAPTER_DEFINITIONS, AdapterDefinition } from "@/lib/adapters/definitions";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Trash2, Plus, Edit, AlertCircle, Check, ChevronsUpDown, Loader2, Database, HardDrive, MessageSquare, Mail, Folder, Disc, Bell } from "lucide-react";
 import { toast } from "sonner";
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { Loader2, ChevronsUpDown, Check, AlertCircle } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 
-interface AdapterManagerProps {
-    type: 'database' | 'storage' | 'notification';
-    title: string;
-    description: string;
-    canManage?: boolean;
-}
+import { AdapterDefinition } from "@/lib/adapters/definitions";
+import { AdapterConfig } from "./types";
 
-interface AdapterConfig {
-    id: string;
-    name: string;
-    adapterId: string;
-    type: string;
-    config: string; // JSON string
-    createdAt: string;
-}
-
-export function AdapterManager({ type, title, description, canManage = true }: AdapterManagerProps) {
-    const [configs, setConfigs] = useState<AdapterConfig[]>([]);
-    const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const [availableAdapters, setAvailableAdapters] = useState<AdapterDefinition[]>([]);
-    const [editingId, setEditingId] = useState<string | null>(null);
-    const [deletingId, setDeletingId] = useState<string | null>(null);
-
-    useEffect(() => {
-        // Filter definitions by type
-        setAvailableAdapters(ADAPTER_DEFINITIONS.filter(d => d.type === type));
-        fetchConfigs();
-    }, [type]);
-
-    const fetchConfigs = async () => {
-        try {
-            const res = await fetch(`/api/adapters?type=${type}`);
-            if (res.ok) {
-                const data = await res.json();
-                setConfigs(data);
-            } else {
-                 const data = await res.json();
-                 toast.error(data.error || "Failed to load configurations");
-            }
-        } catch (error) {
-            toast.error("Failed to load configurations");
-        }
-    };
-
-    const handleDelete = (id: string) => {
-        setDeletingId(id);
-    };
-
-    const confirmDelete = async () => {
-        if (!deletingId) return;
-        const id = deletingId;
-
-        try {
-            const res = await fetch(`/api/adapters/${id}`, { method: 'DELETE' });
-            const data = await res.json();
-
-            if (res.ok && data.success) {
-                toast.success("Configuration deleted");
-                setConfigs(configs.filter(c => c.id !== id));
-            } else {
-                toast.error(data.error || "Failed to delete");
-            }
-        } catch (error) {
-             toast.error("Error deleting configuration");
-        } finally {
-            setDeletingId(null);
-        }
-    };
-
-    return (
-        <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h2 className="text-3xl font-bold tracking-tight">{title}</h2>
-                    <p className="text-muted-foreground">{description}</p>
-                </div>
-                {canManage && (
-                    <Button onClick={() => { setEditingId(null); setIsDialogOpen(true); }}>
-                        <Plus className="mr-2 h-4 w-4" /> Add New
-                    </Button>
-                )}
-            </div>
-
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {configs.map((config) => (
-                    <AdapterCard
-                        key={config.id}
-                        config={config}
-                        definition={ADAPTER_DEFINITIONS.find(d => d.id === config.adapterId)!}
-                        onDelete={() => handleDelete(config.id)}
-                        onEdit={() => { setEditingId(config.id); setIsDialogOpen(true); }}
-                        canManage={canManage}
-                    />
-                ))}
-            </div>
-
-            {configs.length === 0 && (
-                 <div className="rounded-md border p-8 text-center text-muted-foreground bg-muted/10">
-                    {canManage
-                        ? (type === 'notification' ? 'No notifications found. Click "Add New" to get started.' : 'No configurations found. Click "Add New" to get started.')
-                        : 'No configurations found.'}
-                </div>
-            )}
-
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto">
-                    <DialogHeader>
-                        <DialogTitle>{editingId ? "Edit Configuration" : (type === 'notification' ? "Add New Notification" : (type === 'database' ? "Add New Source" : (type === 'storage' ? "Add New Destination" : "Add New Configuration")))}</DialogTitle>
-                    </DialogHeader>
-                    {isDialogOpen && (
-                        <AdapterForm
-                            type={type}
-                            adapters={availableAdapters}
-                            onSuccess={() => { setIsDialogOpen(false); fetchConfigs(); }}
-                            initialData={editingId ? configs.find(c => c.id === editingId) : undefined}
-                        />
-                    )}
-                </DialogContent>
-            </Dialog>
-
-            <AlertDialog open={!!deletingId} onOpenChange={(open) => !open && setDeletingId(null)}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            This action cannot be undone. This will permanently delete this configuration.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                            Delete
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
-        </div>
-    );
-}
-
-function getAdapterIcon(adapterId: string) {
-    const id = adapterId.toLowerCase();
-    if (id.includes('mysql') || id.includes('postgres') || id.includes('mongo')) return Database;
-    if (id.includes('local')) return Folder;
-    if (id.includes('s3') || id.includes('r2') || id.includes('minio')) return HardDrive;
-    if (id.includes('discord') || id.includes('slack')) return MessageSquare;
-    if (id.includes('email') || id.includes('smtp')) return Mail;
-    return Disc;
-}
-
-function AdapterCard({ config, definition, onDelete, onEdit, canManage }: { config: AdapterConfig, definition: AdapterDefinition, onDelete: () => void, onEdit: () => void, canManage: boolean }) {
-    const parsedConfig = JSON.parse(config.config);
-    const Icon = getAdapterIcon(definition?.id || config.adapterId);
-
-    // Helper to format config values for display
-    const getDisplayValue = (key: string, value: any) => {
-        if (key.toLowerCase().includes('password') || key.toLowerCase().includes('secret') || key.toLowerCase().includes('token') || key.toLowerCase().includes('key')) {
-            return '••••••••';
-        }
-        if (typeof value === 'object') return JSON.stringify(value);
-        return String(value);
-    };
-
-    // Filter out complex or empty keys for the preview
-    const displayEntries = Object.entries(parsedConfig)
-        .filter(([key, val]) => val !== "" && val !== null && val !== undefined && !['options'].includes(key))
-        .slice(0, 4);
-
-    return (
-        <Card className="group relative overflow-hidden transition-all hover:shadow-md border-muted-foreground/20">
-            {canManage && (
-                <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-background/50 backdrop-blur-sm rounded-md p-0.5">
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onEdit}>
-                        <Edit className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={onDelete}>
-                        <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                </div>
-            )}
-
-            <CardHeader className="flex flex-row items-center gap-4 pb-2">
-                <div className="flex h-10 w-10 items-center justify-center rounded-md bg-muted text-muted-foreground">
-                    <Icon className="h-5 w-5" />
-                </div>
-                <div className="grid gap-1">
-                    <CardTitle className="text-base font-semibold leading-none tracking-tight">
-                         {config.name}
-                    </CardTitle>
-                    <CardDescription className="text-xs">
-                        {definition?.name || config.adapterId}
-                    </CardDescription>
-                </div>
-            </CardHeader>
-            <CardContent>
-                <div className="grid gap-1.5 text-xs text-muted-foreground mt-2">
-                    {displayEntries.length > 0 ? (
-                        displayEntries.map(([key, value]) => (
-                             <div key={key} className="flex items-center justify-between gap-2">
-                                <span className="capitalize">{key}:</span>
-                                <span className="font-mono truncate max-w-[120px]" title={String(value)}>{getDisplayValue(key, value)}</span>
-                            </div>
-                        ))
-                    ) : (
-                        <div className="text-xs text-muted-foreground italic">No specific configuration</div>
-                    )}
-                </div>
-            </CardContent>
-        </Card>
-    )
-}
-
-function AdapterForm({ type, adapters, onSuccess, initialData }: { type: string, adapters: AdapterDefinition[], onSuccess: () => void, initialData?: AdapterConfig }) {
+export function AdapterForm({ type, adapters, onSuccess, initialData }: { type: string, adapters: AdapterDefinition[], onSuccess: () => void, initialData?: AdapterConfig }) {
     const [selectedAdapterId, setSelectedAdapterId] = useState<string>(initialData?.adapterId || "");
     const [connectionError, setConnectionError] = useState<string | null>(null);
     const [pendingSubmission, setPendingSubmission] = useState<any | null>(null);
@@ -368,7 +124,7 @@ function AdapterForm({ type, adapters, onSuccess, initialData }: { type: string,
     }, [adapters, initialData, form]);
 
 
-const saveConfig = async (data: any) => {
+    const saveConfig = async (data: any) => {
         try {
             const url = initialData ? `/api/adapters/${initialData.id}` : '/api/adapters';
             const method = initialData ? 'PUT' : 'POST';
@@ -772,3 +528,4 @@ const saveConfig = async (data: any) => {
         </>
     );
 }
+

@@ -1,4 +1,4 @@
-import { AdapterManager } from "@/components/adapter-manager";
+import { AdapterManager } from "@/components/adapter/adapter-manager";
 import { getUserPermissions } from "@/lib/access-control";
 import { PERMISSIONS } from "@/lib/permissions";
 
