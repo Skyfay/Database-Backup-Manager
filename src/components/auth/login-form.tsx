@@ -53,7 +53,7 @@ export function LoginForm({ allowSignUp = true }: LoginFormProps) {
              if (result?.error) {
                 toast.error(result.error.message || "Failed to sign in with passkey")
             }
-        } catch (error) {
+        } catch {
             toast.error("Failed to sign in with passkey")
         } finally {
             setLoading(false)
@@ -164,7 +164,7 @@ export function LoginForm({ allowSignUp = true }: LoginFormProps) {
 
   if (twoFactorStep) {
       return (
-          <Card className="w-[350px]">
+          <Card className="w-87.5">
                <CardHeader>
                   <CardTitle>{isBackupCode ? "Backup Code" : "Two-Factor Authentication"}</CardTitle>
                   <CardDescription>
@@ -175,8 +175,8 @@ export function LoginForm({ allowSignUp = true }: LoginFormProps) {
                </CardHeader>
                <CardContent>
                    <div className="space-y-4">
-                       <Button 
-                            variant="outline" 
+                       <Button
+                            variant="outline"
                             className="w-full"
                             onClick={handlePasskeyLogin}
                        >
@@ -253,7 +253,7 @@ export function LoginForm({ allowSignUp = true }: LoginFormProps) {
   }
 
   return (
-    <Card className="w-[350px]">
+    <Card className="w-87.5">
       <CardHeader>
         <CardTitle>{isLogin ? "Login" : "Sign Up"}</CardTitle>
         <CardDescription>

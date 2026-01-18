@@ -69,15 +69,7 @@ export function RestoreDialog({ file, open, onOpenChange, destinationId, sources
         setPrivUser("root");
     }, []);
 
-    // Analyze backup when file opens
-    useEffect(() => {
-        if (open && file) {
-            resetState();
-            analyzeBackup(file);
-        }
-    }, [open, file, resetState]); // removed analyzeBackup from deps to avoid loop if not memoized, will define below
-
-    const analyzeBackup = async (file: FileInfo) => {
+    const analyzeBackup = useCallback(async (file: FileInfo) => {
         try {
             const res = await fetch(`/api/storage/${destinationId}/analyze`, {
                 method: 'POST',
@@ -100,7 +92,15 @@ export function RestoreDialog({ file, open, onOpenChange, destinationId, sources
         } catch {
             console.error("Analysis failed");
         }
-    };
+    }, [destinationId]);
+
+    // Analyze backup when file opens
+    useEffect(() => {
+        if (open && file) {
+            resetState();
+            analyzeBackup(file);
+        }
+    }, [open, file, resetState, analyzeBackup]);
 
     const handleRestore = async (usePrivileged = false) => {
         if (!file || !targetSource) return;
@@ -165,7 +165,7 @@ export function RestoreDialog({ file, open, onOpenChange, destinationId, sources
         <Dialog open={open} onOpenChange={(val) => {
             if (!restoring) onOpenChange(val);
         }}>
-            <DialogContent className="sm:max-w-[800px]">
+            <DialogContent className="sm:max-w-200">
                 <DialogHeader>
                     <DialogTitle>Restore Backup</DialogTitle>
                     <DialogDescription>
@@ -198,7 +198,7 @@ export function RestoreDialog({ file, open, onOpenChange, destinationId, sources
                         {analyzedDbs.length > 0 ? (
                             <div className="space-y-2 border rounded-md p-3">
                                 <Label>Databases detected in Dump</Label>
-                                <div className="space-y-2 max-h-[200px] overflow-y-auto">
+                                <div className="space-y-2 max-h-50 overflow-y-auto">
                                     {dbConfig.map((db, idx) => (
                                         <div key={db.id} className="flex items-center gap-2 p-2 bg-secondary/50 rounded-sm">
                                             <Checkbox
@@ -243,7 +243,7 @@ export function RestoreDialog({ file, open, onOpenChange, destinationId, sources
                     </div>
                 ) : (
                      <div className="space-y-4 py-4">
-                        <div className="bg-destructive/10 text-destructive p-3 rounded-md text-sm whitespace-pre-wrap break-all max-h-[400px] overflow-auto font-mono">
+                        <div className="bg-destructive/10 text-destructive p-3 rounded-md text-sm whitespace-pre-wrap break-all max-h-100 overflow-auto font-mono">
                             {restoreLogs.join('\n')}
                         </div>
                      </div>
