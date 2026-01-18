@@ -117,6 +117,7 @@ function HistoryContent() {
                 data={executions}
                 searchKey="jobName"
                 filterableColumns={filterableColumns}
+                autoResetPageIndex={false}
             />
 
             <Dialog open={!!selectedLog} onOpenChange={(open) => { if(!open) setSelectedLog(null); }}>

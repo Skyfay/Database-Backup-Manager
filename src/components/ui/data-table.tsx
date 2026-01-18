@@ -66,6 +66,7 @@ interface DataTableProps<TData, TValue> {
     data: TData[];
     searchKey?: string;
     filterableColumns?: DataTableFilterableColumn<TData>[];
+    autoResetPageIndex?: boolean;
 }
 
 export function DataTable<TData, TValue>({
@@ -73,6 +74,7 @@ export function DataTable<TData, TValue>({
     data,
     searchKey = "name",
     filterableColumns = [],
+    autoResetPageIndex = true,
 }: DataTableProps<TData, TValue>) {
     const [sorting, setSorting] = React.useState<SortingState>([]);
     const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
@@ -82,6 +84,7 @@ export function DataTable<TData, TValue>({
     const table = useReactTable({
         data,
         columns,
+        autoResetPageIndex,
         onSortingChange: setSorting,
         onColumnFiltersChange: setColumnFilters,
         getCoreRowModel: getCoreRowModel(),
