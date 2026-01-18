@@ -112,7 +112,7 @@ export function DataTable<TData, TValue>({
                         onChange={(event) =>
                             table.getColumn(searchKey)?.setFilterValue(event.target.value)
                         }
-                        className="h-8 w-[150px] lg:w-[250px]"
+                        className="h-8 w-37.5 lg:w-62.5"
                     />
                     {filterableColumns.length > 0 &&
                         filterableColumns.map((column) => (
@@ -229,7 +229,7 @@ export function DataTable<TData, TValue>({
                                 table.setPageSize(Number(value));
                             }}
                         >
-                            <SelectTrigger className="h-8 w-[70px]">
+                            <SelectTrigger className="h-8 w-17.5">
                                 <SelectValue placeholder={table.getState().pagination.pageSize} />
                             </SelectTrigger>
                             <SelectContent side="top">
@@ -241,7 +241,7 @@ export function DataTable<TData, TValue>({
                             </SelectContent>
                         </Select>
                     </div>
-                    <div className="flex w-[100px] items-center justify-center text-sm font-medium">
+                    <div className="flex w-25 items-center justify-center text-sm font-medium">
                         Page {table.getState().pagination.pageIndex + 1} of{" "}
                         {table.getPageCount()}
                     </div>

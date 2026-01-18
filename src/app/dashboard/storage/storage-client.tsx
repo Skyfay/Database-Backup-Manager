@@ -177,7 +177,7 @@ export function StorageClient({ canDownload, canRestore, canDelete }: StorageCli
             <h2 className="text-3xl font-bold tracking-tight">Storage Explorer</h2>
 
             <div className="flex items-center space-x-4">
-                <div className="w-[300px]">
+                <div className="w-75">
                     <Select value={selectedDestination} onValueChange={setSelectedDestination}>
                         <SelectTrigger>
                             <SelectValue placeholder="Select Destination" />

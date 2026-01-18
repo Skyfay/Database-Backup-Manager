@@ -14,6 +14,7 @@ applyTo: "src/components/**/*.tsx, src/app/**/*.tsx"
 
   <styling>
     - Avoid inline styles. Use Tailwind utility classes.
+    - **Tailwind Best Practices**: Prefer standard utility classes (e.g., `h-px`, `w-4`) over arbitrary values (e.g., `h-[1px]`, `w-[1rem]`) whenever possible.
     - **Feedback**: Use `toast` (Sonner) for success/error notifications. Never use `alert()`.
   </styling>
 

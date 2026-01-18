@@ -42,11 +42,6 @@ export function JobsClient({ canManage, canExecute }: JobsClientProps) {
     const [editingJob, setEditingJob] = useState<JobData | null>(null);
     const [deletingId, setDeletingId] = useState<string | null>(null);
 
-    useEffect(() => {
-        fetchJobs();
-        fetchAdapters();
-    }, []);
-
     const fetchJobs = async () => {
         try {
             const res = await fetch("/api/jobs");
@@ -71,6 +66,15 @@ export function JobsClient({ canManage, canExecute }: JobsClientProps) {
             setNotificationChannels(n);
         } catch { toast.error("Failed to fetch adapters"); }
     };
+
+    useEffect(() => {
+        // Wrap in IIFE or just call them, but ensure async pattern is clean
+        const init = async () => {
+             await fetchJobs();
+             await fetchAdapters();
+        };
+        init();
+    }, []);
 
     const handleDelete = (id: string) => {
         setDeletingId(id);
@@ -154,15 +158,15 @@ export function JobsClient({ canManage, canExecute }: JobsClientProps) {
                                 </div>
                                 <div className="flex items-center justify-between gap-2">
                                     <span className="capitalize">Source:</span>
-                                    <span className="font-medium truncate max-w-[120px]">{job.source.name}</span>
+                                    <span className="font-medium truncate max-w-30">{job.source.name}</span>
                                 </div>
                                 <div className="flex items-center justify-between gap-2">
                                     <span className="capitalize">Destination:</span>
-                                    <span className="font-medium truncate max-w-[120px]">{job.destination.name}</span>
+                                    <span className="font-medium truncate max-w-30">{job.destination.name}</span>
                                 </div>
                                 <div className="flex items-center justify-between gap-2">
                                     <span className="capitalize">Notifications:</span>
-                                    <span className="font-medium truncate max-w-[120px]">{job.notifications.length} channels</span>
+                                    <span className="font-medium truncate max-w-30">{job.notifications.length} channels</span>
                                 </div>
                             </div>
                         </CardContent>
