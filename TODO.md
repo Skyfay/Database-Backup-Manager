@@ -115,7 +115,7 @@
     - [x] Administrator manage other user (eg. reset 2FA)
     - [ ] **UX & Refinement**:
         - [ ] Show 2FA Status (Active/Inactive) in User Table
-        - [ ] Invite Flow (Email link) or Force Password Change on first login
+        - [ ] Invite Flow (Email link) or Force Password Change on first login (with SMTP combined)
         - [ ] "Self-Service" Concept (Allow users to edit own profile regardless of strict permissions)
 - [ ] **Audit & Compliance**
     - [ ] **Audit Logs**: Track sensitive user actions (Login, Create/Delete User, Change Permissions)
