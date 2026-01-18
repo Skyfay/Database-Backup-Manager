@@ -74,7 +74,7 @@ export function RestoreDialog({ file, open, onOpenChange, destinationId, sources
             const res = await fetch(`/api/storage/${destinationId}/analyze`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ file: file.path })
+                body: JSON.stringify({ file: file.path, type: file.sourceType })
             });
 
             if (res.ok) {
@@ -182,7 +182,11 @@ export function RestoreDialog({ file, open, onOpenChange, destinationId, sources
                                     <SelectValue placeholder="Select a database source" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {sources.map(s => (
+                                    {sources
+                                        // Filter sources to match backup type (e.g., only restore mysql backup to mysql source)
+                                        // We check 'adapterId' (e.g. 'mysql', 'postgres') against file.sourceType
+                                        .filter(s => !file?.sourceType || s.adapterId === file.sourceType)
+                                        .map(s => (
                                         <SelectItem key={s.id} value={s.id}>
                                             <div className="flex items-center gap-2">
                                                 <Database className="h-4 w-4" />

@@ -2,7 +2,9 @@ import { DatabaseAdapter, BackupResult } from "@/lib/core/interfaces";
 import { PostgresSchema } from "@/lib/adapters/definitions";
 import { execFile, spawn } from "child_process";
 import fs from "fs/promises";
-import { createWriteStream } from "fs";
+import { createWriteStream, createReadStream } from "fs";
+import { Transform } from "stream";
+import readline from "readline";
 import util from "util";
 
 const execFileAsync = util.promisify(execFile);
@@ -12,6 +14,28 @@ export const PostgresAdapter: DatabaseAdapter = {
     type: "database",
     name: "PostgreSQL",
     configSchema: PostgresSchema,
+
+    async analyzeDump(sourcePath: string): Promise<string[]> {
+        const dbs = new Set<string>();
+        try {
+            const fileStream = createReadStream(sourcePath);
+            const rl = readline.createInterface({ input: fileStream, crlfDelay: Infinity });
+
+            for await (const line of rl) {
+                // Matches: CREATE DATABASE "dbname" or CREATE DATABASE dbname
+                // Postgres identifiers can be quoted or unquoted
+                const createMatch = line.match(/^CREATE DATABASE "?([^";\s]+)"? /i);
+                if (createMatch) dbs.add(createMatch[1]);
+
+                // Matches: \connect "dbname"
+                const connectMatch = line.match(/^\\connect "?([^"\s]+)"?/i);
+                if (connectMatch) dbs.add(connectMatch[1]);
+            }
+        } catch (e) {
+            console.error("Error analyzing Postgres dump:", e);
+        }
+        return Array.from(dbs);
+    },
 
     async dump(config: any, destinationPath: string): Promise<BackupResult> {
         const startedAt = new Date();
@@ -139,19 +163,149 @@ export const PostgresAdapter: DatabaseAdapter = {
                 env.PGPASSWORD = config.password;
             }
 
-            const args: string[] = [
-                '-h', config.host,
-                '-p', String(config.port),
-                '-U', config.user,
-                '-d', config.database,
-                '-f', sourcePath
-            ];
+            // Check if we have advanced mapping config
+            const mapping = config.databaseMapping as Array<{ originalName: string, targetName: string, selected: boolean }> | undefined;
 
-            logs.push(`Executing restore command: psql ${args.join(' ')}`);
+            // If mapping is provided, we need to stream and filter the SQL
+            if (mapping && mapping.length > 0) {
+                logs.push("Performing Selective/Mapped Restore...");
 
-            const { stdout, stderr } = await execFileAsync('psql', args, { env });
-             if (stderr) {
-                logs.push(`stderr: ${stderr}`);
+                // 1. Build map for quick lookup
+                const dbMap = new Map<string, { target: string, selected: boolean }>();
+                mapping.forEach(m => dbMap.set(m.originalName, { target: m.targetName, selected: m.selected }));
+
+                // 2. Spawn psql connected to 'postgres' (default maintenance DB)
+                // We do NOT use -f here, we pipe via stdin
+                const args = [
+                    '-h', config.host,
+                    '-p', String(config.port),
+                    '-U', config.user,
+                    '-d', 'postgres' // Connect to default DB to issue CREATE DATABASE commands
+                ];
+
+                logs.push(`Executing restore stream to: psql ${args.join(' ')}`);
+
+                await new Promise<void>((resolve, reject) => {
+                    const psql = spawn('psql', args, { env, stdio: ['pipe', 'pipe', 'pipe'] });
+
+                    psql.stderr.on('data', (d) => logs.push(`stderr: ${d}`));
+                    // psql.stdout.on('data', (d) => logs.push(`stdout: ${d}`)); // Verbose
+
+                    psql.on('close', (code) => {
+                        if (code === 0) resolve();
+                        else reject(new Error(`psql exited with code ${code}`));
+                    });
+
+                    psql.on('error', (err) => reject(err));
+
+                    // 3. Create Transform Stream to filter/rewrite SQL
+                    const fileStream = createReadStream(sourcePath, { encoding: 'utf8', highWaterMark: 64 * 1024 });
+
+                    let currentDb: string | null = null;
+                    let skipMode = false;
+
+                    const transformer = new Transform({
+                        decodeStrings: false,
+                        transform(chunk: string | Buffer, encoding, callback) {
+                            const lines = chunk.toString().split('\n');
+                            const output: string[] = [];
+
+                            for (const line of lines) {
+                                // Detect Context Switches
+                                // Check CREATE DATABASE
+                                const createMatch = line.match(/^CREATE DATABASE "?([^";\s]+)"? /i);
+                                if (createMatch) {
+                                    const dbName = createMatch[1];
+                                    currentDb = dbName;
+                                    const map = dbMap.get(dbName);
+
+                                    if (map) {
+                                        if (!map.selected) {
+                                            skipMode = true;
+                                            // Do not push line
+                                        } else {
+                                            skipMode = false;
+                                            if (map.target !== dbName) {
+                                                // Rename
+                                                output.push(line.replace(`"${dbName}"`, `"${map.target}"`).replace(` ${dbName} `, ` "${map.target}" `));
+                                            } else {
+                                                output.push(line);
+                                            }
+                                        }
+                                    } else {
+                                        // Unknown DB (maybe not analyzed?), default to include? Or skip if we are in selective mode?
+                                        // Let's assume we include things not in map (like globals) but if it's a DB we didn't map, we keep it.
+                                        skipMode = false;
+                                        output.push(line);
+                                    }
+                                    continue;
+                                }
+
+                                // Check Connect
+                                const connectMatch = line.match(/^\\connect "?([^"\s]+)"?/i);
+                                if (connectMatch) {
+                                    const dbName = connectMatch[1];
+                                    const map = dbMap.get(dbName);
+
+                                    if (map) {
+                                        if (!map.selected) {
+                                            skipMode = true;
+                                        } else {
+                                            skipMode = false;
+                                            if (map.target !== dbName) {
+                                                output.push(line.replace(`"${dbName}"`, `"${map.target}"`).replace(` ${dbName}`, ` "${map.target}"`));
+                                            } else {
+                                                output.push(line);
+                                            }
+                                        }
+                                    } else {
+                                        // Connect to something else (e.g. postgres)? Keep it.
+                                        skipMode = false;
+                                        output.push(line);
+                                    }
+                                    continue;
+                                }
+
+                                if (!skipMode) {
+                                    // Handle Renames inside body (ALTER DATABASE ...)
+                                    if (currentDb && dbMap.get(currentDb)?.target !== currentDb) {
+                                        const target = dbMap.get(currentDb)!.target;
+                                        // Simple heuristic replace for ALTER DATABASE "old" ...
+                                        if (line.match(new RegExp(`ALTER DATABASE "?${currentDb}"?`, 'i'))) {
+                                            output.push(line.replace(new RegExp(`"${currentDb}"`, 'g'), `"${target}"`).replace(new RegExp(` ${currentDb} `, 'g'), ` "${target}" `));
+                                        } else {
+                                            output.push(line);
+                                        }
+                                    } else {
+                                        output.push(line);
+                                    }
+                                }
+                            }
+
+                            callback(null, output.join('\n'));
+                        }
+                    });
+
+                    // Pipe: File -> Transformer -> PSQL
+                    fileStream.pipe(transformer).pipe(psql.stdin);
+                });
+
+            } else {
+                // Legacy / Direct Restore (Single file, no fancy mapping)
+                const args: string[] = [
+                    '-h', config.host,
+                    '-p', String(config.port),
+                    '-U', config.user,
+                    '-d', config.database, // Target DB from UI form main input (fallback)
+                    '-f', sourcePath
+                ];
+
+                logs.push(`Executing direct restore command: psql ${args.join(' ')}`);
+
+                const { stdout, stderr } = await execFileAsync('psql', args, { env });
+                 if (stderr) {
+                    logs.push(`stderr: ${stderr}`);
+                }
             }
 
             return {

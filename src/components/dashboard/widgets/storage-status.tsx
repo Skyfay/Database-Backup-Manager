@@ -51,7 +51,9 @@ export async function StorageStatus() {
     executions.forEach(ex => {
         if (ex.job && ex.job.destinationId && stats.has(ex.job.destinationId)) {
             const current = stats.get(ex.job.destinationId)!;
-            current.size += (ex.size || 0);
+            // Convert BigInt to number for display aggregation
+            const size = ex.size ? Number(ex.size) : 0;
+            current.size += size;
             current.count += 1;
         }
     });

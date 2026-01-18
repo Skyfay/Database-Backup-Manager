@@ -30,7 +30,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
         await checkPermission(PERMISSIONS.STORAGE.RESTORE);
 
         const body = await req.json();
-        const { file } = body;
+        const { file, type } = body;
 
         if (!file) {
             return NextResponse.json({ error: "Missing file" }, { status: 400 });
@@ -68,13 +68,29 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
         const downloadSuccess = await storageAdapter.download(sConf, file, tempFile);
         if (!downloadSuccess) return NextResponse.json({ error: "Download failed" }, { status: 500 });
 
-        // Instantiate MySQL Adapter to check
-        // In a real app we'd need to know the type.
-        const mysqlAdapter = registry.get("mysql") as DatabaseAdapter;
-
         let databases: string[] = [];
-        if (mysqlAdapter && mysqlAdapter.analyzeDump) {
-            databases = await mysqlAdapter.analyzeDump(tempFile);
+
+        // Try to find the correct adapter to analyze the file
+        // 1. If type is provided (most reliable)
+        if (type) {
+            const adapter = registry.get(type) as DatabaseAdapter;
+            if (adapter && adapter.analyzeDump) {
+                databases = await adapter.analyzeDump(tempFile);
+            }
+        }
+        // 2. Fallback: Try all known database adapters (Heuristic)
+        else {
+            const adapters = ["mysql", "postgres", "mongodb"];
+            for (const id of adapters) {
+                const adapter = registry.get(id) as DatabaseAdapter;
+                if (adapter && adapter.analyzeDump) {
+                    const dbs = await adapter.analyzeDump(tempFile);
+                    if (dbs.length > 0) {
+                        databases = dbs;
+                        break;
+                    }
+                }
+            }
         }
 
         return NextResponse.json({ databases });
