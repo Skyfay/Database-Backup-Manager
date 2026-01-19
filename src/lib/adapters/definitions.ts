@@ -68,7 +68,8 @@ export const EmailSchema = z.object({
 });
 
 export const ADAPTER_DEFINITIONS: AdapterDefinition[] = [
-    { id: "mysql", type: "database", name: "MySQL / MariaDB", configSchema: MySQLSchema },
+    { id: "mysql", type: "database", name: "MySQL", configSchema: MySQLSchema },
+    { id: "mariadb", type: "database", name: "MariaDB", configSchema: MariaDBSchema },
     { id: "postgres", type: "database", name: "PostgreSQL", configSchema: PostgresSchema },
     { id: "mongodb", type: "database", name: "MongoDB", configSchema: MongoDBSchema },
     { id: "local-filesystem", type: "storage", name: "Local Filesystem", configSchema: LocalStorageSchema },

@@ -23,6 +23,8 @@ export async function stepExecuteDump(ctx: RunnerContext) {
 
     // 2. Prepare Config & Metadata
     const sourceConfig = decryptConfig(JSON.parse(job.source.config));
+    // Inject adapterId as type for Dialect selection (e.g. 'mariadb')
+    sourceConfig.type = job.source.adapterId;
 
     try {
         const dbVal = sourceConfig.database;

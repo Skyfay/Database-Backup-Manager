@@ -8,7 +8,7 @@ import { analyzeDump } from "./analyze";
 export const MySQLAdapter: DatabaseAdapter = {
     id: "mysql",
     type: "database",
-    name: "MySQL / MariaDB",
+    name: "MySQL",
     configSchema: MySQLSchema,
     dump,
     restore,

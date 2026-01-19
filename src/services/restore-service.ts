@@ -290,6 +290,8 @@ export class RestoreService {
             updateProgress(0, `Restoring (0 B / ${formatBytes(totalSize)})...`);
 
             const dbConf = decryptConfig(JSON.parse(sourceConfig.config));
+            // Inject adapterId as type for Dialect selection
+            dbConf.type = sourceConfig.adapterId;
 
             // Override database name if provided
             if (targetDatabaseName) {
