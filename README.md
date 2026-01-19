@@ -25,8 +25,16 @@ A robust, self-hosted solution for automating database backups. Manage sources, 
 - **Notifications**: Get alerts via **Discord** or **Email** when backups succeed or fail.
 - **Restore & Management**: Browse backup history, view logs, and restore databases directly from the UI.
 - **Modern Dashboard**: Built with Next.js 16, Shadcn UI, and Tailwind CSS.
+## 🗄️ Supported Databases
 
+| Database | Supported Versions |
+| :--- | :--- |
+| **PostgreSQL** | 12, 13, 14, 15, 16, 17, 18 |
+| **MySQL** | 5.7, 8, 9 |
+| **MariaDB** | 10, 11 |
+| **MongoDB** | 4, 5, 6, 7, 8 |
 
+> For detailed technical information about client versions and extensive compatibility notes, please refer to our [Supported Database Versions Documentation](docs/development/supported-database-versions.md).
 ## �🛠️ Tech Stack
 
 - **Framework**: [Next.js 16](https://nextjs.org) (App Router)
