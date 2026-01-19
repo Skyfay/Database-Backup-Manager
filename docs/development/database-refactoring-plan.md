@@ -48,7 +48,7 @@ This document outlines the roadmap for refactoring database adapters to support 
     - Handle `mongodump` versions (e.g., `--uri` support vs older distinct flags).
 
 ### Phase 5: Documentation
-- [ ] **Step 9: Update Documentation**
+- [x] **Step 9: Update Documentation**
     - Update `docs/development/database-adapter-guide.md` to reflect the new Dialect pattern and folder structure.
 
 ---

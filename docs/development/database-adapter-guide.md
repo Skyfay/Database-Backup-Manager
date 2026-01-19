@@ -3,47 +3,75 @@
 This guide describes how to implement a new `DatabaseAdapter` for the Database Backup Manager.
 To ensure full compatibility with features like **Live Progress**, **Streaming**, and **Selective Restore**, please follow these guidelines strictly.
 
-## 1. File Structure
+## 1. File Structure & The Dialect Pattern
 
-To keep the codebase maintainable, we enforce a split-file structure for Database Adapters.
-Do **not** put everything in a single file if it exceeds ~150 lines.
+We use the **Dialect Pattern** to support multiple database versions (e.g., MySQL 5.7 vs 8.0 or MariaDB) without duplicating core logic.
 
 **Recommended Structure:**
 ```
 src/lib/adapters/database/<adapter-id>/
-├── index.ts        # Exports functionality as DatabaseAdapter object
-├── connection.ts   # Connection testing & utils (execFileAsync, getDatabases etc.)
-├── dump.ts         # The dump() implementation
-├── restore.ts      # The restore() implementation
-└── analyze.ts      # The analyzeDump() implementation (optional)
+├── index.ts          # Exports functionality as DatabaseAdapter object
+├── connection.ts     # Connection testing (must return version!)
+├── dump.ts           # The dump() implementation (uses Dialect)
+├── restore.ts        # The restore() implementation (uses Dialect)
+└── dialects/         # Folder for version-specific logic
+    ├── index.ts      # Dialect Factory (getDialect)
+    ├── base.ts       # Abstract Base Class
+    └── v1-variant.ts # Specific implementations
 ```
 
-## 2. Interface Implementation
+## 2. The Dialect Interface
 
-All database adapters must implement `DatabaseAdapter` from `@/lib/core/interfaces`.
+Instead of hardcoding CLI flags in `dump.ts` or `restore.ts`, delegate this to a Dialect class.
 
-**`index.ts` Example:**
+**Define a Dialect:**
 ```typescript
-import { DatabaseAdapter } from "@/lib/core/interfaces";
-import { MySchema } from "@/lib/adapters/definitions";
-import { dump } from "./dump";
-import { restore, prepareRestore } from "./restore";
-import { test, getDatabases } from "./connection";
-
-export const MyAdapter: DatabaseAdapter = {
-    id: "my-db",
-    type: "database",
-    name: "My Database",
-    configSchema: MySchema,
-    dump,
-    restore,
-    prepareRestore,
-    test,
-    getDatabases
-};
+// src/lib/adapters/database/common/dialect.ts (Reference)
+export interface DatabaseDialect {
+    getDumpArgs(config: any, databases: string[]): string[];
+    getRestoreArgs(config: any, targetDatabase?: string): string[];
+    getConnectionArgs(config: any): string[];
+}
 ```
 
-## 3. Implementing `restore` (Critical for UX)
+**Using the Dialect in `dump.ts`:**
+```typescript
+import { getDialect } from "./dialects";
+
+export async function dump(config: any, path: string, ...) {
+    // 1. Get the correct dialect based on config and detected version
+    const dialect = getDialect(config.type, config.detectedVersion);
+
+    // 2. Get arguments
+    const args = dialect.getDumpArgs(config, databases);
+
+    // 3. Spawn process
+    const proc = spawn('tool', args, ...);
+}
+```
+
+## 3. Version Detection
+
+Your adapter's `test` function should detect the database version to allow the system to choose the correct dialect.
+
+**`connection.ts` Example:**
+```typescript
+export async function test(config: any) {
+    // 1. Ping
+    await execFileAsync('db_cli', ['ping', ...]);
+
+    // 2. Fetch Version
+    const { stdout } = await execFileAsync('db_cli', ['version', ...]);
+
+    return {
+        success: true,
+        message: "Connected",
+        version: stdout.trim() // e.g. "8.0.32"
+    };
+}
+```
+
+## 4. Implementing `restore` (Critical for UX)
 
 The `restore` method is the most complex part because it drives the "Live Activity" UI.
 
@@ -76,7 +104,10 @@ async restore(config, sourcePath, onLog, onProgress) {
         }
     });
 
-    // 3. Spawn DB Process
+    // 3. Spawn DB Process (using Dialect args)
+    const dialect = getDialect(config.type, config.detectedVersion);
+    const args = dialect.getRestoreArgs(config);
+
     const proc = spawn('db_cli', args, {
         stdio: ['pipe', 'pipe', 'pipe'] // Pipe stdin!
     });
@@ -100,7 +131,7 @@ If your adapter supports renaming databases or restoring only specific ones from
 - Use this stream to parse SQL on-the-fly (e.g., checking `CREATE DATABASE` lines).
 - **Warning**: String manipulation in buffers is tricky. Ensure you handle chunk boundaries or use a line-aware stream reader properly.
 
-## 3. Implementing `dump`
+## 5. Implementing `dump`
 
 ### Critical for Live Progress
 The Backup Manager uses a "File Watcher" technique to monitor the dump progress in real-time.
@@ -123,11 +154,11 @@ async dump(
 - **Error Handling**: Listen to `stderr` and pass it to `onLog`. If the process exit code is non-zero, throw an error or return `{ success: false }`.
 - **Empty File Check**: After the process finishes, check `fs.stat(destinationPath).size`. If it's 0 bytes, the dump likely failed silently (e.g., authentication error).
 
-## 4. `analyzeDump` (Optional)
+## 6. `analyzeDump` (Optional)
 To support the "Selective Restore" UI, your adapter can implement `analyzeDump`.
 - **Performance**: Do NOT read the whole file.
 - Use tools like `grep` (via `spawn`) to quickly find `CREATE DATABASE` statements in multi-gigabyte files without generic parsing.
 
-## 5. Zod Schema
+## 7. Zod Schema
 - Define a strict Zod schema for your configuration (Host, Port, User, Password).
 - Export this schema for the UI to generate the form automatically.

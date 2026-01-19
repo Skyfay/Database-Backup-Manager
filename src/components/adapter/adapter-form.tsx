@@ -26,6 +26,10 @@ export function AdapterForm({ type, adapters, onSuccess, initialData }: { type: 
     const [connectionError, setConnectionError] = useState<string | null>(null);
     const [pendingSubmission, setPendingSubmission] = useState<any | null>(null);
 
+    // Version Detection
+    const initialConfig = initialData ? JSON.parse(initialData.config) : {};
+    const [detectedVersion, setDetectedVersion] = useState<string | null>(initialConfig.detectedVersion || null);
+
     // Multi-Select DB Logic
     const [availableDatabases, setAvailableDatabases] = useState<string[]>([]);
     const [isLoadingDbs, setIsLoadingDbs] = useState(false);
@@ -132,6 +136,11 @@ export function AdapterForm({ type, adapters, onSuccess, initialData }: { type: 
 
             const payload = {
                 ...data,
+                // Ensure detectedVersion is included in config if present in state but not in config object yet
+                config: {
+                    ...data.config,
+                    ...(detectedVersion ? { detectedVersion } : {})
+                },
                 type: type // ensure type is sent
             };
 
@@ -173,8 +182,17 @@ export function AdapterForm({ type, adapters, onSuccess, initialData }: { type: 
 
             if (result.success) {
                 toast.success(result.message || "Connection successful");
+                if (result.version) {
+                    setDetectedVersion(result.version);
+                    // Update form value silently so it gets saved on submit even if user doesn't click "Test" again
+                    // But wait, saveConfig takes 'data' which is from getValues().
+                    // We need to ensure saving includes this.
+                }
             } else {
                 toast.error(result.message || "Connection failed");
+                if (result.success === false) {
+                     // Clear version on failure? Maybe keep last known.
+                }
             }
         } catch (e) {
             toast.dismiss(toastId);
@@ -297,7 +315,15 @@ export function AdapterForm({ type, adapters, onSuccess, initialData }: { type: 
 
                 {selectedAdapter && (
                     <div className="space-y-4 border p-4 rounded-md bg-muted/30">
-                        <h4 className="text-sm font-medium">Configuration</h4>
+                        <div className="flex items-center justify-between">
+                             <h4 className="text-sm font-medium">Configuration</h4>
+                             {detectedVersion && (
+                                <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/20">
+                                    <Check className="w-3 h-3 mr-1" />
+                                    Detected: {detectedVersion}
+                                </Badge>
+                             )}
+                        </div>
                          {Object.keys((selectedAdapter.configSchema as any).shape).map((key) => {
                              const shape = (selectedAdapter.configSchema as any).shape[key];
 
@@ -523,7 +549,10 @@ export function AdapterForm({ type, adapters, onSuccess, initialData }: { type: 
                     </AlertDialogCancel>
                     <AlertDialogAction onClick={() => {
                         setConnectionError(null);
-                        if (pendingSubmission) saveConfig(pendingSubmission);
+                        if (pendingSubmission) {
+                             // If "Save Anyway", we just save whatever was in pending.
+                             saveConfig(pendingSubmission);
+                        }
                     }}>
                         Save Anyway
                     </AlertDialogAction>
