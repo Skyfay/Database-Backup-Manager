@@ -11,6 +11,7 @@ services:
     image: mysql:5.7
     platform: linux/amd64
     container_name: dbm-test-mysql-57
+    command: --skip-name-resolve
     environment:
       MYSQL_ROOT_PASSWORD: rootpassword
       MYSQL_DATABASE: testdb
@@ -40,7 +41,7 @@ services:
   mysql-9:
     image: mysql:9.1
     container_name: dbm-test-mysql-9
-    command: --default-authentication-plugin=mysql_native_password
+    # Removed deprecated authentication plugin flag for MySQL 9.1
     environment:
       MYSQL_ROOT_PASSWORD: rootpassword
       MYSQL_DATABASE: testdb

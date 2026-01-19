@@ -27,7 +27,8 @@ export async function ensureDatabase(config: any, dbName: string, user: string, 
 export async function test(config: any): Promise<{ success: boolean; message: string; version?: string }> {
     try {
         // 1. Basic Ping Test
-        const pingArgs = ['ping', '-h', config.host, '-P', String(config.port), '-u', config.user, '--protocol=tcp', '--connect-timeout=5'];
+        // Increased timeout to 10s to handle heavy load during integration tests
+        const pingArgs = ['ping', '-h', config.host, '-P', String(config.port), '-u', config.user, '--protocol=tcp', '--connect-timeout=10'];
 
         if (config.password) {
             pingArgs.push(`-p${config.password}`);

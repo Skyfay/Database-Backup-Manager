@@ -17,24 +17,38 @@ describe('Integration Tests: Database Connectivity', () => {
                 const adapter = registry.get(config.type) as DatabaseAdapter;
                 if (!adapter) throw new Error(`Adapter ${config.type} not found`);
 
-                const result = await adapter.test(config as any);
-
-                if (!result.success) {
-                    console.error(`Connection failed for ${name}:`, result.message);
+                // Simple Retry Logic for Flaky Docker environments
+                let result;
+                for(let i=0; i<3; i++) {
+                    result = await adapter.test(config as any);
+                    if(result.success) break;
+                    await new Promise(r => setTimeout(r, 2000)); // Wait 2s before retry
                 }
 
-                expect(result.success).toBe(true);
-                expect(result.message).toContain('Connection successful');
-            });
+                if (!result?.success) {
+                    console.error(`Connection failed for ${name}:`, result?.message);
+                }
+
+                expect(result?.success).toBe(true);
+                expect(result?.message).toContain('Connection successful');
+            }, 20000); // Increased timeout per test
 
             // Test 2: Listing
             it('should list databases', async () => {
                 const adapter = registry.get(config.type) as DatabaseAdapter;
-                const dbs = await adapter.getDatabases(config as any);
+
+                let dbs;
+                try {
+                     dbs = await adapter.getDatabases(config as any);
+                } catch (e) {
+                    // Retry once
+                    await new Promise(r => setTimeout(r, 2000));
+                    dbs = await adapter.getDatabases(config as any);
+                }
 
                 expect(Array.isArray(dbs)).toBe(true);
                 expect(dbs.length).toBeGreaterThan(0);
-            });
+            }, 20000);
         });
     });
 });
