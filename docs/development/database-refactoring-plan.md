@@ -27,7 +27,7 @@ This document outlines the roadmap for refactoring database adapters to support 
     - Create `src/lib/adapters/database/mysql/dialects/mysql-base.ts`.
     - Implement `MySQL80Dialect` (Standard) and `MySQL57Dialect` (Legacy).
     - Handle flags like `--default-character-set=utf8mb4` vs `utf8`.
-- [ ] **Step 4: Implement MariaDB Dialect**
+- [x] **Step 4: Implement MariaDB Dialect**
     - Create `src/lib/adapters/database/mysql/dialects/mariadb.ts` (or move to `mariadb/` folder if we split files completely, but keeping shared connection logic is better).
     - Implement `MariaDBDialect` handling `--skip-ssl` instead of `--ssl-mode`.
 
