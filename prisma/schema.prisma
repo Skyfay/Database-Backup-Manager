@@ -13,6 +13,7 @@ model AdapterConfig {
   type             String
   adapterId        String
   config           String
+  metadata         String? // Stores non-sensitive runtime data (e.g., version, connection status)
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
   jobsDestination  Job[]    @relation("Destination")
@@ -84,6 +85,13 @@ model User {
   group   Group?  @relation(fields: [groupId], references: [id])
 
   @@map("user")
+}
+
+model SystemSetting {
+  key         String   @id
+  value       String
+  description String?
+  updatedAt   DateTime @updatedAt
 }
 
 model Group {
@@ -164,8 +172,5 @@ model Verification {
   @@map("verification")
 }
 
-model SystemSetting {
-  key   String @id
-  value String
-}
+
 

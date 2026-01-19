@@ -105,6 +105,19 @@ export function AdapterManager({ type, title, description, canManage = true }: A
                 <div className="font-medium">{row.getValue("name")}</div>
             )
         },
+        // Database Version Column
+        ...(type === 'database' ? [{
+            id: "version",
+            header: "Version",
+            cell: ({ row }: { row: any }) => {
+                try {
+                    if (!row.original.metadata) return <span className="text-muted-foreground">-</span>;
+                    const meta = JSON.parse(row.original.metadata);
+                    if (!meta.engineVersion) return <span className="text-muted-foreground">-</span>;
+                    return <Badge variant="secondary" className="font-mono text-xs">{meta.engineVersion}</Badge>;
+                } catch { return <span className="text-muted-foreground">-</span>; }
+            }
+        }] : []),
         {
             accessorKey: "adapterId",
             header: "Type",

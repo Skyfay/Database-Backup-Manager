@@ -2,6 +2,7 @@ import cron from "node-cron";
 import type { ScheduledTask } from "node-cron";
 import prisma from "@/lib/prisma";
 import { runJob } from "@/lib/runner";
+import { systemTaskService, SYSTEM_TASKS } from "@/services/system-task-service";
 
 export class BackupScheduler {
     private tasks: Map<string, ScheduledTask> = new Map();
@@ -22,7 +23,7 @@ export class BackupScheduler {
         this.stopAll();
 
         try {
-            // Fetch all enabled jobs
+            // 1. User Jobs
             const jobs = await prisma.job.findMany({
                 where: { enabled: true }
             });
@@ -42,6 +43,20 @@ export class BackupScheduler {
                 } else {
                     console.error(`[Scheduler] Invalid cron schedule for job ${job.id}: ${job.schedule}`);
                 }
+            }
+
+            // 2. System Tasks
+            for (const taskId of Object.values(SYSTEM_TASKS)) {
+                try {
+                const schedule = await systemTaskService.getTaskConfig(taskId);
+                if (schedule && cron.validate(schedule)) {
+                     console.log(`[Scheduler] Scheduling system task '${taskId}' with '${schedule}'`);
+                     const task = cron.schedule(schedule, () => {
+                         systemTaskService.runTask(taskId).catch(e => console.error(`[Scheduler] System Task ${taskId} failed:`, e));
+                     });
+                     this.tasks.set(taskId, task);
+                }
+                } catch(e) { console.error(`[Scheduler] Failed to schedule task ${taskId}`, e); }
             }
         } catch (error) {
             console.error("[Scheduler] Failed to load jobs from DB", error);

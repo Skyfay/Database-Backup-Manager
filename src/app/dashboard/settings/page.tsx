@@ -5,6 +5,8 @@ import { getUserPermissions } from "@/lib/access-control";
 import { PERMISSIONS } from "@/lib/permissions";
 import prisma from "@/lib/prisma";
 import { SystemSettingsForm } from "@/components/settings/system-settings-form";
+import { SystemTasksSettings } from "@/components/settings/system-tasks-settings";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default async function SettingsPage() {
     const headersList = await headers();
@@ -12,7 +14,6 @@ export default async function SettingsPage() {
         headers: headersList
     });
 
-    // ... check session ...
     if (!session) {
         redirect("/login");
     }
@@ -24,7 +25,7 @@ export default async function SettingsPage() {
 
     // Load Settings
     const maxJobsSetting = await prisma.systemSetting.findUnique({ where: { key: "maxConcurrentJobs" } });
-    const maxConcurrentJobs = maxJobsSetting ? parseInt(maxJobsSetting.value) : 1; // Default 1
+    const maxConcurrentJobs = maxJobsSetting ? parseInt(maxJobsSetting.value) : 1;
 
     return (
         <div className="space-y-6">
@@ -35,10 +36,18 @@ export default async function SettingsPage() {
                 </div>
             </div>
 
-            <div className="grid gap-6">
-                 {/* Connection / Environment Settings */}
-                <SystemSettingsForm initialMaxConcurrentJobs={maxConcurrentJobs} />
-            </div>
+            <Tabs defaultValue="general" className="space-y-4">
+                <TabsList>
+                    <TabsTrigger value="general">General</TabsTrigger>
+                    <TabsTrigger value="tasks">System Tasks</TabsTrigger>
+                </TabsList>
+                <TabsContent value="general" className="space-y-4">
+                    <SystemSettingsForm initialMaxConcurrentJobs={maxConcurrentJobs} />
+                </TabsContent>
+                <TabsContent value="tasks" className="space-y-4">
+                    <SystemTasksSettings />
+                </TabsContent>
+            </Tabs>
         </div>
     );
 }

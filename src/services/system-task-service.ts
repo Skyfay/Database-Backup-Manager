@@ -1,0 +1,106 @@
+import prisma from "@/lib/prisma";
+import { registry } from "@/lib/core/registry";
+import { registerAdapters } from "@/lib/adapters";
+import { DatabaseAdapter } from "@/lib/core/interfaces";
+import { decryptConfig } from "@/lib/crypto";
+
+// Ensure adapters are registered for worker context
+registerAdapters();
+
+export const SYSTEM_TASKS = {
+    UPDATE_DB_VERSIONS: "system.update_db_versions"
+};
+
+export const DEFAULT_TASK_CONFIG = {
+    [SYSTEM_TASKS.UPDATE_DB_VERSIONS]: {
+        interval: "0 * * * *", // Every hour
+        label: "Update Database Versions",
+        description: "Checks connectivity and fetches version information from all configured database sources."
+    }
+};
+
+export class SystemTaskService {
+
+    async getTaskConfig(taskId: string) {
+        const key = `task.${taskId}.schedule`;
+        const setting = await prisma.systemSetting.findUnique({ where: { key } });
+        return setting?.value || DEFAULT_TASK_CONFIG[taskId as keyof typeof DEFAULT_TASK_CONFIG]?.interval;
+    }
+
+    async setTaskConfig(taskId: string, schedule: string) {
+        const key = `task.${taskId}.schedule`;
+        await prisma.systemSetting.upsert({
+            where: { key },
+            update: { value: schedule },
+            create: { key, value: schedule, description: `Schedule for ${taskId}` }
+        });
+    }
+
+    async runTask(taskId: string) {
+        console.log(`[SystemTask] Running ${taskId}...`);
+
+        switch (taskId) {
+            case SYSTEM_TASKS.UPDATE_DB_VERSIONS:
+                await this.runUpdateDbVersions();
+                break;
+            default:
+                console.warn(`[SystemTask] Unknown task: ${taskId}`);
+        }
+    }
+
+    private async runUpdateDbVersions() {
+        const sources = await prisma.adapterConfig.findMany({
+            where: { type: 'database' }
+        });
+
+        for (const source of sources) {
+            try {
+                const adapter = registry.get(source.adapterId) as DatabaseAdapter;
+                if (!adapter || !adapter.test) continue;
+
+                // Decrypt config
+                let config;
+                try {
+                    config = decryptConfig(JSON.parse(source.config));
+                } catch { continue; }
+
+                // Test Connection
+                const result = await adapter.test(config);
+
+                if (result.success && result.version) {
+                    // Update Metadata
+                    const currentMeta = source.metadata ? JSON.parse(source.metadata) : {};
+                    const newMeta = {
+                        ...currentMeta,
+                        engineVersion: result.version,
+                        lastCheck: new Date().toISOString(),
+                        status: 'Online'
+                    };
+
+                    await prisma.adapterConfig.update({
+                        where: { id: source.id },
+                        data: { metadata: JSON.stringify(newMeta) }
+                    });
+                    console.log(`[SystemTask] Updated version for ${source.name}: ${result.version}`);
+                } else {
+                    // Mark as offline or warning?
+                     const currentMeta = source.metadata ? JSON.parse(source.metadata) : {};
+                     const newMeta = {
+                        ...currentMeta,
+                        status: 'Unreachable',
+                        lastError: result.message
+                     };
+                     await prisma.adapterConfig.update({
+                        where: { id: source.id },
+                        data: { metadata: JSON.stringify(newMeta) }
+                    });
+                }
+
+            } catch (e: any) {
+                console.error(`[SystemTask] Failed check for ${source.name}:`, e.message);
+            }
+        }
+    }
+}
+
+export const systemTaskService = new SystemTaskService();

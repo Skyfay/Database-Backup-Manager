@@ -1,0 +1,120 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
+import { Play, RotateCw } from "lucide-react";
+
+interface SystemTask {
+    id: string;
+    schedule: string;
+    label: string;
+    description: string;
+}
+
+export function SystemTasksSettings() {
+    const [tasks, setTasks] = useState<SystemTask[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [editing, setEditing] = useState<Record<string, string>>({});
+
+    useEffect(() => {
+        fetchTasks();
+    }, []);
+
+    const fetchTasks = async () => {
+        setLoading(true);
+        try {
+            const res = await fetch("/api/settings/system-tasks");
+            if (res.ok) {
+                setTasks(await res.json());
+            }
+        } catch {
+            toast.error("Failed to load task schedules");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleSave = async (taskId: string) => {
+        const schedule = editing[taskId];
+        if (!schedule) return;
+
+        try {
+            const res = await fetch("/api/settings/system-tasks", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ taskId, schedule }),
+            });
+            if (res.ok) {
+                toast.success("Schedule updated");
+                fetchTasks(); // Refresh to clean state
+                const newEdit = { ...editing };
+                delete newEdit[taskId];
+                setEditing(newEdit);
+            } else {
+                toast.error("Failed to update schedule");
+            }
+        } catch {
+            toast.error("Error saving schedule");
+        }
+    };
+
+    const handleRun = async (taskId: string) => {
+        try {
+            const res = await fetch("/api/settings/system-tasks", {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ taskId }),
+            });
+            if (res.ok) {
+                toast.success("Task started in background");
+            } else {
+                toast.error("Failed to start task");
+            }
+        } catch {
+            toast.error("Error starting task");
+        }
+    };
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>System Tasks</CardTitle>
+                <CardDescription>
+                    Configure frequency of background maintenance tasks.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="space-y-6">
+                    {loading && <div>Loading...</div>}
+                    {!loading && tasks.map(task => (
+                        <div key={task.id} className="flex items-center justify-between p-4 border rounded-lg">
+                            <div className="space-y-1 flex-1">
+                                <h4 className="font-semibold">{task.label}</h4>
+                                <p className="text-sm text-muted-foreground">{task.description}</p>
+                            </div>
+                            <div className="flex items-center space-x-4">
+                                <div className="flex items-center space-x-2">
+                                    <span className="text-sm font-mono text-muted-foreground">Cron:</span>
+                                    <Input
+                                        className="w-[150px] font-mono"
+                                        value={editing[task.id] !== undefined ? editing[task.id] : task.schedule}
+                                        onChange={(e) => setEditing({...editing, [task.id]: e.target.value})}
+                                    />
+                                </div>
+                                {editing[task.id] && (
+                                     <Button size="sm" onClick={() => handleSave(task.id)}>Save</Button>
+                                )}
+                                <Button size="sm" variant="outline" onClick={() => handleRun(task.id)}>
+                                    <Play className="h-4 w-4 mr-1" /> Run Now
+                                </Button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </CardContent>
+        </Card>
+    );
+}

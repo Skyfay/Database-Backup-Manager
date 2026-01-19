@@ -5,6 +5,7 @@ export interface AdapterConfig {
     adapterId: string;
     type: string;
     config: string; // JSON string
+    metadata?: string; // JSON string
     createdAt: string;
 }
 
