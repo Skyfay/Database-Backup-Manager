@@ -23,7 +23,7 @@ This document outlines the roadmap for refactoring database adapters to support 
     - Register a new `mariadb` adapter in `src/lib/adapters/index.ts`.
     - Update `definitions.ts` to have `MySQLSchema` and `MariaDBSchema` (can share most fields but might differ later).
     - Ensure UI shows them as separate entries.
-- [ ] **Step 3: Implement MySQL Dialects**
+- [x] **Step 3: Implement MySQL Dialects**
     - Create `src/lib/adapters/database/mysql/dialects/mysql-base.ts`.
     - Implement `MySQL80Dialect` (Standard) and `MySQL57Dialect` (Legacy).
     - Handle flags like `--default-character-set=utf8mb4` vs `utf8`.
