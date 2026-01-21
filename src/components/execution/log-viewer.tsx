@@ -26,6 +26,7 @@ interface LogViewerProps {
   logs: (LogEntry | string)[];
   className?: string;
   autoScroll?: boolean;
+  status?: string; // Overall job status
 }
 
 interface LogGroup {
@@ -35,7 +36,7 @@ interface LogGroup {
     startTime?: string;
 }
 
-export function LogViewer({ logs, className, autoScroll = true }: LogViewerProps) {
+export function LogViewer({ logs, className, autoScroll = true, status }: LogViewerProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [shouldAutoScroll, setShouldAutoScroll] = useState(autoScroll);
   const [activeStages, setActiveStages] = useState<string[]>([]);
@@ -66,7 +67,9 @@ export function LogViewer({ logs, className, autoScroll = true }: LogViewerProps
       let currentGroup: LogGroup | null = null;
 
       parsedLogs.forEach(log => {
-          const stageName = log.stage || "General";
+          // Normalize stage name by removing parenthesis content (e.g. "Dumping (50%)" -> "Dumping")
+          const rawStage = log.stage || "General";
+          const stageName = rawStage.replace(/\s*\(.*\).*$/, "").trim();
 
           if (!currentGroup || currentGroup.stage !== stageName) {
               // Finish previous group status check
@@ -90,12 +93,18 @@ export function LogViewer({ logs, className, autoScroll = true }: LogViewerProps
           if (log.level === 'error') currentGroup.status = 'failed';
       });
 
-      return groups;
-  }, [parsedLogs]);
+      // Cleanup final group status if job is done
+      if (currentGroup) {
+           const hasError = currentGroup.logs.some(l => l.level === 'error');
+           if (hasError) {
+               currentGroup.status = 'failed';
+           } else if (status && status !== 'Running') {
+               currentGroup.status = 'success';
+           }
+      }
 
-  // Auto-expand latest running stage only if user hasn't manually collapsed/expanded things
-  useEffect(() => {
-     if (userInteracted) return;
+      return groups;
+  }, [parsedLogs, status]);
 
      const lastGroup = groupedLogs[groupedLogs.length - 1];
      if (lastGroup) {
@@ -149,7 +158,9 @@ export function LogViewer({ logs, className, autoScroll = true }: LogViewerProps
             className="space-y-4"
         >
             {groupedLogs.map((group, groupIdx) => {
-                const isRunning = group.status === 'running' && groupIdx === groupedLogs.length - 1; // Only last one is truly running
+                const isRunning = group.status === 'running' &&
+                                  groupIdx === groupedLogs.length - 1 &&
+                                  (!status || status === 'Running');
 
                 return (
                     <AccordionItem

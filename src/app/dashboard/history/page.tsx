@@ -168,7 +168,11 @@ function HistoryContent() {
                     )}
 
                     <div className="flex-1 min-h-0 bg-black/20">
-                         <LogViewer logs={selectedLog ? parseLogs(selectedLog.logs) : []} className="h-full border-0 bg-transparent" />
+                         <LogViewer
+                            logs={selectedLog ? parseLogs(selectedLog.logs) : []}
+                            status={selectedLog?.status}
+                            className="h-full border-0 bg-transparent"
+                         />
                     </div>
                 </DialogContent>
             </Dialog>
