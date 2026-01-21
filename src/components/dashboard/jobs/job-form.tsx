@@ -278,14 +278,18 @@ export function JobForm({ sources, destinations, notifications, encryptionProfil
                             )} />
 
                              <FormField control={form.control} name="enabled" render={({ field }) => (
-                                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-none h-[88px]">
-                                    <div className="space-y-0.5">
-                                        <FormLabel>Active Status</FormLabel>
-                                        <FormDescription>Enable automatic execution</FormDescription>
+                                <FormItem>
+                                    <FormLabel>Active Status</FormLabel>
+                                    <div className="flex h-10 items-center justify-between rounded-md border border-input bg-transparent px-3 py-2">
+                                        <span className="text-sm text-muted-foreground">
+                                            {field.value ? "Enabled" : "Disabled"}
+                                        </span>
+                                        <FormControl>
+                                            <Switch checked={field.value} onCheckedChange={field.onChange} />
+                                        </FormControl>
                                     </div>
-                                    <FormControl>
-                                        <Switch checked={field.value} onCheckedChange={field.onChange} />
-                                    </FormControl>
+                                    <FormDescription>Enable automatic execution</FormDescription>
+                                    <FormMessage />
                                 </FormItem>
                             )} />
                         </div>
