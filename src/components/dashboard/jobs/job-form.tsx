@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -9,9 +10,23 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { Lock, History, Calculator } from "lucide-react";
+import { Lock, History, Calculator, Check, ChevronsUpDown } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
 
 export interface JobData {
     id: string;
@@ -70,6 +85,9 @@ interface JobFormProps {
 }
 
 export function JobForm({ sources, destinations, notifications, encryptionProfiles, initialData, onSuccess }: JobFormProps) {
+    const [sourceOpen, setSourceOpen] = useState(false);
+    const [destOpen, setDestOpen] = useState(false);
+    const [notifyOpen, setNotifyOpen] = useState(false);
 
     const defaultRetention = initialData?.retention ? JSON.parse(initialData.retention) : { mode: "NONE", simple: { keepCount: 10 }, smart: { daily: 7, weekly: 4, monthly: 12, yearly: 2 } };
     // Ensure structure even if JSON is partial
@@ -120,233 +138,403 @@ export function JobForm({ sources, destinations, notifications, encryptionProfil
 
     return (
         <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                 <FormField control={form.control} name="name" render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Job Name</FormLabel>
-                        <FormControl><Input placeholder="Daily Production Backup" {...field} /></FormControl>
-                        <FormMessage />
-                    </FormItem>
-                )} />
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
 
-                <div className="grid grid-cols-2 gap-4">
-                    <FormField control={form.control} name="sourceId" render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Source</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl><SelectTrigger><SelectValue placeholder="Select Source" /></SelectTrigger></FormControl>
-                                <SelectContent>
-                                    {sources.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
-                            <FormMessage />
-                        </FormItem>
-                    )} />
-
-                    <FormField control={form.control} name="destinationId" render={({ field }) => (
-                         <FormItem>
-                            <FormLabel>Destination</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl><SelectTrigger><SelectValue placeholder="Select Destination" /></SelectTrigger></FormControl>
-                                <SelectContent>
-                                    {destinations.map((d) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
+                {/* Header: Name and Enabled */}
+                <div className="flex flex-col md:flex-row gap-4">
+                    <FormField control={form.control} name="name" render={({ field }) => (
+                        <FormItem className="flex-1">
+                            <FormLabel>Job Name</FormLabel>
+                            <FormControl><Input placeholder="Daily Production Backup" {...field} /></FormControl>
                             <FormMessage />
                         </FormItem>
                     )} />
                 </div>
 
-                <FormField control={form.control} name="encryptionProfileId" render={({ field }) => (
-                    <FormItem>
-                        <FormLabel className="flex items-center gap-2">
-                            <Lock className="h-3 w-3" />
-                            Encryption (Optional)
-                        </FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value || "no-encryption"}>
-                            <FormControl><SelectTrigger><SelectValue placeholder="No Encryption" /></SelectTrigger></FormControl>
-                            <SelectContent>
-                                <SelectItem value="no-encryption">None (Unencrypted)</SelectItem>
-                                {encryptionProfiles.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
-                            </SelectContent>
-                        </Select>
-                        <FormDescription>
-                            Select a key to encrypt the backup. Backups can only be restored if this key exists.
-                        </FormDescription>
-                        <FormMessage />
-                    </FormItem>
-                )} />
+                <Tabs defaultValue="config" className="w-full">
+                    <TabsList className="grid w-full grid-cols-4">
+                        <TabsTrigger value="config">General</TabsTrigger>
+                        <TabsTrigger value="retention">Retention</TabsTrigger>
+                        <TabsTrigger value="security">Security</TabsTrigger>
+                        <TabsTrigger value="notifications">Notify</TabsTrigger>
+                    </TabsList>
 
-                <FormField control={form.control} name="compression" render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Compression</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select compression" />
-                                </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                                <SelectItem value="NONE">None (Fastest)</SelectItem>
-                                <SelectItem value="GZIP">Gzip (Standard)</SelectItem>
-                                <SelectItem value="BROTLI">Brotli (Best Compression)</SelectItem>
-                            </SelectContent>
-                        </Select>
-                        <FormDescription>Compress the backup file to save storage space.</FormDescription>
-                        <FormMessage />
-                    </FormItem>
-                )} />
+                    {/* TAB 1: GENERAL (Source, Dest, Schedule) */}
+                    <TabsContent value="config" className="space-y-4 pt-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <FormField control={form.control} name="sourceId" render={({ field }) => (
+                                <FormItem className="flex flex-col">
+                                    <FormLabel>Source</FormLabel>
+                                    <Popover open={sourceOpen} onOpenChange={setSourceOpen}>
+                                        <PopoverTrigger asChild>
+                                            <FormControl>
+                                                <Button
+                                                    variant="outline"
+                                                    role="combobox"
+                                                    aria-expanded={sourceOpen}
+                                                    className={cn("w-full justify-between", !field.value && "text-muted-foreground")}
+                                                >
+                                                    {field.value
+                                                        ? sources.find((s) => s.id === field.value)?.name
+                                                        : "Select Source"}
+                                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                </Button>
+                                            </FormControl>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                                            <Command>
+                                                <CommandInput placeholder="Search source..." />
+                                                <CommandList>
+                                                    <CommandEmpty>No source found.</CommandEmpty>
+                                                    <CommandGroup>
+                                                        {sources.map((s) => (
+                                                            <CommandItem
+                                                                value={s.name}
+                                                                key={s.id}
+                                                                onSelect={() => {
+                                                                    form.setValue("sourceId", s.id);
+                                                                    setSourceOpen(false);
+                                                                }}
+                                                            >
+                                                                <Check
+                                                                    className={cn(
+                                                                        "mr-2 h-4 w-4",
+                                                                        field.value === s.id ? "opacity-100" : "opacity-0"
+                                                                    )}
+                                                                />
+                                                                {s.name}
+                                                            </CommandItem>
+                                                        ))}
+                                                    </CommandGroup>
+                                                </CommandList>
+                                            </Command>
+                                        </PopoverContent>
+                                    </Popover>
+                                    <FormMessage />
+                                </FormItem>
+                            )} />
 
-                <FormField control={form.control} name="schedule" render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Schedule (Cron)</FormLabel>
-                        <FormControl><Input placeholder="0 0 * * *" {...field} /></FormControl>
-                        <FormDescription>Standard cron expression (e.g. 0 0 * * * for daily at midnight)</FormDescription>
-                        <FormMessage />
-                    </FormItem>
-                )} />
-
-                 <FormField control={form.control} name="notificationIds" render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Notifications (Optional)</FormLabel>
-                         <Select onValueChange={(val) => {
-                             const current = field.value || [];
-                             if(!current.includes(val)) field.onChange([...current, val]);
-                         }} >
-                            <FormControl><SelectTrigger><SelectValue placeholder="Add Notification Channel" /></SelectTrigger></FormControl>
-                             <SelectContent>
-                                {notifications.map((n) => <SelectItem key={n.id} value={n.id}>{n.name}</SelectItem>)}
-                            </SelectContent>
-                        </Select>
-                        {field.value && field.value.length > 0 && (
-                            <div className="flex gap-2 flex-wrap mt-2">
-                                {field.value.map((id: string) => {
-                                    const n = notifications.find((x) => x.id === id);
-                                    return (
-                                        <div key={id} className="bg-secondary text-secondary-foreground px-2 py-1 rounded text-xs flex items-center">
-                                            {n?.name}
-                                            <button type="button" onClick={() => field.onChange((field.value || []).filter((x: string) => x !== id))} className="ml-1 hover:text-destructive">×</button>
-                                        </div>
-                                    )
-                                })}
-                            </div>
-                        )}
-                        <FormMessage />
-                    </FormItem>
-                )} />
-
-                <Card>
-                    <CardHeader className="pb-3">
-                        <CardTitle className="text-base flex items-center gap-2">
-                            <History className="h-4 w-4" />
-                            Retention Policy
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <FormField
-                            control={form.control}
-                            name="retention.mode"
-                            render={({ field }) => (
-                                <Tabs value={field.value} onValueChange={field.onChange} className="w-full">
-                                    <TabsList className="grid w-full grid-cols-3">
-                                        <TabsTrigger value="NONE">Keep All</TabsTrigger>
-                                        <TabsTrigger value="SIMPLE">Simple Limit</TabsTrigger>
-                                        <TabsTrigger value="SMART">Smart Rotation</TabsTrigger>
-                                    </TabsList>
-
-                                    <TabsContent value="NONE" className="pt-4">
-                                        <p className="text-sm text-muted-foreground">
-                                            All backups will be kept indefinitely.
-                                            <br/>Warning: This may fill up your storage quickly.
-                                        </p>
-                                    </TabsContent>
-
-                                    <TabsContent value="SIMPLE" className="pt-4">
-                                        <FormField
-                                            control={form.control}
-                                            name="retention.simple.keepCount"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Max Backups to Keep</FormLabel>
-                                                    <FormControl>
-                                                        <Input type="number" min={1} {...field} onChange={e => field.onChange(parseInt(e.target.value))} />
-                                                    </FormControl>
-                                                    <FormDescription>
-                                                        Only the newest {field.value} backups will be kept. Older ones are deleted.
-                                                    </FormDescription>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                    </TabsContent>
-
-                                    <TabsContent value="SMART" className="pt-4 space-y-4">
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <FormField
-                                                control={form.control}
-                                                name="retention.smart.daily"
-                                                render={({ field }) => (
-                                                    <FormItem>
-                                                        <FormLabel>Daily Backups</FormLabel>
-                                                        <FormControl><Input type="number" min={0} {...field} onChange={e => field.onChange(parseInt(e.target.value))} /></FormControl>
-                                                        <FormDescription>Keep for X days</FormDescription>
-                                                    </FormItem>
-                                                )}
-                                            />
-                                            <FormField
-                                                control={form.control}
-                                                name="retention.smart.weekly"
-                                                render={({ field }) => (
-                                                    <FormItem>
-                                                        <FormLabel>Weekly Backups</FormLabel>
-                                                        <FormControl><Input type="number" min={0} {...field} onChange={e => field.onChange(parseInt(e.target.value))} /></FormControl>
-                                                        <FormDescription>Keep for X weeks</FormDescription>
-                                                    </FormItem>
-                                                )}
-                                            />
-                                            <FormField
-                                                control={form.control}
-                                                name="retention.smart.monthly"
-                                                render={({ field }) => (
-                                                    <FormItem>
-                                                        <FormLabel>Monthly Backups</FormLabel>
-                                                        <FormControl><Input type="number" min={0} {...field} onChange={e => field.onChange(parseInt(e.target.value))} /></FormControl>
-                                                        <FormDescription>Keep for X months</FormDescription>
-                                                    </FormItem>
-                                                )}
-                                            />
-                                            <FormField
-                                                control={form.control}
-                                                name="retention.smart.yearly"
-                                                render={({ field }) => (
-                                                    <FormItem>
-                                                        <FormLabel>Yearly Backups</FormLabel>
-                                                        <FormControl><Input type="number" min={0} {...field} onChange={e => field.onChange(parseInt(e.target.value))} /></FormControl>
-                                                        <FormDescription>Keep for X years</FormDescription>
-                                                    </FormItem>
-                                                )}
-                                            />
-                                        </div>
-                                    </TabsContent>
-                                </Tabs>
-                            )}
-                        />
-                    </CardContent>
-                </Card>
-
-                <FormField control={form.control} name="enabled" render={({ field }) => (
-                     <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                        <div className="space-y-0.5">
-                            <FormLabel>Enabled</FormLabel>
-                            <FormDescription>Pause automated execution without deleting</FormDescription>
+                            <FormField control={form.control} name="destinationId" render={({ field }) => (
+                                <FormItem className="flex flex-col">
+                                    <FormLabel>Destination</FormLabel>
+                                    <Popover open={destOpen} onOpenChange={setDestOpen}>
+                                        <PopoverTrigger asChild>
+                                            <FormControl>
+                                                <Button
+                                                    variant="outline"
+                                                    role="combobox"
+                                                    aria-expanded={destOpen}
+                                                    className={cn("w-full justify-between", !field.value && "text-muted-foreground")}
+                                                >
+                                                    {field.value
+                                                        ? destinations.find((d) => d.id === field.value)?.name
+                                                        : "Select Destination"}
+                                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                </Button>
+                                            </FormControl>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                                            <Command>
+                                                <CommandInput placeholder="Search destination..." />
+                                                <CommandList>
+                                                    <CommandEmpty>No destination found.</CommandEmpty>
+                                                    <CommandGroup>
+                                                        {destinations.map((d) => (
+                                                            <CommandItem
+                                                                value={d.name}
+                                                                key={d.id}
+                                                                onSelect={() => {
+                                                                    form.setValue("destinationId", d.id);
+                                                                    setDestOpen(false);
+                                                                }}
+                                                            >
+                                                                <Check
+                                                                    className={cn(
+                                                                        "mr-2 h-4 w-4",
+                                                                        field.value === d.id ? "opacity-100" : "opacity-0"
+                                                                    )}
+                                                                />
+                                                                {d.name}
+                                                            </CommandItem>
+                                                        ))}
+                                                    </CommandGroup>
+                                                </CommandList>
+                                            </Command>
+                                        </PopoverContent>
+                                    </Popover>
+                                    <FormMessage />
+                                </FormItem>
+                            )} />
                         </div>
-                        <FormControl>
-                            <Switch checked={field.value} onCheckedChange={field.onChange} />
-                        </FormControl>
-                    </FormItem>
-                )} />
 
-                <Button type="submit" className="w-full">Save Job</Button>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                             <FormField control={form.control} name="schedule" render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Schedule (Cron)</FormLabel>
+                                    <FormControl><Input placeholder="0 0 * * *" {...field} /></FormControl>
+                                    <FormDescription>Min Hour Day Month Weekday</FormDescription>
+                                    <FormMessage />
+                                </FormItem>
+                            )} />
+
+                             <FormField control={form.control} name="enabled" render={({ field }) => (
+                                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-none h-[88px]">
+                                    <div className="space-y-0.5">
+                                        <FormLabel>Active Status</FormLabel>
+                                        <FormDescription>Enable automatic execution</FormDescription>
+                                    </div>
+                                    <FormControl>
+                                        <Switch checked={field.value} onCheckedChange={field.onChange} />
+                                    </FormControl>
+                                </FormItem>
+                            )} />
+                        </div>
+                    </TabsContent>
+
+                    {/* TAB 2: RETENTION */}
+                    <TabsContent value="retention" className="pt-4">
+                         <Card className="border-border">
+                            <CardHeader className="pb-3">
+                                <CardTitle className="text-base flex items-center gap-2">
+                                    <History className="h-4 w-4" />
+                                    Retention Strategy
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <FormField
+                                    control={form.control}
+                                    name="retention.mode"
+                                    render={({ field }) => (
+                                        <Tabs value={field.value} onValueChange={field.onChange} className="w-full">
+                                            <TabsList className="grid w-full grid-cols-3">
+                                                <TabsTrigger value="NONE">Keep All</TabsTrigger>
+                                                <TabsTrigger value="SIMPLE">Simple Limit</TabsTrigger>
+                                                <TabsTrigger value="SMART">Smart Rotation</TabsTrigger>
+                                            </TabsList>
+
+                                            <TabsContent value="NONE" className="pt-4">
+                                                <div className="bg-muted p-4 rounded-md text-sm text-muted-foreground">
+                                                    All backups will be kept indefinitely.
+                                                    <br/><strong>Warning:</strong> This may fill up your storage quickly if you run backups frequently.
+                                                </div>
+                                            </TabsContent>
+
+                                            <TabsContent value="SIMPLE" className="pt-4">
+                                                <FormField
+                                                    control={form.control}
+                                                    name="retention.simple.keepCount"
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel>Max Backups to Keep</FormLabel>
+                                                            <FormControl>
+                                                                <div className="flex items-center gap-2">
+                                                                     <Input type="number" min={1} {...field} onChange={e => field.onChange(parseInt(e.target.value))} className="w-24" />
+                                                                     <span className="text-sm text-muted-foreground">newest backups</span>
+                                                                </div>
+                                                            </FormControl>
+                                                            <FormDescription>
+                                                                Older backups exceeding this limit are deleted.
+                                                            </FormDescription>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                            </TabsContent>
+
+                                            <TabsContent value="SMART" className="pt-4 space-y-4">
+                                                <p className="text-sm text-muted-foreground mb-4">
+                                                    Grandfather-Father-Son rotation. Defines how many backups to keep for each time period.
+                                                </p>
+                                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                                    <FormField
+                                                        control={form.control}
+                                                        name="retention.smart.daily"
+                                                        render={({ field }) => (
+                                                            <FormItem>
+                                                                <FormLabel>Daily</FormLabel>
+                                                                <FormControl><Input type="number" min={0} {...field} onChange={e => field.onChange(parseInt(e.target.value))} /></FormControl>
+                                                                <FormDescription>Days</FormDescription>
+                                                            </FormItem>
+                                                        )}
+                                                    />
+                                                    <FormField
+                                                        control={form.control}
+                                                        name="retention.smart.weekly"
+                                                        render={({ field }) => (
+                                                            <FormItem>
+                                                                <FormLabel>Weekly</FormLabel>
+                                                                <FormControl><Input type="number" min={0} {...field} onChange={e => field.onChange(parseInt(e.target.value))} /></FormControl>
+                                                                <FormDescription>Weeks</FormDescription>
+                                                            </FormItem>
+                                                        )}
+                                                    />
+                                                    <FormField
+                                                        control={form.control}
+                                                        name="retention.smart.monthly"
+                                                        render={({ field }) => (
+                                                            <FormItem>
+                                                                <FormLabel>Monthly</FormLabel>
+                                                                <FormControl><Input type="number" min={0} {...field} onChange={e => field.onChange(parseInt(e.target.value))} /></FormControl>
+                                                                <FormDescription>Months</FormDescription>
+                                                            </FormItem>
+                                                        )}
+                                                    />
+                                                    <FormField
+                                                        control={form.control}
+                                                        name="retention.smart.yearly"
+                                                        render={({ field }) => (
+                                                            <FormItem>
+                                                                <FormLabel>Yearly</FormLabel>
+                                                                <FormControl><Input type="number" min={0} {...field} onChange={e => field.onChange(parseInt(e.target.value))} /></FormControl>
+                                                                <FormDescription>Years</FormDescription>
+                                                            </FormItem>
+                                                        )}
+                                                    />
+                                                </div>
+                                            </TabsContent>
+                                        </Tabs>
+                                    )}
+                                />
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+
+                    {/* TAB 3: SECURITY & OPTIMIZATION */}
+                    <TabsContent value="security" className="space-y-4 pt-4">
+                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <FormField control={form.control} name="encryptionProfileId" render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel className="flex items-center gap-2">
+                                        <Lock className="h-3 w-3" />
+                                        Encryption
+                                    </FormLabel>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value || "no-encryption"}>
+                                        <FormControl><SelectTrigger><SelectValue placeholder="No Encryption" /></SelectTrigger></FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="no-encryption">None (Unencrypted)</SelectItem>
+                                            {encryptionProfiles.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
+                                    <FormDescription>
+                                        Requires key to restore.
+                                    </FormDescription>
+                                    <FormMessage />
+                                </FormItem>
+                            )} />
+
+                            <FormField control={form.control} name="compression" render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Compression</FormLabel>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                        <FormControl>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select compression" />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="NONE">None (Fastest)</SelectItem>
+                                            <SelectItem value="GZIP">Gzip (Standard)</SelectItem>
+                                            <SelectItem value="BROTLI">Brotli (Best Compression)</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <FormDescription>Trade CPU for storage.</FormDescription>
+                                    <FormMessage />
+                                </FormItem>
+                            )} />
+                        </div>
+                    </TabsContent>
+
+                    {/* TAB 4: NOTIFICATIONS */}
+                    <TabsContent value="notifications" className="pt-4">
+                        <FormField control={form.control} name="notificationIds" render={({ field }) => (
+                            <FormItem className="flex flex-col">
+                                <FormLabel>Active Notification Channels</FormLabel>
+                                <Popover open={notifyOpen} onOpenChange={setNotifyOpen}>
+                                    <PopoverTrigger asChild>
+                                        <FormControl>
+                                            <Button
+                                                variant="outline"
+                                                role="combobox"
+                                                aria-expanded={notifyOpen}
+                                                className="w-full justify-between"
+                                            >
+                                                Add Notification Channel
+                                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                            </Button>
+                                        </FormControl>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                                        <Command>
+                                            <CommandInput placeholder="Search notifications..." />
+                                            <CommandList>
+                                                <CommandEmpty>No channel found.</CommandEmpty>
+                                                <CommandGroup>
+                                                    {notifications.map((n) => (
+                                                        <CommandItem
+                                                            value={n.name}
+                                                            key={n.id}
+                                                            onSelect={() => {
+                                                                const current = field.value || [];
+                                                                if (!current.includes(n.id)) {
+                                                                    field.onChange([...current, n.id]);
+                                                                } else {
+                                                                    // Toggle off if already selected?
+                                                                    // Usually multi-select comboboxes allow toggling
+                                                                    field.onChange(current.filter(id => id !== n.id));
+                                                                }
+                                                                // setNotifyOpen(false); // Keep open for multi-select convenience? OR close it.
+                                                                // Standard shadcn behavior is often to close, but for multi-select staying open is nicer.
+                                                                // Let's close it to match other inputs behavior for now, or keep it open?
+                                                                // User might want to add multiple at once.
+                                                                // But I will keep it simple: Select -> Close.
+                                                                // Actually, toggling is better UX.
+                                                                // Let's allow toggle and keep OPEN ? No, standard is close.
+                                                                setNotifyOpen(false);
+                                                            }}
+                                                        >
+                                                            <Check
+                                                                className={cn(
+                                                                    "mr-2 h-4 w-4",
+                                                                    (field.value || []).includes(n.id) ? "opacity-100" : "opacity-0"
+                                                                )}
+                                                            />
+                                                            {n.name}
+                                                        </CommandItem>
+                                                    ))}
+                                                </CommandGroup>
+                                            </CommandList>
+                                        </Command>
+                                    </PopoverContent>
+                                </Popover>
+                                <div className="min-h-[100px] border rounded-md mt-2 p-2">
+                                    {field.value && field.value.length > 0 ? (
+                                        <div className="flex gap-2 flex-wrap">
+                                            {field.value.map((id: string) => {
+                                                const n = notifications.find((x) => x.id === id);
+                                                return (
+                                                    <div key={id} className="bg-secondary text-secondary-foreground px-3 py-1 rounded-full text-sm flex items-center shadow-sm">
+                                                        {n?.name}
+                                                        <button type="button" onClick={() => field.onChange((field.value || []).filter((x: string) => x !== id))} className="ml-2 hover:text-destructive font-bold">×</button>
+                                                    </div>
+                                                )
+                                            })}
+                                        </div>
+                                    ) : (
+                                        <p className="text-sm text-muted-foreground p-2 italic">No notifications configured.</p>
+                                    )}
+                                </div>
+                                <FormDescription>
+                                    Selected channels will receive alerts on backup success/failure.
+                                </FormDescription>
+                                <FormMessage />
+                            </FormItem>
+                        )} />
+                    </TabsContent>
+                </Tabs>
+
+                <div className="pt-4 border-t">
+                    <Button type="submit" className="w-full">Save Job Configuration</Button>
+                </div>
             </form>
         </Form>
     )

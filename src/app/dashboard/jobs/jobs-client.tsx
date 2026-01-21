@@ -284,9 +284,9 @@ export function JobsClient({ canManage, canExecute }: JobsClientProps) {
 
 
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent>
+                <DialogContent className="max-w-[700px]">
                     <DialogHeader>
-                        <DialogTitle>{editingJob ? "Edit Job" : "Create New Job"}</DialogTitle>
+                        <DialogTitle>{editingJob ? "Edit Backup Job" : "Create New Backup Job"}</DialogTitle>
                     </DialogHeader>
                     {isDialogOpen && (
                         <JobForm
