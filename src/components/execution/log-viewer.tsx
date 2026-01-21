@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useEffect, useState } from "react";
+import React, { useRef, useEffect, useState, useMemo } from "react";
 import { format } from "date-fns";
 import {
   CheckCircle2,
@@ -10,28 +10,108 @@ import {
   ChevronRight,
   ChevronDown,
   Clock,
-  ArrowDown
+  ArrowDown,
+  Loader2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LogEntry } from "@/lib/core/logs";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion"
 
 interface LogViewerProps {
-  logs: (LogEntry | string)[]; // Supports legacy strings and new objects
+  logs: (LogEntry | string)[];
   className?: string;
   autoScroll?: boolean;
+}
+
+interface LogGroup {
+    stage: string;
+    logs: LogEntry[];
+    status: 'pending' | 'running' | 'success' | 'failed';
+    startTime?: string;
 }
 
 export function LogViewer({ logs, className, autoScroll = true }: LogViewerProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [shouldAutoScroll, setShouldAutoScroll] = useState(autoScroll);
-  const [isAtBottom, setIsAtBottom] = useState(true);
+  const [activeStages, setActiveStages] = useState<string[]>([]);
+  const [userInteracted, setUserInteracted] = useState(false);
+
+  // Parse Logs Helper
+  const parsedLogs = useMemo(() => {
+     return logs.map(rawLog => {
+        if (typeof rawLog === "object") return rawLog;
+
+        // Legacy string parsing
+        try { return JSON.parse(rawLog) as LogEntry; } catch {}
+
+        const parts = rawLog.split(": ");
+        return {
+            timestamp: parts[0]?.length > 10 ? parts[0] : new Date().toISOString(),
+            level: "info",
+            type: "general",
+            message: parts.slice(1).join(": ") || rawLog,
+            stage: "General" // Fallback stage
+        } as LogEntry;
+     });
+  }, [logs]);
+
+  // Grouping Logic
+  const groupedLogs = useMemo(() => {
+      const groups: LogGroup[] = [];
+      let currentGroup: LogGroup | null = null;
+
+      parsedLogs.forEach(log => {
+          const stageName = log.stage || "General";
+
+          if (!currentGroup || currentGroup.stage !== stageName) {
+              // Finish previous group status check
+              if (currentGroup) {
+                  const hasError = currentGroup.logs.some(l => l.level === 'error');
+                  if (hasError) currentGroup.status = 'failed';
+                  else currentGroup.status = 'success'; // Assume success if moved to next stage without error
+              }
+
+              // Start new group
+              currentGroup = {
+                  stage: stageName,
+                  logs: [],
+                  status: 'running', // Initially running
+                  startTime: log.timestamp
+              };
+              groups.push(currentGroup);
+          }
+
+          currentGroup.logs.push(log);
+          if (log.level === 'error') currentGroup.status = 'failed';
+      });
+
+      return groups;
+  }, [parsedLogs]);
+
+  // Auto-expand latest running stage only if user hasn't manually collapsed/expanded things
+  useEffect(() => {
+     if (userInteracted) return;
+
+     const lastGroup = groupedLogs[groupedLogs.length - 1];
+     if (lastGroup) {
+         setActiveStages(prev => {
+             if (!prev.includes(lastGroup.stage)) {
+                 return [...prev, lastGroup.stage];
+             }
+             return prev;
+         });
+     }
+  }, [groupedLogs.length, userInteracted]);
 
   // Scroll to bottom on new logs if sticky
   useEffect(() => {
     if (shouldAutoScroll && scrollRef.current) {
         const div = scrollRef.current;
-        // Check if smooth scrolling causes issues with rapid updates (can lag behind)
-        // For logs, instant jump is often better or very fast smooth
         div.scrollTo({ top: div.scrollHeight, behavior: "smooth" });
     }
   }, [logs, shouldAutoScroll]);
@@ -39,18 +119,10 @@ export function LogViewer({ logs, className, autoScroll = true }: LogViewerProps
   const handleScroll = () => {
       if (!scrollRef.current) return;
       const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
-      // Tolerance of 50px
       const atBottom = scrollHeight - scrollTop - clientHeight < 50;
-      setIsAtBottom(atBottom);
 
-      // If user scrolls up, disable auto-scroll
-      if (!atBottom && shouldAutoScroll) {
-          setShouldAutoScroll(false);
-      }
-      // If user hits bottom clearly, re-enable auto-scroll
-      if (atBottom && !shouldAutoScroll) {
-          setShouldAutoScroll(true);
-      }
+      if (!atBottom && shouldAutoScroll) setShouldAutoScroll(false);
+      if (atBottom && !shouldAutoScroll) setShouldAutoScroll(true);
   };
 
   const scrollToBottom = () => {
@@ -60,36 +132,6 @@ export function LogViewer({ logs, className, autoScroll = true }: LogViewerProps
       }
   };
 
-  const parseLog = (log: LogEntry | string): LogEntry => {
-    if (typeof log === "string") {
-      // Legacy fallback parser: try to parse if it is a JSON string, else treat as text
-      try {
-        const parsed = JSON.parse(log);
-        if (parsed && parsed.timestamp && parsed.level) {
-           return parsed;
-        }
-      } catch {
-        // Not a JSON object, fall through
-      }
-
-      const parts = log.split(": ");
-      const potentialDate = parts[0] || "";
-      const date = (potentialDate.length > 10 && !isNaN(Date.parse(potentialDate)))
-        ? potentialDate
-        : new Date().toISOString();
-
-      const message = parts.length > 1 ? parts.slice(1).join(": ") : log;
-
-      return {
-        timestamp: date,
-        level: "info",
-        type: "general",
-        message: message,
-      };
-    }
-    return log;
-  };
-
   return (
     <div className={cn("rounded-md border bg-zinc-950 text-sm font-mono shadow-sm relative flex flex-col", className)}>
       <div
@@ -97,12 +139,58 @@ export function LogViewer({ logs, className, autoScroll = true }: LogViewerProps
         onScroll={handleScroll}
         className="flex-1 w-full p-4 overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-800 scrollbar-track-transparent"
       >
-        <div className="space-y-4">
-          {logs.map((rawLog, idx) => {
-            const log = parseLog(rawLog);
-            return <LogItem key={`${log.timestamp}-${idx}`} entry={log} />;
-          })}
-        </div>
+        <Accordion
+            type="multiple"
+            value={activeStages}
+            onValueChange={(vals) => {
+                setActiveStages(vals);
+                setUserInteracted(true);
+            }}
+            className="space-y-4"
+        >
+            {groupedLogs.map((group, groupIdx) => {
+                const isRunning = group.status === 'running' && groupIdx === groupedLogs.length - 1; // Only last one is truly running
+
+                return (
+                    <AccordionItem
+                        key={`${group.stage}-${groupIdx}`}
+                        value={group.stage}
+                        className="border border-white/10 rounded-lg bg-zinc-900/30 px-2 data-[state=open]:bg-zinc-900/50 transition-colors"
+                    >
+                        <AccordionTrigger className="hover:no-underline py-3 px-2">
+                             <div className="flex items-center gap-3 w-full">
+                                {group.status === 'failed' ? (
+                                    <AlertCircle className="w-4 h-4 text-red-500" />
+                                ) : isRunning ? (
+                                    <Loader2 className="w-4 h-4 text-emerald-500 animate-spin" />
+                                ) : (
+                                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                                )}
+
+                                <span className={cn(
+                                    "font-semibold",
+                                    group.status === 'failed' ? "text-red-400" :
+                                    isRunning ? "text-emerald-400" : "text-zinc-300"
+                                )}>
+                                    {group.stage}
+                                </span>
+
+                                <span className="ml-auto text-xs text-zinc-500 font-normal mr-4">
+                                    {group.logs.length} logs
+                                </span>
+                             </div>
+                        </AccordionTrigger>
+                        <AccordionContent className="pt-2 pb-4 px-2 border-t border-white/5">
+                             <div className="space-y-1 pl-2 border-l border-white/10 ml-2">
+                                {group.logs.map((log, idx) => (
+                                    <LogItem key={`${log.timestamp}-${idx}`} entry={log} />
+                                ))}
+                             </div>
+                        </AccordionContent>
+                    </AccordionItem>
+                );
+            })}
+        </Accordion>
       </div>
 
       {!shouldAutoScroll && (
@@ -138,48 +226,32 @@ function LogItem({ entry }: { entry: LogEntry }) {
   }[entry.level] || "text-zinc-400";
 
   return (
-    <div className="group relative pl-4">
-      {/* Timeline Line */}
-      <div
-        className={cn(
-          "absolute left-0 top-2 bottom-0 w-px bg-white/10 group-last:bottom-auto group-last:h-4",
-          entry.level === 'error' && "bg-red-500/20",
-          entry.level === 'success' && "bg-emerald-500/20"
-        )}
-      />
-
-      {/* Header Row */}
-      <div className="flex items-start gap-4 py-1">
+    <div className="group relative pl-2 hover:bg-white/5 rounded px-2 transition-colors">
+      <div className="flex items-start gap-3 py-1">
         {/* Timestamp */}
-        <div className="shrink-0 text-xs text-zinc-500 w-[70px] pt-1">
+        <div className="shrink-0 text-xs text-zinc-600 w-[60px] pt-0.5 font-mono">
            {isValidDate(entry.timestamp) ? format(new Date(entry.timestamp), "HH:mm:ss") : "--:--:--"}
         </div>
 
         {/* Icon & Message Container */}
         <div className="flex-1 min-w-0">
           <div
-            className="flex items-center gap-2 cursor-pointer select-none"
+            className="flex items-start gap-2 cursor-pointer select-none"
             onClick={() => hasDetails && setIsOpen(!isOpen)}
           >
-            <div className={cn("shrink-0", levelColor)}>
-               {isCommand ? <Terminal className="w-4 h-4" /> : <LevelIcon className="w-4 h-4" />}
+            <div className={cn("shrink-0 pt-0.5", levelColor)}>
+               {isCommand ? <Terminal className="w-3.5 h-3.5" /> : <LevelIcon className="w-3.5 h-3.5" />}
             </div>
 
-            <div className="flex-1 flex items-center justify-between gap-4">
-                <span className={cn("truncate", entry.level === 'error' ? "text-red-300" : "text-zinc-300")}>
-                    {entry.message}
-                </span>
-
+            <div className="flex-1">
                 <div className="flex items-center gap-2">
-                    {entry.durationMs && (
-                        <span className="text-xs text-zinc-600 flex items-center gap-1">
-                            <Clock className="w-3 h-3" /> {entry.durationMs}ms
-                        </span>
-                    )}
+                    <span className={cn("text-sm break-all", entry.level === 'error' ? "text-red-300" : "text-zinc-300")}>
+                         {entry.message}
+                    </span>
                     {hasDetails && (
-                        <button className="text-zinc-500 hover:text-zinc-300 transition-colors">
-                            {isOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                        </button>
+                         <span className="text-zinc-600">
+                             {isOpen ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                         </span>
                     )}
                 </div>
             </div>
@@ -187,18 +259,11 @@ function LogItem({ entry }: { entry: LogEntry }) {
 
           {/* Details Section */}
           {hasDetails && isOpen && (
-            <div className="mt-2 ml-6 text-xs animate-in slide-in-from-top-1 duration-200">
+            <div className="mt-2 ml-5 text-xs animate-in slide-in-from-top-1 duration-200">
                 {entry.details && (
-                    <div className="bg-zinc-900 rounded border border-white/5 p-3 overflow-x-auto">
+                    <div className="bg-zinc-950 rounded border border-white/10 p-3 overflow-x-auto">
                         <pre className="text-zinc-400 font-mono whitespace-pre-wrap break-all">
                             {entry.details}
-                        </pre>
-                    </div>
-                )}
-                {entry.context && (
-                    <div className="mt-2 bg-zinc-900/50 rounded p-3 border border-white/5">
-                        <pre className="text-zinc-500">
-                            {JSON.stringify(entry.context, null, 2)}
                         </pre>
                     </div>
                 )}

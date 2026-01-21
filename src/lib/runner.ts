@@ -20,7 +20,8 @@ export async function runJob(jobId: string) {
             timestamp: new Date().toISOString(),
             level: "info",
             type: "general",
-            message: "Job queued"
+            message: "Job queued",
+            stage: "Queued"
         };
 
         const execution = await prisma.execution.create({
@@ -78,7 +79,8 @@ export async function performExecution(executionId: string, jobId: string) {
                  timestamp: parts[0]?.length > 10 ? parts[0] : new Date().toISOString(),
                  level: "info",
                  type: "general",
-                 message: parts.slice(1).join(": ") || l
+                 message: parts.slice(1).join(": ") || l,
+                 stage: "Legacy Log"
              };
         }
         return l;
@@ -133,10 +135,11 @@ export async function performExecution(executionId: string, jobId: string) {
             level,
             type,
             message,
+            stage: currentStage, // Uses the closure variable 'currentStage'
             details
         };
 
-        console.log(`[Job ${jobId}] [${level}] ${message}`);
+        console.log(`[Job ${jobId}] [${currentStage}] [${level}] ${message}`);
         logs.push(entry);
 
         flushLogs(executionId);

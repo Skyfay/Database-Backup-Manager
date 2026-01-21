@@ -135,7 +135,7 @@ function HistoryContent() {
             </Card>
 
             <Dialog open={!!selectedLog} onOpenChange={(open) => { if(!open) setSelectedLog(null); }}>
-                <DialogContent className="max-w-[80vw] w-full max-h-[85vh] h-full flex flex-col p-0 gap-0 overflow-hidden bg-zinc-950 border-zinc-800">
+                <DialogContent className="max-w-[95vw] w-full max-h-[90vh] h-full flex flex-col p-0 gap-0 overflow-hidden bg-zinc-950 border-zinc-800">
                     <DialogHeader className="p-6 pb-4 border-b border-white/10 shrink-0">
                         <DialogTitle className="flex items-center gap-3">
                              {selectedLog?.status === "Running" && <Loader2 className="h-4 w-4 animate-spin text-emerald-500" />}
