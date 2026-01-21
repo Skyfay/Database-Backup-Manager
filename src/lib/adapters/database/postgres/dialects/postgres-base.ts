@@ -73,7 +73,8 @@ export class PostgresBaseDialect implements DatabaseDialect {
         const args: string[] = [
             '-h', config.host,
             '-p', String(config.port),
-            '-U', config.user
+            '-U', config.user,
+            '-w' // Never prompt for password
         ];
 
         if (targetDatabase) {

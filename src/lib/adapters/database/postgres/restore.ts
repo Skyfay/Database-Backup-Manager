@@ -1,5 +1,5 @@
-import { BackupResult } from "@/lib/core/interfaces";
 import { LogLevel, LogType } from "@/lib/core/logs";
+import { BackupResult } from "@/lib/core/interfaces";
 import { execFileAsync } from "./connection";
 import { getDialect } from "./dialects";
 import { spawn } from "child_process";
@@ -78,9 +78,21 @@ export async function restore(config: any, sourcePath: string, onLog?: (msg: str
         };
 
         const env = { ...process.env };
-        if (config.password) {
-            env.PGPASSWORD = config.password;
+
+        // Handle Privileged Auth
+        const priv = config.privilegedAuth;
+        const user = (priv && priv.user) ? priv.user : config.user;
+        const password = (priv && priv.password) ? priv.password : config.password;
+
+        if (password) {
+            env.PGPASSWORD = password;
+        } else {
+             log("No password provided for connection.", "warning");
         }
+
+        log(`Prepared connection: ${user}@${config.host}:${config.port} (Privileged: ${!!priv})`, "info");
+        // Create usage config with correct user
+        const usageConfig = { ...config, user };
 
         const dialect = getDialect('postgres', config.detectedVersion);
 
@@ -99,9 +111,9 @@ export async function restore(config: any, sourcePath: string, onLog?: (msg: str
             // Actually, if we map databases, the stream rewriter handles \connect or CREATE DATABASE logic potentially?
             // "postgres" is safe default.
 
-            const args = dialect.getRestoreArgs(config, 'postgres');
+            const args = dialect.getRestoreArgs(usageConfig, 'postgres');
 
-            log(`Executing restore stream to: psql ${args.join(' ')}`);
+            log("Starting restore process", "info", "command", `psql ${args.join(' ')}`);
 
             await new Promise<void>(async (resolve, reject) => {
                 const psql = spawn('psql', args, { env, stdio: ['pipe', 'pipe', 'pipe'] });
@@ -213,33 +225,34 @@ export async function restore(config: any, sourcePath: string, onLog?: (msg: str
 
         } else {
             // Legacy / Direct Restore (Single file, no fancy mapping)
-            /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
-
-            // Refactored to use Dialect
             const targetDb = config.database || 'postgres';
-            const args = dialect.getRestoreArgs(config, targetDb);
+            const args = dialect.getRestoreArgs(usageConfig, targetDb);
 
-            // Note: Standard psql -f does not provide progress hooks easily
-            // because it opens the file internally.
-            // To support progress, we MUST pipe instead of using -f, even for direct restore.
-            // Let's switch to piping for consistency and progress.
+            log("Starting direct restore command", "info", "command", `psql ${args.join(' ')}`);
 
-            log(`Executing direct restore command: psql (piped) ${args.join(' ')}`);
+            const psql = spawn('psql', args, { env, stdio: ['pipe', 'pipe', 'pipe'] });
 
-            await new Promise<void>(async (resolve, reject) => {
-                const psql = spawn('psql', args, { env, stdio: ['pipe', 'pipe', 'pipe'] });
+            // Handle stdout to prevent buffer blocking
+            if (psql.stdout) {
+                 psql.stdout.on('data', () => {});
+            }
 
-                const stream = createReadStream(sourcePath);
-                stream.on('data', (c) => updateProgress(c.length));
-                stream.pipe(psql.stdin);
+            const stream = createReadStream(sourcePath);
+            stream.on('data', (c) => updateProgress(c.length));
 
-                try {
-                    await waitForProcess(psql, 'psql', (d) => log(`stderr: ${d}`));
-                    resolve();
-                } catch (err) {
-                    reject(err);
-                }
+            const streamPromise = pipeline(stream, psql.stdin).catch(err => {
+                 // Ignore EPIPE as psql exit code will tell the story
+                 if (err.code === 'EPIPE') return;
+                 throw err;
             });
+
+            const processPromise = waitForProcess(psql, 'psql', (d) => log(`stderr: ${d}`));
+
+            try {
+                await Promise.all([streamPromise, processPromise]);
+            } catch (err: any) {
+                throw err;
+            }
         }
 
         return {

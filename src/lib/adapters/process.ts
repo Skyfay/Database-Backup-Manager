@@ -11,9 +11,18 @@ export function waitForProcess(
     onLog?: (msg: string) => void
 ): Promise<void> {
     return new Promise((resolve, reject) => {
-        if (onLog && child.stderr) {
+        let stderrOutput = "";
+
+        if (child.stderr) {
             child.stderr.on('data', (data) => {
-                onLog(data.toString());
+                 const str = data.toString();
+                 stderrOutput += str;
+                 // Keep last 1KB to avoid memory issues with huge logs
+                 if (stderrOutput.length > 1024) stderrOutput = stderrOutput.slice(-1024);
+
+                 if (onLog) {
+                    onLog(str);
+                 }
             });
         }
 
@@ -25,7 +34,12 @@ export function waitForProcess(
             if (code === 0) {
                 resolve();
             } else {
-                reject(new Error(`${processName} exited with code ${code}`));
+                // Attach captured stderr to error message for better visibility
+                let errorMsg = `${processName} exited with code ${code}`;
+                if (stderrOutput.trim()) {
+                    errorMsg += `: ${stderrOutput.trim()}`;
+                }
+                reject(new Error(errorMsg));
             }
         });
     });

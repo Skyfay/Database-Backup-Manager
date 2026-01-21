@@ -12,8 +12,7 @@ import { createReadStream, createWriteStream } from "fs";
 import { getProfileMasterKey } from "@/services/encryption-service";
 import { createDecryptionStream } from "@/lib/crypto-stream";
 import { getDecompressionStream, CompressionType } from "@/lib/compression";
-import { randomUUID } from "crypto";
-import { LogEntry, LogLevel } from "@/lib/core/logs";
+import { LogEntry, LogLevel, LogType } from "@/lib/core/logs";
 
 // Ensure adapters are loaded
 registerAdapters();
@@ -163,13 +162,14 @@ export class RestoreService {
             }
         };
 
-        const log = (msg: string, level: LogLevel = 'info') => {
+        const log = (msg: string, level: LogLevel = 'info', type: LogType = 'general', details?: string) => {
             const entry: LogEntry = {
                 timestamp: new Date().toISOString(),
                 message: msg,
                 level: level,
-                type: 'general',
-                stage: currentStage
+                type: type,
+                stage: currentStage,
+                details: details
             };
             internalLogs.push(entry);
             flushLogs(level === 'error'); // Force flush on error
@@ -263,7 +263,7 @@ export class RestoreService {
                                     log(`WARNING: You are restoring a newer version backup (${metadata.engineVersion}) to an older database (${test.version}). This might fail.`, 'warning');
                                 }
                             }
-                        } catch(e) { /* ignore connection tests during restore init */ }
+                        } catch { /* ignore connection tests during restore init */ }
                     }
 
                     await fs.promises.unlink(tempMetaPath).catch(() => {});
@@ -300,8 +300,8 @@ export class RestoreService {
             // --- DECRYPTION EXECUTION ---
             if (isEncrypted && encryptionMeta) {
                 try {
-                    log(`Decrypting backup (Profile: ${encryptionMeta.profileId})...`, 'info');
                     updateProgress(0, "Decrypting");
+                    log(`Decrypting backup (Profile: ${encryptionMeta.profileId})...`, 'info');
 
                     const masterKey = await getProfileMasterKey(encryptionMeta.profileId);
                     const iv = Buffer.from(encryptionMeta.iv, 'hex');
