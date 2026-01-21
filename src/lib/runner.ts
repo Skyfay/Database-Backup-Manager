@@ -176,8 +176,7 @@ export async function performExecution(executionId: string, jobId: string) {
         // 2. Dump
         await stepExecuteDump(ctx);
 
-        updateProgress(50, "Uploading Backup");
-        // 3. Upload
+        // 3. Upload (Stage will be set inside stepUpload to correctly distinguish processing/uploading)
         await stepUpload(ctx);
 
         updateProgress(90, "Applying Retention Policy");

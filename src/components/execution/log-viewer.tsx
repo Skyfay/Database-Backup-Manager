@@ -68,8 +68,9 @@ export function LogViewer({ logs, className, autoScroll = true, status }: LogVie
 
       parsedLogs.forEach(log => {
           // Normalize stage name by removing parenthesis content (e.g. "Dumping (50%)" -> "Dumping")
+          // Also remove trailing ellipsis "..." and trim whitespace
           const rawStage = log.stage || "General";
-          const stageName = rawStage.replace(/\s*\(.*\).*$/, "").trim();
+          const stageName = rawStage.replace(/\s*\(.*\).*$/, "").replace(/\.{3,}$/, "").trim();
 
           if (!currentGroup || currentGroup.stage !== stageName) {
               // Finish previous group status check
@@ -106,11 +107,17 @@ export function LogViewer({ logs, className, autoScroll = true, status }: LogVie
       return groups;
   }, [parsedLogs, status]);
 
+  // Auto-expand latest running stage only if user hasn't manually collapsed/expanded things
+  useEffect(() => {
+     if (userInteracted) return;
+
      const lastGroup = groupedLogs[groupedLogs.length - 1];
      if (lastGroup) {
          setActiveStages(prev => {
+             // If the last group is not in the active list, switch to it ONLY.
+             // This effectively collapses previous success stages.
              if (!prev.includes(lastGroup.stage)) {
-                 return [...prev, lastGroup.stage];
+                 return [lastGroup.stage];
              }
              return prev;
          });

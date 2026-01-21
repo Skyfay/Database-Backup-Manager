@@ -19,6 +19,21 @@ export async function stepUpload(ctx: RunnerContext) {
     const compression = (job as any).compression as CompressionType;
     const destAdapter = ctx.destAdapter;
 
+    // Determine Action Label for UI
+    const actions: string[] = [];
+    if (compression && compression !== 'NONE') actions.push("Compressing");
+    if (job.encryptionProfileId) actions.push("Encrypting");
+    const processingLabel = actions.length > 0 ? actions.join(" & ") : "Processing";
+
+    // Set Initial Stage
+    // If we have transformations, we start with "Encrypting/Compressing".
+    // Otherwise we go straight to "Uploading Backup".
+    if (actions.length > 0) {
+        ctx.updateProgress(0, processingLabel + "...");
+    } else {
+        ctx.updateProgress(0, "Uploading Backup...");
+    }
+
     ctx.log(`Starting Upload to ${job.destination.name} (${job.destination.type})...`);
 
     // --- PIPELINE CONSTRUCTION ---
@@ -27,11 +42,6 @@ export async function stepUpload(ctx: RunnerContext) {
     let currentFile = ctx.tempFile;
     const transformStreams: any[] = [];
 
-    // Determine Action Label for UI
-    const actions: string[] = [];
-    if (compression && compression !== 'NONE') actions.push("Compressing");
-    if (job.encryptionProfileId) actions.push("Encrypting");
-    const processingLabel = actions.length > 0 ? actions.join(" & ") : "Processing";
 
     // 0. Progress Monitor for Local Processing
     const sourceSize = statSync(ctx.tempFile).size;
@@ -84,7 +94,7 @@ export async function stepUpload(ctx: RunnerContext) {
 
     // EXECUTE PIPELINE
     if (transformStreams.length > 0) {
-        ctx.updateProgress(0, `${processingLabel}...`);
+        // Reuse the already set stage "Encrypting..." or "Compressing..."
         ctx.log(`Processing pipeline -> ${path.basename(currentFile)}`);
 
         // Inject Progress Monitor at the start
@@ -143,6 +153,10 @@ export async function stepUpload(ctx: RunnerContext) {
         const metaPath = ctx.tempFile + ".meta.json";
         await fs.writeFile(metaPath, JSON.stringify(metadata, null, 2));
 
+        // Switch stage to Uploading before starting metadata upload
+        // This ensures "Preparing destination" logs for metadata appear in the Upload group
+        ctx.updateProgress(0, "Uploading Backup...");
+
         ctx.log(`Uploading metadata sidecar: ${path.basename(metaPath)}`);
         // We upload to the same path but with .meta.json appended
         // e.g. /backups/Job/file.sql.meta.json
@@ -162,7 +176,7 @@ export async function stepUpload(ctx: RunnerContext) {
     }
 
     // Main Upload
-    ctx.updateProgress(0, "Uploading Backup...");
+    // We update progress but keep the stage name "Uploading Backup..."
     const uploadSuccess = await destAdapter.upload(destConfig, ctx.tempFile, remotePath, (percent) => {
         ctx.updateProgress(percent, `Uploading Backup (${percent}%)`);
     }, (msg, level, type, details) => ctx.log(msg, level, type, details));
