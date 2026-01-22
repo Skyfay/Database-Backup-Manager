@@ -21,6 +21,7 @@ import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { Loader2, Fingerprint } from "lucide-react"
 import { formatTwoFactorCode } from "@/lib/utils"
+import { ShieldCheck, Box, Settings2, Globe } from "lucide-react"
 
 const formSchema = z.object({
   email: z.string().email(),
@@ -30,15 +31,38 @@ const formSchema = z.object({
 
 interface LoginFormProps {
     allowSignUp?: boolean;
+    ssoProviders?: { id: string; name: string; type: string; providerId: string; adapterId: string }[];
 }
 
-export function LoginForm({ allowSignUp = true }: LoginFormProps) {
+export function LoginForm({ allowSignUp = true, ssoProviders = [] }: LoginFormProps) {
   const router = useRouter()
   const [isLogin, setIsLogin] = useState(true)
   const [loading, setLoading] = useState(false)
   const [twoFactorStep, setTwoFactorStep] = useState(false)
   const [totpCode, setTotpCode] = useState("")
   const [isBackupCode, setIsBackupCode] = useState(false)
+
+  const handleSsoLogin = async (providerId: string) => {
+        setLoading(true);
+        try {
+            await signIn.sso({
+                providerId: providerId,
+                 callbackURL: "/dashboard",
+            });
+        } catch (e) {
+            toast.error("SSO Login failed");
+            setLoading(false);
+        }
+  };
+
+  const getSsoIcon = (adapterId: string) => {
+        switch (adapterId) {
+            case "authentik": return ShieldCheck;
+            case "pocket-id": return Box;
+            case "generic": return Settings2;
+            default: return Globe;
+        }
+    };
 
   const handlePasskeyLogin = async () => {
         setLoading(true)
@@ -315,6 +339,27 @@ export function LoginForm({ allowSignUp = true }: LoginFormProps) {
         </Form>
         {isLogin && (
             <div className="mt-4 space-y-4">
+                {(ssoProviders.length > 0 || true) && (
+                    <div className="space-y-2">
+                        {ssoProviders.map((provider) => {
+                             const Icon = getSsoIcon(provider.adapterId);
+                             return (
+                                <Button
+                                    key={provider.id}
+                                    variant="outline"
+                                    type="button"
+                                    className="w-full relative" // relative for potential badge
+                                    onClick={() => handleSsoLogin(provider.providerId)}
+                                    disabled={loading}
+                                >
+                                    <Icon className="mr-2 h-4 w-4 absolute left-4"/>
+                                    Continue with {provider.name}
+                                </Button>
+                             );
+                        })}
+                    </div>
+                )}
+
                 <div className="relative">
                     <div className="absolute inset-0 flex items-center">
                         <span className="w-full border-t" />

@@ -24,6 +24,10 @@ const createProviderSchema = baseInputSchema.extend({
 
 // --- Actions ---
 
+export async function getPublicSsoProviders() {
+    return OidcProviderService.getEnabledProviders();
+}
+
 export async function getSsoProviders() {
     await checkPermission(PERMISSIONS.SETTINGS.READ);
     return OidcProviderService.getProviders();
