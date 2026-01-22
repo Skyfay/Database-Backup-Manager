@@ -3,6 +3,7 @@ import { prismaAdapter } from "better-auth/adapters/prisma";
 import prisma from "./prisma";
 import { twoFactor } from "better-auth/plugins";
 import { passkey } from "@better-auth/passkey";
+import { sso } from "@better-auth/sso";
 import { PERMISSIONS } from "@/lib/permissions";
 
 export const auth = betterAuth({
@@ -39,6 +40,7 @@ export const auth = betterAuth({
     },
     plugins: [
         twoFactor(),
-        passkey()
+        passkey(),
+        sso()
     ]
 });

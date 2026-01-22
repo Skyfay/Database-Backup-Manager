@@ -16,8 +16,8 @@
     "test:ui": "pnpm run test:env:up && sleep 30 && pnpm run test:seed"
   },
   "dependencies": {
-    "@better-auth/cli": "^1.4.12",
-    "@better-auth/passkey": "^1.4.12",
+    "@better-auth/passkey": "^1.4.17",
+    "@better-auth/sso": "^1.4.17",
     "@hookform/resolvers": "^5.2.2",
     "@prisma/client": "5",
     "@radix-ui/react-accordion": "^1.2.12",
@@ -38,7 +38,7 @@
     "@radix-ui/react-tooltip": "^1.2.8",
     "@tanstack/react-table": "^8.21.3",
     "adm-zip": "^0.5.16",
-    "better-auth": "^1.4.12",
+    "better-auth": "^1.4.17",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
@@ -60,6 +60,7 @@
     "zod": "^4.3.5"
   },
   "devDependencies": {
+    "@better-auth/cli": "^1.4.17",
     "@tailwindcss/postcss": "^4",
     "@testing-library/react": "^16.3.1",
     "@types/adm-zip": "^0.5.7",

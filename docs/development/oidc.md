@@ -63,11 +63,11 @@ model SsoProvider {
 ## 4. Implementation Steps (Tasks)
 
 ### Phase 1: Core Setup & Schema
-- [ ] **Install Plugin**: Add `@better-auth/sso` package.
-- [ ] **Update Prisma Schema**:
+- [x] **Install Plugin**: Add `@better-auth/sso` package.
+- [x] **Update Prisma Schema**:
     -   Add `SsoProvider` model (as defined above).
     -   Run `prisma migrate dev`.
-- [ ] **Better-Auth Config**:
+- [x] **Better-Auth Config**:
     -   Register `sso()` plugin in `src/lib/auth.ts`.
     -   Configure the `sso` plugin to use the prisma adapter.
 
