@@ -5,8 +5,13 @@ import { redirect } from "next/navigation";
 import { LoginForm } from "@/components/auth/login-form";
 import { getPublicSsoProviders } from "@/app/actions/oidc";
 
-export default async function Home() {
+interface HomeProps {
+    searchParams: Promise<{ error?: string }>;
+}
+
+export default async function Home({ searchParams }: HomeProps) {
     const headersList = await headers();
+    const params = await searchParams;
     let session = null;
     try {
         session = await auth.api.getSession({
@@ -28,7 +33,11 @@ export default async function Home() {
              <div className="mb-8 font-bold text-2xl tracking-tight">
                 Database Backup Manager
              </div>
-            <LoginForm allowSignUp={userCount === 0} ssoProviders={ssoProviders} />
+            <LoginForm
+                allowSignUp={userCount === 0}
+                ssoProviders={ssoProviders}
+                errorCode={params.error}
+            />
         </div>
     );
 }

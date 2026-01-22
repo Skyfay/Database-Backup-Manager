@@ -139,6 +139,10 @@ export const auth = betterAuth({
             // Trust email verification status from IdP
             // This allows automatic user creation without domain matching
             trustEmailVerified: true,
+            // Disable automatic user creation by default.
+            // Each provider can enable it via allowProvisioning flag,
+            // which is passed as requestSignUp from the client.
+            disableImplicitSignUp: true,
         })
     ]
 });

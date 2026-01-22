@@ -19,9 +19,10 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
-import { Loader2, Fingerprint } from "lucide-react"
+import { Loader2, Fingerprint, AlertCircle } from "lucide-react"
 import { formatTwoFactorCode } from "@/lib/utils"
 import { ShieldCheck, Box, Settings2, Globe } from "lucide-react"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 const formSchema = z.object({
   email: z.string().email(),
@@ -31,10 +32,31 @@ const formSchema = z.object({
 
 interface LoginFormProps {
     allowSignUp?: boolean;
-    ssoProviders?: { id: string; name: string; type: string; providerId: string; adapterId: string }[];
+    ssoProviders?: { id: string; name: string; type: string; providerId: string; adapterId: string; allowProvisioning: boolean }[];
+    errorCode?: string;
 }
 
-export function LoginForm({ allowSignUp = true, ssoProviders = [] }: LoginFormProps) {
+// Error messages for SSO errors
+const ERROR_MESSAGES: Record<string, { title: string; description: string }> = {
+    sso_signup_disabled: {
+        title: "Account nicht gefunden",
+        description: "Für diesen SSO-Provider ist die automatische Benutzeranlage deaktiviert. Bitte kontaktieren Sie Ihren Administrator."
+    },
+    sso_user_not_found: {
+        title: "Benutzer nicht gefunden",
+        description: "Es existiert kein Konto mit dieser E-Mail-Adresse."
+    },
+    sso_access_denied: {
+        title: "Zugriff verweigert",
+        description: "Sie haben keine Berechtigung, sich anzumelden."
+    },
+    sso_error: {
+        title: "SSO-Fehler",
+        description: "Bei der Anmeldung ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut."
+    }
+};
+
+export function LoginForm({ allowSignUp = true, ssoProviders = [], errorCode }: LoginFormProps) {
   const router = useRouter()
   const [isLogin, setIsLogin] = useState(true)
   const [loading, setLoading] = useState(false)
@@ -42,12 +64,18 @@ export function LoginForm({ allowSignUp = true, ssoProviders = [] }: LoginFormPr
   const [totpCode, setTotpCode] = useState("")
   const [isBackupCode, setIsBackupCode] = useState(false)
 
-  const handleSsoLogin = async (providerId: string) => {
+  // Get error message for display
+  const errorMessage = errorCode ? ERROR_MESSAGES[errorCode] || ERROR_MESSAGES.sso_error : null;
+
+  const handleSsoLogin = async (providerId: string, allowProvisioning: boolean) => {
         setLoading(true);
         try {
             const res = await signIn.sso({
                 providerId: providerId,
                 callbackURL: "/dashboard",
+                // Pass allowProvisioning to server - this enables signup for this specific provider
+                // Server has disableImplicitSignUp: true, so without requestSignUp: true, new users are blocked
+                requestSignUp: allowProvisioning,
             });
             if (res.error) {
                  toast.error(res.error.message || "SSO Login failed");
@@ -293,6 +321,14 @@ export function LoginForm({ allowSignUp = true, ssoProviders = [] }: LoginFormPr
         </CardDescription>
       </CardHeader>
       <CardContent>
+        {/* SSO Error Alert */}
+        {errorMessage && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>{errorMessage.title}</AlertTitle>
+            <AlertDescription>{errorMessage.description}</AlertDescription>
+          </Alert>
+        )}
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             {!isLogin && (
@@ -354,7 +390,7 @@ export function LoginForm({ allowSignUp = true, ssoProviders = [] }: LoginFormPr
                                     variant="outline"
                                     type="button"
                                     className="w-full relative" // relative for potential badge
-                                    onClick={() => handleSsoLogin(provider.providerId)}
+                                    onClick={() => handleSsoLogin(provider.providerId, provider.allowProvisioning)}
                                     disabled={loading}
                                 >
                                     <Icon className="mr-2 h-4 w-4 absolute left-4"/>

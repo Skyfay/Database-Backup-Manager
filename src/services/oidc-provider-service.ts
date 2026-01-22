@@ -54,7 +54,8 @@ export class OidcProviderService {
                 providerId: true,
                 name: true,
                 type: true,
-                adapterId: true
+                adapterId: true,
+                allowProvisioning: true
                 // Do NOT select secrets
             }
         });
