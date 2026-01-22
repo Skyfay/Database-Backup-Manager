@@ -5,7 +5,7 @@ export const PocketIDAdapter: OIDCAdapter = {
   id: "pocket-id",
   name: "PocketID",
   description: "Configuration for PocketID",
-  
+
   inputs: [
     {
       name: "baseUrl",

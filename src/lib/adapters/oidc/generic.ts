@@ -5,7 +5,7 @@ export const GenericAdapter: OIDCAdapter = {
   id: "generic",
   name: "Generic OIDC",
   description: "Manual configuration for any OpenID Connect provider",
-  
+
   inputs: [
     {
       name: "issuer",

@@ -23,7 +23,7 @@ export interface OIDCAdapter {
   name: string;
   description: string;
   icon?: string; // We can use Lucide icon names or SVG strings later
-  
+
   /**
    * Fields required from the user configuration
    */

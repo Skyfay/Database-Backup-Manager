@@ -5,7 +5,7 @@ export const AuthentikAdapter: OIDCAdapter = {
   id: "authentik",
   name: "Authentik",
   description: "Configuration for Authentik Identity Provider",
-  
+
   inputs: [
     {
       name: "baseUrl",
