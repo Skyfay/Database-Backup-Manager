@@ -407,7 +407,19 @@ export function AdapterForm({ type, adapters, onSuccess, initialData }: { type: 
         if (!selectedAdapter) return null;
 
         const connectionFields = ['uri', 'host', 'port', 'user', 'password'];
-        return renderFields(connectionFields);
+        return (
+            <>
+                {detectedVersion && (
+                    <div className="mb-4">
+                        <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/20">
+                            <Check className="w-3 h-3 mr-1" />
+                            Detected: {detectedVersion}
+                        </Badge>
+                    </div>
+                )}
+                {renderFields(connectionFields)}
+            </>
+        );
     }
 
     function renderDatabaseConfigurationFields() {
