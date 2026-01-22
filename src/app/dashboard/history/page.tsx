@@ -86,6 +86,14 @@ function HistoryContent() {
 
     const filterableColumns = useMemo(() => [
         {
+            id: "type",
+            title: "Type",
+            options: [
+                { label: "Backup", value: "Backup" },
+                { label: "Restore", value: "Restore" },
+            ]
+        },
+        {
             id: "status",
             title: "Status",
             options: [

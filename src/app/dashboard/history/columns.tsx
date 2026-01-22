@@ -47,7 +47,10 @@ export const createColumns = (onViewLogs: (execution: Execution) => void): Colum
         cell: ({ row }) => {
             const type = row.getValue("type") as string;
             return <Badge variant="outline">{type || "Backup"}</Badge>;
-        }
+        },
+        filterFn: (row, id, value) => {
+            return value.includes(row.getValue(id))
+        },
     },
     {
         accessorKey: "status",
