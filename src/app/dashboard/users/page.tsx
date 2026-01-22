@@ -1,7 +1,10 @@
 import { getUsers } from "@/app/actions/user";
 import { getGroups } from "@/app/actions/group";
+import { getSsoProviders } from "@/app/actions/oidc";
 import { UserTable } from "./user-table";
 import { GroupTable } from "./group-table";
+import { AddSsoProviderDialog } from "@/components/oidc/add-sso-provider-dialog";
+import { SsoProviderList } from "@/components/oidc/sso-provider-list";
 import { CreateUserDialog } from "./create-user-dialog";
 import { CreateGroupDialog } from "./create-group-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -22,10 +25,13 @@ export default async function UsersPage() {
 
     const canManageUsers = permissions.includes(PERMISSIONS.USERS.WRITE);
     const canManageGroups = permissions.includes(PERMISSIONS.GROUPS.WRITE);
+    const hasReadSettings = permissions.includes(PERMISSIONS.SETTINGS.READ);
+    const hasWriteSettings = permissions.includes(PERMISSIONS.SETTINGS.WRITE);
 
     // Fetch data only if permission is granted, otherwise provide empty array to avoid server action errors
     const users = hasReadUsers ? await getUsers() : [];
     const groups = hasReadGroups ? await getGroups() : [];
+    const ssoProviders = hasReadSettings ? await getSsoProviders() : [];
 
     return (
         <div className="space-y-6">
@@ -42,6 +48,7 @@ export default async function UsersPage() {
                 <TabsList>
                     {hasReadUsers && <TabsTrigger value="users">Users</TabsTrigger>}
                     {hasReadGroups && <TabsTrigger value="groups">Groups</TabsTrigger>}
+                    {hasReadSettings && <TabsTrigger value="sso">SSO / OIDC</TabsTrigger>}
                 </TabsList>
                 {hasReadUsers && (
                     <TabsContent value="users" className="space-y-4">
@@ -75,6 +82,24 @@ export default async function UsersPage() {
                             </CardHeader>
                             <CardContent>
                                 <GroupTable data={groups} canManage={canManageGroups} />
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+                )}
+                {hasReadSettings && (
+                    <TabsContent value="sso" className="space-y-4">
+                        <Card>
+                             <CardHeader>
+                                <div className="flex justify-between items-center">
+                                    <div>
+                                        <CardTitle>Single Sign-On</CardTitle>
+                                        <CardDescription>Manage OpenID Connect providers.</CardDescription>
+                                    </div>
+                                    {hasWriteSettings && <AddSsoProviderDialog />}
+                                </div>
+                            </CardHeader>
+                            <CardContent>
+                                <SsoProviderList providers={ssoProviders} />
                             </CardContent>
                         </Card>
                     </TabsContent>
