@@ -135,10 +135,10 @@ function HistoryContent() {
             </Card>
 
             <Dialog open={!!selectedLog} onOpenChange={(open) => { if(!open) setSelectedLog(null); }}>
-                <DialogContent className="max-w-[60vw] w-full max-h-[85vh] h-full flex flex-col p-0 gap-0 overflow-hidden bg-zinc-950 border-zinc-800 sm:max-w-[60vw]">
-                    <DialogHeader className="p-6 pb-4 border-b border-white/10 shrink-0">
+                <DialogContent className="max-w-[60vw] w-full max-h-[85vh] h-full flex flex-col p-0 gap-0 overflow-hidden bg-popover border-border sm:max-w-[60vw]">
+                    <DialogHeader className="p-6 pb-4 border-b border-border/50 shrink-0">
                         <DialogTitle className="flex items-center gap-3">
-                             {selectedLog?.status === "Running" && <Loader2 className="h-4 w-4 animate-spin text-emerald-500" />}
+                             {selectedLog?.status === "Running" && <Loader2 className="h-4 w-4 animate-spin text-blue-500 dark:text-blue-400" />}
                              <span className="font-mono">{selectedLog?.job?.name || selectedLog?.type || "Manual Job"}</span>
                              {selectedLog?.status && (
                                 <Badge variant={selectedLog.status === 'Success' ? 'default' : selectedLog.status === 'Failed' ? 'destructive' : 'secondary'}>
@@ -146,28 +146,28 @@ function HistoryContent() {
                                 </Badge>
                              )}
                         </DialogTitle>
-                        <DialogDescription className="text-zinc-400">
+                        <DialogDescription className="text-muted-foreground">
                             {selectedLog?.startedAt && <DateDisplay date={selectedLog.startedAt} format="PPpp" />}
                         </DialogDescription>
                     </DialogHeader>
 
                      {selectedLog?.status === "Running" && (
-                        <div className="px-6 py-3 bg-zinc-900/50 border-b border-white/5 shrink-0">
-                            <div className="flex justify-between text-xs text-zinc-400 mb-2">
+                        <div className="px-6 py-3 bg-card/50 border-b border-border/50 shrink-0">
+                            <div className="flex justify-between text-xs text-muted-foreground mb-2">
                                 <span>{stage}</span>
                                 <span>{progress > 0 ? `${progress}%` : ''}</span>
                             </div>
                             {progress > 0 ? (
-                                <Progress value={progress} className="h-1.5 bg-zinc-800" />
+                                <Progress value={progress} className="h-1.5 bg-muted" />
                             ) : (
-                                <div className="h-1.5 w-full overflow-hidden rounded-full bg-zinc-800">
-                                    <div className="h-full w-full animate-indeterminate rounded-full bg-emerald-500/50 origin-left-right"></div>
+                                <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                                    <div className="h-full w-full animate-indeterminate rounded-full bg-blue-500/50 origin-left-right"></div>
                                 </div>
                             )}
                         </div>
                     )}
 
-                    <div className="flex-1 min-h-0 bg-black/20">
+                    <div className="flex-1 min-h-0 bg-background/5">
                          <LogViewer
                             logs={selectedLog ? parseLogs(selectedLog.logs) : []}
                             status={selectedLog?.status}

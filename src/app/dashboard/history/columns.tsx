@@ -54,26 +54,28 @@ export const createColumns = (onViewLogs: (execution: Execution) => void): Colum
         header: "Status",
         cell: ({ row }) => {
             const status = row.getValue("status") as string;
-            let variant: "default" | "secondary" | "destructive" | "outline" = "default";
 
-            if (status === "Success") variant = "secondary";
-            else if (status === "Failed") variant = "destructive";
-
-            // For running, we use a clean blue badge (not outline to avoid double border look)
-            // Using "secondary" as base prevents outline border conflict if we override
-            if (status === "Running") {
-                 return (
-                    <Badge className="bg-blue-500 hover:bg-blue-600 text-white border-transparent">
+            if (status === "Success") {
+                return (
+                    <Badge className="bg-[hsl(145,78%,45%)] text-white border-transparent hover:bg-[hsl(145,78%,40%)]">
+                        Success
+                    </Badge>
+                );
+            } else if (status === "Failed") {
+                return (
+                    <Badge className="bg-[hsl(357,78%,54%)] text-white border-transparent hover:bg-[hsl(357,78%,48%)]">
+                        Failed
+                    </Badge>
+                );
+            } else if (status === "Running") {
+                return (
+                    <Badge className="bg-[hsl(225,79%,54%)] text-white border-transparent hover:bg-[hsl(225,79%,48%)]">
                         Running
                     </Badge>
                 );
             }
 
-            return (
-                <Badge variant={variant}>
-                    {status}
-                </Badge>
-            );
+            return <Badge variant="outline">{status}</Badge>;
         },
         filterFn: (row, id, value) => {
             return value.includes(row.getValue(id))

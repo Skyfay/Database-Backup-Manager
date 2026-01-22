@@ -151,11 +151,11 @@ export function LogViewer({ logs, className, autoScroll = true, status }: LogVie
   };
 
   return (
-    <div className={cn("rounded-md border bg-zinc-950 text-sm font-mono shadow-sm relative flex flex-col", className)}>
+    <div className={cn("rounded-md border border-border bg-popover text-sm font-mono shadow-sm relative flex flex-col", className)}>
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className="flex-1 w-full p-4 overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-800 scrollbar-track-transparent"
+        className="flex-1 w-full p-4 overflow-y-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent"
       >
         <Accordion
             type="multiple"
@@ -175,33 +175,33 @@ export function LogViewer({ logs, className, autoScroll = true, status }: LogVie
                     <AccordionItem
                         key={`${group.stage}-${groupIdx}`}
                         value={group.stage}
-                        className="border border-white/10 rounded-lg bg-zinc-900/30 px-2 data-[state=open]:bg-zinc-900/50 transition-colors"
+                        className="border border-border rounded-lg bg-card/30 px-2 data-[state=open]:bg-card/50 transition-colors"
                     >
                         <AccordionTrigger className="hover:no-underline py-3 px-2">
                              <div className="flex items-center gap-3 w-full">
                                 {group.status === 'failed' ? (
-                                    <AlertCircle className="w-4 h-4 text-red-500" />
+                                    <AlertCircle className="w-4 h-4 text-red-500 dark:text-red-400" />
                                 ) : isRunning ? (
-                                    <Loader2 className="w-4 h-4 text-emerald-500 animate-spin" />
+                                    <Loader2 className="w-4 h-4 text-blue-500 dark:text-blue-400 animate-spin" />
                                 ) : (
-                                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                                    <CheckCircle2 className="w-4 h-4 text-green-500 dark:text-green-400" />
                                 )}
 
                                 <span className={cn(
                                     "font-semibold",
-                                    group.status === 'failed' ? "text-red-400" :
-                                    isRunning ? "text-emerald-400" : "text-zinc-300"
+                                    group.status === 'failed' ? "text-red-500 dark:text-red-400" :
+                                    isRunning ? "text-blue-500 dark:text-blue-400" : "text-green-500 dark:text-green-400"
                                 )}>
                                     {group.stage}
                                 </span>
 
-                                <span className="ml-auto text-xs text-zinc-500 font-normal mr-4">
+                                <span className="ml-auto text-xs text-muted-foreground font-normal mr-4">
                                     {group.logs.length} logs
                                 </span>
                              </div>
                         </AccordionTrigger>
-                        <AccordionContent className="pt-2 pb-4 px-2 border-t border-white/5">
-                             <div className="space-y-1 pl-2 border-l border-white/10 ml-2">
+                        <AccordionContent className="pt-2 pb-4 px-2 border-t border-border/50">
+                             <div className="space-y-1 pl-2 border-l border-border ml-2">
                                 {group.logs.map((log, idx) => (
                                     <LogItem key={`${log.timestamp}-${idx}`} entry={log} />
                                 ))}
@@ -216,7 +216,7 @@ export function LogViewer({ logs, className, autoScroll = true, status }: LogVie
       {!shouldAutoScroll && (
           <button
             onClick={scrollToBottom}
-            className="absolute bottom-4 right-8 bg-emerald-500 hover:bg-emerald-600 text-white p-2 rounded-full shadow-lg animate-in fade-in transition-all z-10"
+            className="absolute bottom-4 right-8 bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-full shadow-lg animate-in fade-in transition-all z-10"
             title="Scroll to bottom"
           >
               <ArrowDown className="w-4 h-4" />
@@ -239,17 +239,17 @@ function LogItem({ entry }: { entry: LogEntry }) {
   }[entry.level] || Info;
 
   const levelColor = {
-    info: "text-blue-400",
-    success: "text-emerald-400",
-    warning: "text-amber-400",
-    error: "text-red-400",
-  }[entry.level] || "text-zinc-400";
+    info: "text-blue-500 dark:text-blue-400",
+    success: "text-green-500 dark:text-green-400",
+    warning: "text-amber-500 dark:text-amber-400",
+    error: "text-red-500 dark:text-red-400",
+  }[entry.level] || "text-muted-foreground";
 
   return (
-    <div className="group relative pl-2 hover:bg-white/5 rounded px-2 transition-colors">
+    <div className="group relative pl-2 hover:bg-accent/50 rounded px-2 transition-colors">
       <div className="flex items-start gap-3 py-1">
         {/* Timestamp */}
-        <div className="shrink-0 text-xs text-zinc-600 w-[80px] pt-0.5 font-mono">
+        <div className="shrink-0 text-xs text-muted-foreground w-[80px] pt-0.5 font-mono">
            <DateDisplay date={entry.timestamp} format="pp" />
         </div>
 
@@ -265,11 +265,11 @@ function LogItem({ entry }: { entry: LogEntry }) {
 
             <div className="flex-1">
                 <div className="flex items-center gap-2">
-                    <span className={cn("text-sm break-all", entry.level === 'error' ? "text-red-300" : "text-zinc-300")}>
+                    <span className={cn("text-sm break-all", entry.level === 'error' ? "text-destructive" : "text-foreground")}>
                          {entry.message}
                     </span>
                     {hasDetails && (
-                         <span className="text-zinc-600">
+                         <span className="text-muted-foreground">
                              {isOpen ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
                          </span>
                     )}
@@ -281,8 +281,8 @@ function LogItem({ entry }: { entry: LogEntry }) {
           {hasDetails && isOpen && (
             <div className="mt-2 ml-5 text-xs animate-in slide-in-from-top-1 duration-200">
                 {entry.details && (
-                    <div className="bg-zinc-950 rounded border border-white/10 p-3 overflow-x-auto">
-                        <pre className="text-zinc-400 font-mono whitespace-pre-wrap break-all">
+                    <div className="bg-popover rounded border border-border p-3 overflow-x-auto">
+                        <pre className="text-muted-foreground font-mono whitespace-pre-wrap break-all">
                             {entry.details}
                         </pre>
                     </div>

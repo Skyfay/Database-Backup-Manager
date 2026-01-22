@@ -54,12 +54,10 @@ export async function RecentActivity() {
 
                             let iconColor = isSuccess ? 'text-green-600' : 'text-red-600';
                             let iconBg = isSuccess ? 'border-green-200 bg-green-100' : 'border-red-200 bg-red-100';
-                            let badgeVariant: "outline" | "destructive" | "default" | "secondary" = isSuccess ? "outline" : "destructive";
 
                             if (isRunning) {
                                 iconColor = 'text-blue-600';
                                 iconBg = 'border-blue-200 bg-blue-100';
-                                // We'll handle badge manually or use a variant if available
                             }
 
                             return (
@@ -96,11 +94,15 @@ export async function RecentActivity() {
                                         </div>
                                         <div className="flex flex-col items-end gap-1">
                                             {isRunning ? (
-                                                 <Badge className="bg-blue-500 hover:bg-blue-600 text-white border-transparent">
+                                                 <Badge className="bg-[hsl(225,79%,54%)] text-white border-transparent hover:bg-[hsl(225,79%,48%)]">
                                                     Running
                                                 </Badge>
+                                            ) : isSuccess ? (
+                                                <Badge className="bg-[hsl(145,78%,45%)] text-white border-transparent hover:bg-[hsl(145,78%,40%)]">
+                                                    Success
+                                                </Badge>
                                             ) : (
-                                                <Badge variant={badgeVariant}>
+                                                <Badge className="bg-[hsl(357,78%,54%)] text-white border-transparent hover:bg-[hsl(357,78%,48%)]">
                                                     {execution.status}
                                                 </Badge>
                                             )}
