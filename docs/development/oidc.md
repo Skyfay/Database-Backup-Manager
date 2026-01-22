@@ -82,11 +82,11 @@ model SsoProvider {
 - [x] **Adapter Registry**: Create `src/services/oidc-registry.ts` to manage available adapters.
 
 ### Phase 3: Administration UI
-- [ ] **Settings Integration**:
+- [x] **Settings Integration**:
     -   Add "SSO / OIDC" tab in `Admin > Settings` (or `Users & Groups`).
-- [ ] **List View**:
+- [x] **List View**:
     -   Show configured providers (Name, Adapter Type, Status).
-- [ ] **Create/Edit Dialog**:
+- [x] **Create/Edit Dialog**:
     -   Step 1: Select Adapter (Grid Layout with Icons).
     -   Step 2: Dynamic Form based on Adapter requirements (using Zod schemas).
     -   Step 3: Save (Server Action -> Writes to `sso_provider` table).
