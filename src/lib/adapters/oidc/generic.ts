@@ -54,12 +54,17 @@ export const GenericAdapter: OIDCAdapter = {
   }),
 
   getEndpoints: (config) => {
+    // For generic adapter, construct discoveryEndpoint from issuer if available
+    const issuer = config.issuer?.replace(/\/$/, "");
+    const discoveryEndpoint = issuer ? `${issuer}/.well-known/openid-configuration` : undefined;
+
     return {
       issuer: config.issuer,
       authorizationEndpoint: config.authorizationEndpoint,
       tokenEndpoint: config.tokenEndpoint,
       userInfoEndpoint: config.userInfoEndpoint,
-      jwksEndpoint: config.jwksEndpoint || undefined
+      jwksEndpoint: config.jwksEndpoint || undefined,
+      discoveryEndpoint
     };
   }
 };

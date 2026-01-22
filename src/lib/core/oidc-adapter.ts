@@ -16,6 +16,12 @@ export type OIDCEndpoints = {
   tokenEndpoint: string;
   userInfoEndpoint: string;
   jwksEndpoint?: string;
+  /**
+   * The OIDC discovery endpoint URL.
+   * Required by better-auth even when skipDiscovery=true.
+   * Different providers have different paths (e.g., Authentik uses /application/o/{slug}/.well-known/openid-configuration)
+   */
+  discoveryEndpoint?: string;
 };
 
 export interface OIDCAdapter {

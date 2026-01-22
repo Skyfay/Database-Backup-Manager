@@ -34,6 +34,7 @@ export const AuthentikAdapter: OIDCAdapter = {
     // Construct discovery URL
     // Remove trailing slash from baseUrl if present
     const baseUrl = config.baseUrl.replace(/\/$/, "");
+    // Authentik uses a different discovery path than standard OIDC!
     const discoveryUrl = `${baseUrl}/application/o/${config.slug}/.well-known/openid-configuration`;
 
     try {
@@ -52,7 +53,9 @@ export const AuthentikAdapter: OIDCAdapter = {
         authorizationEndpoint: data.authorization_endpoint,
         tokenEndpoint: data.token_endpoint,
         userInfoEndpoint: data.userinfo_endpoint,
-        jwksEndpoint: data.jwks_uri
+        jwksEndpoint: data.jwks_uri,
+        // IMPORTANT: Authentik has a non-standard discovery path
+        discoveryEndpoint: discoveryUrl
       };
     } catch (error) {
        console.error("Authentik discovery failed:", error);

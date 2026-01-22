@@ -37,7 +37,8 @@ export const PocketIDAdapter: OIDCAdapter = {
         authorizationEndpoint: data.authorization_endpoint,
         tokenEndpoint: data.token_endpoint,
         userInfoEndpoint: data.userinfo_endpoint,
-        jwksEndpoint: data.jwks_uri
+        jwksEndpoint: data.jwks_uri,
+        discoveryEndpoint: discoveryUrl
       };
     } catch (error) {
        console.error("PocketID discovery failed:", error);

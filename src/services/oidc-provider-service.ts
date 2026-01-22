@@ -19,6 +19,12 @@ export interface CreateSsoProviderInput {
     tokenEndpoint: string;
     userInfoEndpoint: string;
     jwksEndpoint?: string;
+    /**
+     * The OIDC discovery endpoint URL.
+     * Required by better-auth even when skipDiscovery=true.
+     * This should come from the adapter as different providers have different paths.
+     */
+    discoveryEndpoint?: string;
     scope?: string;
 }
 
@@ -66,11 +72,13 @@ export class OidcProviderService {
             }
         }
 
-        // Build discoveryEndpoint from issuer if not explicitly provided
-        // This is required by better-auth even when skipDiscovery=true
-        const discoveryEndpoint = data.issuer
-            ? `${data.issuer.replace(/\/$/, '')}/.well-known/openid-configuration`
-            : undefined;
+        // Use discoveryEndpoint from adapter if provided, otherwise fallback to standard path
+        // Different OIDC providers have different discovery paths (e.g., Authentik uses /application/o/{slug}/...)
+        const discoveryEndpoint = data.discoveryEndpoint ?? (
+            data.issuer
+                ? `${data.issuer.replace(/\/$/, '')}/.well-known/openid-configuration`
+                : undefined
+        );
 
         const oidcConfig = data.type === "oidc" ? JSON.stringify({
             issuer: data.issuer,

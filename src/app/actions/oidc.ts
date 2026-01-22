@@ -78,12 +78,13 @@ export async function createSsoProvider(input: z.infer<typeof createProviderSche
             clientSecret,
             allowProvisioning: allowProvisioning ?? true,
 
-            // Map endpoints
+            // Map endpoints from adapter (includes discoveryEndpoint for non-standard providers)
             issuer: endpoints.issuer,
             authorizationEndpoint: endpoints.authorizationEndpoint,
             tokenEndpoint: endpoints.tokenEndpoint,
             userInfoEndpoint: endpoints.userInfoEndpoint,
-            jwksEndpoint: endpoints.jwksEndpoint
+            jwksEndpoint: endpoints.jwksEndpoint,
+            discoveryEndpoint: endpoints.discoveryEndpoint
         });
 
         revalidatePath("/admin/settings"); // Or wherever the list is
