@@ -16,6 +16,11 @@ vi.mock('@/lib/core/registry', () => ({
     }
 }));
 
+// Mock adapters registration to prevent import errors
+vi.mock('@/lib/adapters', () => ({
+    registerAdapters: vi.fn(),
+}));
+
 describe('StorageService', () => {
     let service: StorageService;
 

@@ -55,6 +55,8 @@ describe('JobService', () => {
                     enabled: input.enabled,
                     encryptionProfileId: null,
                     compression: "NONE",
+                    notificationEvents: "ALWAYS",
+                    retention: "{}",
                     notifications: {
                         connect: [{ id: 'notif-1' }]
                     }

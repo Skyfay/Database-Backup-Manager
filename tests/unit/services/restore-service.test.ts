@@ -62,27 +62,36 @@ describe('RestoreService', () => {
         const executionId = 'exec-123';
         const mockStorageAdapter = {
             download: vi.fn().mockResolvedValue(true),
+            read: vi.fn().mockResolvedValue(null), // No metadata file
         } as unknown as StorageAdapter;
 
         const mockDbAdapter = {
             restore: vi.fn().mockResolvedValue({ success: true, logs: ['Restored tables', 'Done'] }),
+            prepareRestore: vi.fn().mockResolvedValue(true), // Add this
         } as unknown as DatabaseAdapter;
 
         // DB Mocks
         prismaMock.execution.create.mockResolvedValue({ id: executionId } as any);
         prismaMock.execution.update.mockResolvedValue({} as any);
 
-        // Mocks for: 1. Pre-flight Target Check, 2. Run Process Storage, 3. Run Process Target
+        // Mocks for findUnique calls in order:
+        // 1. Pre-flight Target Check (line 37)
+        // 2. Version Check Storage Config (line 70)
+        // 3. runRestoreProcess Storage Config (line 192)
+        // 4. runRestoreProcess Source Config (line 201)
         prismaMock.adapterConfig.findUnique
-            .mockResolvedValueOnce(mockSourceConfig as any) // 1. Target (Pre-flight)
-            .mockResolvedValueOnce(mockStorageConfig as any) // 2. Storage (Run)
-            .mockResolvedValueOnce(mockSourceConfig as any); // 3. Source (Run)
+            .mockResolvedValueOnce(mockSourceConfig as any)  // 1. Pre-flight
+            .mockResolvedValueOnce(mockStorageConfig as any) // 2. Version check
+            .mockResolvedValueOnce(mockStorageConfig as any) // 3. Run Storage
+            .mockResolvedValueOnce(mockSourceConfig as any);  // 4. Run Source
 
-        // Registry Mocks
+        // Registry Mocks - multiple calls for different adapters
         vi.mocked(registry.get)
-            .mockReturnValueOnce(mockDbAdapter)     // 1. Target
-            .mockReturnValueOnce(mockStorageAdapter) // 2. Storage
-            .mockReturnValueOnce(mockDbAdapter);     // 3. Source
+            .mockReturnValueOnce(mockDbAdapter)      // 1. Pre-flight prepareRestore check
+            .mockReturnValueOnce(mockStorageAdapter) // 2. Version check
+            .mockReturnValueOnce(mockDbAdapter)      // 3. Version check target
+            .mockReturnValueOnce(mockStorageAdapter) // 4. Run Storage
+            .mockReturnValueOnce(mockDbAdapter);     // 5. Run Source
 
         // Act
         const result = await service.restore({
@@ -147,23 +156,29 @@ describe('RestoreService', () => {
          const executionId = 'exec-fail-restore';
          const mockStorageAdapter = {
             download: vi.fn().mockResolvedValue(true),
+            read: vi.fn().mockResolvedValue(null),
         } as unknown as StorageAdapter;
 
         const mockDbAdapter = {
             restore: vi.fn().mockResolvedValue({ success: false, logs: ['Syntax error'], error: 'Oops' }),
+            prepareRestore: vi.fn().mockResolvedValue(true),
         } as unknown as DatabaseAdapter;
 
         prismaMock.execution.create.mockResolvedValue({ id: executionId } as any);
 
         prismaMock.adapterConfig.findUnique
-            .mockResolvedValueOnce(mockSourceConfig as any)
-            .mockResolvedValueOnce(mockStorageConfig as any)
-            .mockResolvedValueOnce(mockSourceConfig as any);
+            .mockResolvedValueOnce(mockSourceConfig as any)  // Pre-flight
+            .mockResolvedValueOnce(mockStorageConfig as any) // Version check
+            .mockResolvedValueOnce(mockStorageConfig as any) // Run Storage
+            .mockResolvedValueOnce(mockSourceConfig as any);  // Run Source
 
+        // Registry Mocks
         vi.mocked(registry.get)
-            .mockReturnValueOnce(mockDbAdapter)
-            .mockReturnValueOnce(mockStorageAdapter)
-            .mockReturnValueOnce(mockDbAdapter);
+            .mockReturnValueOnce(mockDbAdapter)      // Pre-flight
+            .mockReturnValueOnce(mockStorageAdapter) // Version check storage
+            .mockReturnValueOnce(mockDbAdapter)      // Version check target
+            .mockReturnValueOnce(mockStorageAdapter) // Run Storage
+            .mockReturnValueOnce(mockDbAdapter);     // Run Source
 
         const result = await service.restore({
             storageConfigId: 'storage-1',
