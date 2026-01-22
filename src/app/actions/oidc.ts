@@ -9,18 +9,16 @@ import { revalidatePath } from "next/cache";
 
 // --- Schemas ---
 
-const baseInputSchema = z.object({
+const createProviderSchema = z.object({
   name: z.string().min(1, "Name is required"),
   adapterId: z.string(),
   providerId: z.string().min(1, "Provider ID is required").regex(/^[a-z0-9-_]+$/, "Only lowercase letters, numbers, dashes and underscores"),
   clientId: z.string().min(1, "Client ID is required"),
   clientSecret: z.string().min(1, "Client Secret is required"),
+  allowProvisioning: z.boolean().optional(),
+  adapterConfig: z.record(z.string(), z.any()),
 });
 
-// Since the specific config (BaseURL etc) varies by adapter, we accept it as a dynamic record and validate inside the action
-const createProviderSchema = baseInputSchema.extend({
-    adapterConfig: z.record(z.any())
-});
 
 // --- Actions ---
 
@@ -41,7 +39,7 @@ export async function createSsoProvider(input: z.infer<typeof createProviderSche
         return { success: false, error: validation.error.format() };
     }
 
-    const { name, adapterId, providerId, clientId, clientSecret, adapterConfig } = validation.data;
+    const { name, adapterId, providerId, clientId, clientSecret, adapterConfig, allowProvisioning } = validation.data;
 
     // 1. Get Adapter
     const adapter = getOIDCAdapter(adapterId);
@@ -76,6 +74,7 @@ export async function createSsoProvider(input: z.infer<typeof createProviderSche
             providerId,
             clientId,
             clientSecret,
+            allowProvisioning: allowProvisioning ?? true,
 
             // Map endpoints
             issuer: endpoints.issuer,

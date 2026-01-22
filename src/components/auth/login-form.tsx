@@ -339,7 +339,7 @@ export function LoginForm({ allowSignUp = true, ssoProviders = [] }: LoginFormPr
         </Form>
         {isLogin && (
             <div className="mt-4 space-y-4">
-                {(ssoProviders.length > 0 || true) && (
+                {ssoProviders.length > 0 && (
                     <div className="space-y-2">
                         {ssoProviders.map((provider) => {
                              const Icon = getSsoIcon(provider.adapterId);

@@ -180,25 +180,26 @@ model SsoProvider {
   id             String   @id @default(cuid())
   providerId     String   @unique // e.g. "authentik-main"
   type           String   @default("oidc") // "oidc" or "saml"
-  
+
   // OIDC Specific Fields (Managed by Better-Auth)
   issuer         String?
   authorizationEndpoint String?
   tokenEndpoint  String?
   userInfoEndpoint String?
   jwksEndpoint   String?
-  
+
   // Credentials
   clientId       String?
-  clientSecret   String? 
-  
+  clientSecret   String?
+
   // Custom App Logic
   adapterId      String   // e.g. "authentik", "pocket-id"
   name           String   // Display Name e.g. "Corporate Login"
   enabled        Boolean  @default(true)
-  
+  allowProvisioning Boolean @default(true) // Whether to create new users automatically
+
   userId         String? // Optional: If linked to a specific user (Account Linking) logic, usually null for global SSO
-  
+
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 

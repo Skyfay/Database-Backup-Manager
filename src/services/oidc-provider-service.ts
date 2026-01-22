@@ -8,6 +8,7 @@ export interface CreateSsoProviderInput {
     type: "oidc" | "saml";
     providerId: string;
     enabled?: boolean; // Default true
+    allowProvisioning?: boolean;
 
     // Credentials
     clientId: string;
@@ -61,6 +62,7 @@ export class OidcProviderService {
                 type: data.type,
                 providerId: data.providerId,
                 enabled: data.enabled ?? true,
+                allowProvisioning: data.allowProvisioning ?? true,
 
                 clientId: data.clientId,
                 clientSecret: data.clientSecret,

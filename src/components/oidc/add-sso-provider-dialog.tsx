@@ -20,6 +20,7 @@ import { createSsoProvider } from "@/app/actions/oidc";
 import { OIDCAdapter } from "@/lib/core/oidc-adapter";
 import { PlusCircle, ShieldCheck, Box, Settings2, Globe } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Switch } from "@/components/ui/switch";
 
 export function AddSsoProviderDialog() {
     const [open, setOpen] = useState(false);
@@ -32,6 +33,7 @@ export function AddSsoProviderDialog() {
     const [clientId, setClientId] = useState("");
     const [clientSecret, setClientSecret] = useState("");
     const [adapterConfig, setAdapterConfig] = useState<Record<string, any>>({});
+    const [allowProvisioning, setAllowProvisioning] = useState(true);
 
     const [isLoading, setIsLoading] = useState(false);
 
@@ -60,7 +62,8 @@ export function AddSsoProviderDialog() {
                 adapterId: selectedAdapter.id,
                 clientId,
                 clientSecret,
-                adapterConfig
+                adapterConfig,
+                allowProvisioning
             });
 
             if (res.success) {
@@ -90,6 +93,7 @@ export function AddSsoProviderDialog() {
         setProviderId("");
         setClientId("");
         setClientSecret("");
+        setAllowProvisioning(true);
         setAdapterConfig({});
     };
 
@@ -169,6 +173,11 @@ export function AddSsoProviderDialog() {
                                     pattern="^[a-z0-9-_]+$"
                                     title="Only lowercase letters, numbers, dashes and underscores"
                                 />
+                                {providerId && (
+                                    <p className="text-[10px] text-muted-foreground break-all mt-1 bg-muted p-1 rounded">
+                                        Callback URL: <span className="font-mono select-all">{typeof window !== 'undefined' ? window.location.origin : ''}/api/auth/callback/{providerId}</span>
+                                    </p>
+                                )}
                             </div>
                         </div>
 
@@ -205,7 +214,15 @@ export function AddSsoProviderDialog() {
                                 disabled={isLoading}
                             />
                         </div>
-
+                         <div className="flex items-center space-x-2 border-t pt-4">
+                            <Switch id="provisioning" checked={allowProvisioning} onCheckedChange={setAllowProvisioning} disabled={isLoading} />
+                            <div className="grid gap-1.5 leading-none">
+                                <Label htmlFor="provisioning">Auto-Provisioning</Label>
+                                <p className="text-sm text-muted-foreground">
+                                    Automatically create new users when they log in for the first time.
+                                </p>
+                            </div>
+                        </div>
                         <DialogFooter className="gap-2">
                             <Button type="button" variant="outline" onClick={() => setStep(1)} disabled={isLoading}>Back</Button>
                             <Button type="submit" disabled={isLoading}>

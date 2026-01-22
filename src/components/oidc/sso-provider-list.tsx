@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { Trash2, ShieldCheck, Box, Settings2, Globe, CheckCircle2 } from "lucide-react";
+import { Trash2, ShieldCheck, Box, Settings2, Globe, CheckCircle2, UserPlus, UserX } from "lucide-react";
 import { deleteSsoProvider, toggleSsoProvider } from "@/app/actions/oidc";
 import { toast } from "sonner";
 import {
@@ -120,6 +120,19 @@ function ProviderCard({ provider }: { provider: SsoProvider }) {
                      <div className="flex items-center text-xs text-muted-foreground pt-2">
                         <CheckCircle2 className="h-3 w-3 mr-1 text-green-500" />
                         Auth & Token endpoints configured
+                    </div>
+                     <div className="flex items-center text-xs text-muted-foreground pt-1">
+                        {provider.allowProvisioning ? (
+                            <>
+                                <UserPlus className="h-3 w-3 mr-1" />
+                                Auto-provisioning enabled
+                            </>
+                        ) : (
+                             <>
+                                <UserX className="h-3 w-3 mr-1" />
+                                Auto-provisioning disabled
+                            </>
+                        )}
                     </div>
                  </div>
             </CardContent>
