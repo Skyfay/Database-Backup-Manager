@@ -182,6 +182,10 @@ model SsoProvider {
   type           String   @default("oidc") // "oidc" or "saml"
 
   // OIDC Specific Fields (Managed by Better-Auth)
+  oidcConfig     String?  // JSON string containing issuer, clientId, clientSecret, etc.
+  samlConfig     String?  // JSON string containing spMetadata, idpMetadata, etc.
+
+  // Legacy/UI Specific Fields (Kept for UI convenience, synced with oidcConfig)
   issuer         String?
   authorizationEndpoint String?
   tokenEndpoint  String?

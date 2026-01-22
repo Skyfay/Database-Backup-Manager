@@ -56,6 +56,16 @@ export class OidcProviderService {
     }
 
     static async createProvider(data: CreateSsoProviderInput) {
+        const oidcConfig = data.type === "oidc" ? JSON.stringify({
+            issuer: data.issuer,
+            clientId: data.clientId,
+            clientSecret: data.clientSecret,
+            authorizationEndpoint: data.authorizationEndpoint,
+            tokenEndpoint: data.tokenEndpoint,
+            userInfoEndpoint: data.userInfoEndpoint,
+            jwksEndpoint: data.jwksEndpoint,
+        }) : undefined;
+
         return prisma.ssoProvider.create({
             data: {
                 name: data.name,
@@ -73,15 +83,62 @@ export class OidcProviderService {
                 tokenEndpoint: data.tokenEndpoint,
                 userInfoEndpoint: data.userInfoEndpoint,
                 jwksEndpoint: data.jwksEndpoint,
-                scope: data.scope
+                scope: data.scope,
+
+                oidcConfig
             }
         });
     }
 
     static async updateProvider(id: string, data: Partial<CreateSsoProviderInput>) {
+        // Fetch current provider to merge config if needed, or primarily we just overwrite with new data if provided.
+        // For partial updates, it's safer to reconstruct.
+        // However, assuming the UI sends full data or we handle it in action layer.
+        // Let's implement a simple merge for oidcConfig if it's OIDC.
+
+        let oidcConfigUpdate: string | undefined = undefined;
+
+        if (data.clientId || data.clientSecret || data.authorizationEndpoint) {
+             // If critical OIDC params are updated, we should reconstruct oidcConfig.
+             // Ideally we'd need the full object, but let's assume `data` contains necessary updates
+             // or we fetch existing first.
+             // For simplicity, we'll try to use data properties if available.
+
+             // A better approach: We rely on the Action to pass consistent data.
+             // Constructing a partial config is tricky.
+             // Let's rely on the individual fields being present in `data` OR existing in DB if not passed?
+             // Actually, `updateProvider` is likely called by an Action that validates everything.
+             // Let's construct it from `data` assuming `data` has the changes.
+
+             // REALITY CHECK: If we only update 'enabled', we don't want to destroy oidcConfig.
+             // So only update oidcConfig if we are updating OIDC fields.
+
+             const isOidcUpdate = data.clientId || data.issuer || data.endpoint;
+
+             if (isOidcUpdate || data.type === "oidc") {
+                  // We need to fetch existing to merge properly if partial
+                  const existing = await prisma.ssoProvider.findUnique({ where: { id } });
+                  if (existing) {
+                      const newConfig = {
+                          issuer: data.issuer ?? existing.issuer,
+                          clientId: data.clientId ?? existing.clientId,
+                          clientSecret: data.clientSecret ?? existing.clientSecret,
+                          authorizationEndpoint: data.authorizationEndpoint ?? existing.authorizationEndpoint,
+                          tokenEndpoint: data.tokenEndpoint ?? existing.tokenEndpoint,
+                          userInfoEndpoint: data.userInfoEndpoint ?? existing.userInfoEndpoint,
+                          jwksEndpoint: data.jwksEndpoint ?? existing.jwksEndpoint,
+                      };
+                      oidcConfigUpdate = JSON.stringify(newConfig);
+                  }
+             }
+        }
+
         return prisma.ssoProvider.update({
             where: { id },
-            data
+            data: {
+                ...data,
+                ...(oidcConfigUpdate ? { oidcConfig: oidcConfigUpdate } : {})
+            }
         });
     }
 
