@@ -180,6 +180,8 @@ model SsoProvider {
   id             String   @id @default(cuid())
   providerId     String   @unique // e.g. "authentik-main"
   type           String   @default("oidc") // "oidc" or "saml"
+  domain         String?  // Required by better-auth SSO plugin for email domain matching
+  domainVerified Boolean  @default(false) // Required by better-auth for trusted provider status
 
   // OIDC Specific Fields (Managed by Better-Auth)
   oidcConfig     String?  // JSON string containing issuer, clientId, clientSecret, etc.

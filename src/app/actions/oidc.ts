@@ -13,6 +13,7 @@ const createProviderSchema = z.object({
   name: z.string().min(1, "Name is required"),
   adapterId: z.string(),
   providerId: z.string().min(1, "Provider ID is required").regex(/^[a-z0-9-_]+$/, "Only lowercase letters, numbers, dashes and underscores"),
+  domain: z.string().optional(),
   clientId: z.string().min(1, "Client ID is required"),
   clientSecret: z.string().min(1, "Client Secret is required"),
   allowProvisioning: z.boolean().optional(),
@@ -39,7 +40,7 @@ export async function createSsoProvider(input: z.infer<typeof createProviderSche
         return { success: false, error: validation.error.format() };
     }
 
-    const { name, adapterId, providerId, clientId, clientSecret, adapterConfig, allowProvisioning } = validation.data;
+    const { name, adapterId, providerId, domain, clientId, clientSecret, adapterConfig, allowProvisioning } = validation.data;
 
     // 1. Get Adapter
     const adapter = getOIDCAdapter(adapterId);
@@ -72,6 +73,7 @@ export async function createSsoProvider(input: z.infer<typeof createProviderSche
             adapterId,
             type: "oidc",
             providerId,
+            domain,
             clientId,
             clientSecret,
             allowProvisioning: allowProvisioning ?? true,

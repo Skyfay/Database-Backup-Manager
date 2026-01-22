@@ -30,6 +30,7 @@ export function AddSsoProviderDialog() {
     // Form State
     const [name, setName] = useState("");
     const [providerId, setProviderId] = useState("");
+    const [domain, setDomain] = useState("");
     const [clientId, setClientId] = useState("");
     const [clientSecret, setClientSecret] = useState("");
     const [adapterConfig, setAdapterConfig] = useState<Record<string, any>>({});
@@ -59,6 +60,7 @@ export function AddSsoProviderDialog() {
             const res = await createSsoProvider({
                 name,
                 providerId,
+                domain: domain || undefined,
                 adapterId: selectedAdapter.id,
                 clientId,
                 clientSecret,
@@ -91,6 +93,7 @@ export function AddSsoProviderDialog() {
         setSelectedAdapter(null);
         setName("");
         setProviderId("");
+        setDomain("");
         setClientId("");
         setClientSecret("");
         setAllowProvisioning(true);
@@ -174,6 +177,20 @@ export function AddSsoProviderDialog() {
                                     title="Only lowercase letters, numbers, dashes and underscores"
                                 />
                             </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="domain">Domain (Optional)</Label>
+                            <Input
+                                id="domain"
+                                value={domain}
+                                onChange={(e) => setDomain(e.target.value)}
+                                placeholder="example.com"
+                                disabled={isLoading}
+                            />
+                            <p className="text-xs text-muted-foreground">
+                                Users with email addresses matching this domain will be redirected to this provider.
+                            </p>
                         </div>
 
                          <div className="grid grid-cols-2 gap-4">

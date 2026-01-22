@@ -1,6 +1,4 @@
 import prisma from "@/lib/prisma";
-import { SsoProvider } from "@prisma/client";
-import { OIDCEndpoints } from "@/lib/core/oidc-adapter";
 
 export interface CreateSsoProviderInput {
     name: string;
@@ -9,6 +7,7 @@ export interface CreateSsoProviderInput {
     providerId: string;
     enabled?: boolean; // Default true
     allowProvisioning?: boolean;
+    domain?: string; // Email domain for SSO matching (e.g., "example.com")
 
     // Credentials
     clientId: string;
@@ -56,6 +55,23 @@ export class OidcProviderService {
     }
 
     static async createProvider(data: CreateSsoProviderInput) {
+        // Extract domain from issuer URL if not provided
+        let domain = data.domain;
+        if (!domain && data.issuer) {
+            try {
+                const issuerUrl = new URL(data.issuer);
+                domain = issuerUrl.hostname;
+            } catch {
+                // If URL parsing fails, leave domain undefined
+            }
+        }
+
+        // Build discoveryEndpoint from issuer if not explicitly provided
+        // This is required by better-auth even when skipDiscovery=true
+        const discoveryEndpoint = data.issuer
+            ? `${data.issuer.replace(/\/$/, '')}/.well-known/openid-configuration`
+            : undefined;
+
         const oidcConfig = data.type === "oidc" ? JSON.stringify({
             issuer: data.issuer,
             clientId: data.clientId,
@@ -64,6 +80,11 @@ export class OidcProviderService {
             tokenEndpoint: data.tokenEndpoint,
             userInfoEndpoint: data.userInfoEndpoint,
             jwksEndpoint: data.jwksEndpoint,
+            // discoveryEndpoint is required by better-auth even with skipDiscovery
+            // It's called in the callback handler regardless of skipDiscovery setting
+            discoveryEndpoint,
+            // Skip OIDC discovery since we provide all endpoints manually
+            skipDiscovery: true,
         }) : undefined;
 
         return prisma.ssoProvider.create({
@@ -74,6 +95,7 @@ export class OidcProviderService {
                 providerId: data.providerId,
                 enabled: data.enabled ?? true,
                 allowProvisioning: data.allowProvisioning ?? true,
+                domain, // Required by better-auth SSO plugin
 
                 clientId: data.clientId,
                 clientSecret: data.clientSecret,
@@ -83,7 +105,6 @@ export class OidcProviderService {
                 tokenEndpoint: data.tokenEndpoint,
                 userInfoEndpoint: data.userInfoEndpoint,
                 jwksEndpoint: data.jwksEndpoint,
-                scope: data.scope,
 
                 oidcConfig
             }
@@ -113,7 +134,7 @@ export class OidcProviderService {
              // REALITY CHECK: If we only update 'enabled', we don't want to destroy oidcConfig.
              // So only update oidcConfig if we are updating OIDC fields.
 
-             const isOidcUpdate = data.clientId || data.issuer || data.endpoint;
+             const isOidcUpdate = data.clientId || data.issuer || data.authorizationEndpoint;
 
              if (isOidcUpdate || data.type === "oidc") {
                   // We need to fetch existing to merge properly if partial
