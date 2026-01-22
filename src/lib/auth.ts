@@ -27,8 +27,7 @@ async function getTrustedOriginsFromDb(): Promise<string[]> {
 
 /**
  * Cache for trusted SSO provider IDs.
- * This is loaded at server startup and used for account linking.
- * Adding new providers requires a server restart to be recognized as trusted.
+ * This is loaded dynamically and used for account linking.
  *
  * IMPORTANT: We use a single array instance and MUTATE it (not reassign)
  * because better-auth stores the reference at config time.
@@ -37,13 +36,13 @@ const trustedProvidersCache: string[] = [];
 
 /**
  * Load trusted provider IDs from database into cache.
- * Called at module load time and can be refreshed if needed.
+ * Called on every auth request to ensure newly added providers work immediately.
  *
  * NOTE: We use splice + push to MUTATE the array, not reassign it!
  * Reassigning would create a new array reference, but better-auth
  * holds a reference to the original array from config initialization.
  */
-async function loadTrustedProviders(): Promise<void> {
+export async function loadTrustedProviders(): Promise<void> {
     try {
         const providers = await prisma.ssoProvider.findMany({
             where: { enabled: true },
@@ -60,9 +59,6 @@ async function loadTrustedProviders(): Promise<void> {
     }
 }
 
-// Initialize cache on module load (async IIFE)
-loadTrustedProviders();
-
 /**
  * Get cached trusted providers for account linking.
  * Returns the SAME array instance that's used in config.
@@ -77,6 +73,11 @@ export const auth = betterAuth({
     },
     baseURL: process.env.NEXT_PUBLIC_APP_URL || process.env.BETTER_AUTH_URL || "http://localhost:3000",
     trustedOrigins: async (request) => {
+        // Refresh trusted providers on every auth request
+        // This ensures newly added SSO providers work immediately without server restart
+        // We mutate the same array reference, so better-auth sees the changes
+        await loadTrustedProviders();
+
         // Base trusted origins
         const baseOrigins = [
             process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",

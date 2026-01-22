@@ -141,13 +141,13 @@ const auth = betterAuth({
 When you **reassign** an array variable (`arr = newArr`), you create a new array reference. But the original empty array reference was already captured in the config object.
 
 ### Solution
-**MUTATE** the array instead of reassigning:
+**MUTATE** the array instead of reassigning, and **refresh on every request**:
 
 ```typescript
 // src/lib/auth.ts
 const trustedProvidersCache: string[] = []; // Single instance, never reassigned
 
-async function loadTrustedProviders(): Promise<void> {
+export async function loadTrustedProviders(): Promise<void> {
     try {
         const providers = await prisma.ssoProvider.findMany({
             where: { enabled: true },
@@ -156,24 +156,31 @@ async function loadTrustedProviders(): Promise<void> {
         // MUTATE the array, don't reassign!
         trustedProvidersCache.splice(0, trustedProvidersCache.length);
         trustedProvidersCache.push(...providers.map(p => p.providerId));
-        console.log("[Auth] Loaded trusted SSO providers:", trustedProvidersCache);
     } catch (error) {
-        console.warn("[Auth] Could not load trusted providers:", error);
         trustedProvidersCache.splice(0, trustedProvidersCache.length);
     }
 }
 
-// Initialize on module load
-loadTrustedProviders();
-
 function getTrustedProviders(): string[] {
     return trustedProvidersCache; // Same array reference always
 }
+
+// Call loadTrustedProviders() in trustedOrigins (called on every auth request)
+export const auth = betterAuth({
+    trustedOrigins: async (request) => {
+        // Refresh trusted providers on every auth request
+        await loadTrustedProviders();
+        // ... rest of the function
+    },
+    account: {
+        accountLinking: {
+            trustedProviders: getTrustedProviders(), // Same array reference
+        }
+    }
+});
 ```
 
-> ⚠️ **IMPORTANT:** After adding a new SSO provider, the server must be restarted!
-> The `trustedProviders` list is loaded from the database at server startup and cached.
-> New providers are only recognized as "trusted" after a restart.
+This way, new SSO providers work **immediately** without server restart!
 
 ---
 
