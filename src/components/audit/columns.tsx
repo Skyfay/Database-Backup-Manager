@@ -71,7 +71,7 @@ export const columns: ColumnDef<AuditLogWithUser>[] = [
         <div className="flex flex-col">
           <span className="font-medium">{resource}</span>
           {resourceId && (
-            <span className="text-xs text-muted-foreground font-mono truncate max-w-[100px]" title={resourceId}>
+            <span className="text-xs text-muted-foreground font-mono truncate max-w-25" title={resourceId}>
               {resourceId}
             </span>
           )}
@@ -94,11 +94,11 @@ export const columns: ColumnDef<AuditLogWithUser>[] = [
               <Eye className="h-4 w-4" />
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-[600px]">
+          <DialogContent className="max-w-150">
             <DialogHeader>
               <DialogTitle>Log Details</DialogTitle>
             </DialogHeader>
-            <ScrollArea className="h-[400px] w-full rounded-md border p-4">
+            <ScrollArea className="h-100 w-full rounded-md border p-4">
               <pre className="text-xs font-mono whitespace-pre-wrap">
                 {JSON.stringify(JSON.parse(details), null, 2)}
               </pre>
