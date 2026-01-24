@@ -510,6 +510,13 @@ export function AdapterForm({ type, adapters, onSuccess, initialData }: { type: 
 
                // Hetzner Specific (Enum default handles region, but just in case)
                "s3-hetzner.pathPrefix": "server1/mysql",
+
+               // SFTP
+               "sftp.host": "sftp.example.com",
+               "sftp.port": "22",
+               "sftp.username": "backup-user",
+               "sftp.password": "secure-password",
+               "sftp.pathPrefix": "/home/backup/uploads",
             };
             const placeholder = PLACEHOLDERS[`${selectedAdapter.id}.${key}`] || PLACEHOLDERS[key];
 

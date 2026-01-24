@@ -98,6 +98,7 @@ const SENSITIVE_KEYS = [
   'webhookUrl',
   'uri', // MongoDB Connection String
   'passphrase', // SSH Key Passphrase
+  'privateKey', // SSH Private Key
 ];
 
 /**

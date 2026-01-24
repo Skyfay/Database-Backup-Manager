@@ -88,6 +88,16 @@ export const S3HetznerSchema = z.object({
     pathPrefix: z.string().min(1, "Path prefix is required for Hetzner").describe("Folder prefix (Required)"),
 });
 
+export const SFTPSchema = z.object({
+    host: z.string().min(1, "Host is required"),
+    port: z.coerce.number().default(22),
+    username: z.string().min(1, "Username is required"),
+    password: z.string().optional().describe("Password (optional if using Private Key)"),
+    privateKey: z.string().optional().describe("Private Key (PEM format, optional)"),
+    passphrase: z.string().optional().describe("Passphrase for Private Key (optional)"),
+    pathPrefix: z.string().optional().describe("Remote destination folder"),
+});
+
 export const DiscordSchema = z.object({
     webhookUrl: z.string().url("Valid Webhook URL is required"),
     username: z.string().optional().default("Backup Manager"),
@@ -115,6 +125,7 @@ export const ADAPTER_DEFINITIONS: AdapterDefinition[] = [
     { id: "s3-aws", type: "storage", name: "Amazon S3", configSchema: S3AWSSchema },
     { id: "s3-r2", type: "storage", name: "Cloudflare R2", configSchema: S3R2Schema },
     { id: "s3-hetzner", type: "storage", name: "Hetzner Object Storage", configSchema: S3HetznerSchema },
+    { id: "sftp", type: "storage", name: "SFTP (SSH)", configSchema: SFTPSchema },
 
     { id: "discord", type: "notification", name: "Discord Webhook", configSchema: DiscordSchema },
     { id: "email", type: "notification", name: "Email (SMTP)", configSchema: EmailSchema },

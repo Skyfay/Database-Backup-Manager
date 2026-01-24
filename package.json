@@ -58,6 +58,7 @@
     "react-dom": "19.2.3",
     "react-hook-form": "^7.71.0",
     "sonner": "^2.0.7",
+    "ssh2-sftp-client": "^12.0.1",
     "tailwind-merge": "^3.4.0",
     "tailwindcss-animate": "^1.0.7",
     "zod": "^4.3.5"

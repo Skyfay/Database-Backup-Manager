@@ -5,6 +5,7 @@ import { PostgresAdapter } from "./database/postgres";
 import { MongoDBAdapter } from "./database/mongodb";
 import { LocalFileSystemAdapter } from "./storage/local";
 import { S3GenericAdapter, S3AWSAdapter, S3R2Adapter, S3HetznerAdapter } from "./storage/s3";
+import { SFTPStorageAdapter } from "./storage/sftp";
 import { DiscordAdapter } from "./notification/discord";
 import { EmailAdapter } from "./notification/email";
 
@@ -24,6 +25,7 @@ export function registerAdapters() {
     registry.register(S3AWSAdapter);
     registry.register(S3R2Adapter);
     registry.register(S3HetznerAdapter);
+    registry.register(SFTPStorageAdapter);
 
     registry.register(DiscordAdapter);
     registry.register(EmailAdapter);
