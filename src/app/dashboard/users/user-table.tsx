@@ -24,7 +24,8 @@ import { useRouter } from "next/navigation"
 
 // Create an extended User type that includes the group relation
 type UserWithGroup = User & {
-    group?: Group | null
+    group?: Group | null;
+    lastLogin?: Date | string | null;
 }
 
 interface UserTableProps {
@@ -85,6 +86,18 @@ export function UserTable({ data, groups, canManage }: UserTableProps) {
                     <span className="text-muted-foreground text-sm">-</span>
                 );
             }
+        },
+        {
+            accessorKey: "lastLogin",
+            header: "Last Login",
+            cell: ({ row }) => {
+                const date = row.original.lastLogin;
+                return date ? (
+                    <DateDisplay date={date} format="PPp" />
+                ) : (
+                    <span className="text-muted-foreground text-sm">Never</span>
+                );
+            },
         },
         {
             accessorKey: "createdAt",

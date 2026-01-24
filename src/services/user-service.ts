@@ -1,18 +1,33 @@
 import prisma from "@/lib/prisma";
+import { AUDIT_ACTIONS } from "@/lib/core/audit-types";
 
 export const userService = {
   /**
-   * Get all users with their associated group.
+   * Get all users with their associated group and last login time.
    * ordered by creation date desc
    */
   async getUsers() {
-    return await prisma.user.findMany({
+    const users = await prisma.user.findMany({
       orderBy: {
         createdAt: "desc",
       },
       include: {
         group: true,
+        auditLogs: {
+          where: { action: AUDIT_ACTIONS.LOGIN },
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+          select: { createdAt: true }
+        }
       },
+    });
+
+    return users.map(user => {
+      const { auditLogs, ...rest } = user;
+      return {
+        ...rest,
+        lastLogin: auditLogs[0]?.createdAt || null
+      };
     });
   },
 
