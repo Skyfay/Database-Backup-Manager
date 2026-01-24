@@ -24,6 +24,18 @@ This list contains critical unit tests that need to be implemented to ensure app
     - **Goal:** Ensure temporary files (dumps) are deleted even if a later step in the backup process fails.
     - **Expectation:** `stepCleanup` must be called in case of error (e.g., upload failed) to prevent disk space leaks.
 
+## Configuration & Validation
+
+- [ ] **Adapter Input Validation** (`tests/unit/adapters/definitions.test.ts`)
+    - **Goal:** Verify that adapter configuration schemas (Zod) reject invalid inputs (e.g. negative ports, forbidden characters).
+    - **Expectation:** schemas.safeParse() should return success: false for malformed data.
+
+## Reliability
+
+- [ ] **Scheduler Resilience** (`tests/unit/lib/scheduler.test.ts`)
+    - **Goal:** Ensure the scheduler does not crash when encountering invalid cron expressions in the database.
+    - **Expectation:** Invalid jobs should be logged as errors, but valid jobs must still be scheduled and executed.
+
 ## Integration Tests
 
 - [x] **Backup Flow** (`tests/integration/backup.test.ts`)
