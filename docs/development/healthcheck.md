@@ -1,115 +1,100 @@
-# Healthcheck & Connectivity Monitoring Implementierung
+# Healthcheck & Connectivity Monitoring
 
-Dieses Dokument beschreibt den Plan zur Implementierung eines automatischen "Heartbeat"-Systems, das die Erreichbarkeit von Datenbank-Quellen und Speicher-Zielen überwacht.
+The Healthcheck system is designed to continuously monitor the availability and status of all configured database sources and storage destinations. It ensures that connection issues are detected early and can be tracked historically.
 
-## 🧱 1. Datenmodell (Schema)
+## 🧱 Architecture
 
-Wir benötigen eine effiziente Speicherung der Ping-Historie sowie eine Erweiterung der bestehenden Konfigurationen für den aktuellen Status.
+### Data Model
 
-### Prisma Schema Änderungen
+The system extends the Prisma schema with a dedicated log table for health checks and adds caching fields to the `AdapterConfig` model.
 
 ```prisma
-// Status-Enum für Health-Checks
+// Status states for adapters
 enum HealthStatus {
-  ONLINE
-  DEGRADED // Transiente Fehler (erster/zweiter Fehlversuch)
-  OFFLINE  // Dauerhafter Fehler (>= 3 Fehlversuche)
+  ONLINE    // Connection successful
+  DEGRADED  // Transient failures (first/second attempt failed)
+  OFFLINE   // Persistent failure (>= 3 consecutive failures)
 }
 
-// Log-Eintrag für jeden Prüfzyklus (wird regelmäßig bereinigt)
+// Log entry for each check cycle
 model HealthCheckLog {
-  id              String        @id @default(uuid())
+  id              String        @id
   adapterConfigId String
   status          HealthStatus
-  latencyMs       Int           // Antwortzeit in Millisekunden
-  error           String?       // Fehlermeldung falls fehlgeschlagen
-  createdAt       DateTime      @default(now())
+  latencyMs       Int           // Measured latency in milliseconds
+  error           String?       // Error message if failed
+  createdAt       DateTime
 
-  adapterConfig   AdapterConfig @relation(fields: [adapterConfigId], references: [id], onDelete: Cascade)
-
-  @@index([adapterConfigId, createdAt])
+  adapterConfig   AdapterConfig @relation(...)
 }
 
-// Erweiterung des bestehenden AdapterConfig Models
 model AdapterConfig {
-  // ... existing fields ...
-
-  // Caching-Felder für schnelle UI-Anzeige ohne Joins
-  lastHealthCheck      DateTime?
-  lastStatus           HealthStatus  @default(ONLINE)
-  consecutiveFailures  Int           @default(0) // Zähler für Logik (Grün -> Orange -> Rot)
-
-  healthLogs           HealthCheckLog[]
+  // ...
+  lastHealthCheck      DateTime?     // Timestamp of last check
+  lastStatus           HealthStatus  // Cached status for UI display
+  consecutiveFailures  Int           // Counter for failure state machine
 }
 ```
 
-## ⚙️ 2. Core Service & Task Logic
+### Components
 
-Da das Feature als System Task laufen soll, nutzen wir die bestehende Infrastruktur in `SystemTaskService`.
+#### 1. Backend Service (`src/services/healthcheck-service.ts`)
+The core service that performs the actual checks.
+*   **Process**: Iterates over all adapters -> Executes `adapter.test()` -> Evaluates status.
+*   **State Machine**:
+    *   Success -> Status `ONLINE`, Failures = 0.
+    *   Failure -> Failures + 1.
+    *   Failures < 3 -> Status `DEGRADED`.
+    *   Failures >= 3 -> Status `OFFLINE`.
+*   **Retention**: Deletes logs older than 48 hours to control database size.
 
-### Neuer System Task
-*   **ID**: `SYSTEM_TASKS.HEALTH_CHECK` (`system.health_check`)
-*   **Default Schedule**: `*/1 * * * *` (Jede Minute)
+#### 2. System Task (`src/services/system-task-service.ts`)
+The healthcheck is integrated as a system task (`system.health_check`).
+*   **Interval**: Default runs every minute (`*/1 * * * *`).
+*   Can be configured and manually triggered via the UI ("Settings" -> "System Tasks").
 
-### Logik (`src/services/healthcheck-service.ts`)
-1.  **Iteriere** über alle `AdapterConfig` Einträge (`type: 'database'` und `type: 'storage'`).
-2.  **Ping/Test**:
-    *   Rufe `adapter.test(config)` auf (oder eine neue, leichtere Methode `adapter.ping(config)` falls `test` zu schwergewichtig ist).
-    *   Messe die Zeit (`latencyMs`).
-3.  **Status Bestimmung**:
-    *   *Success*: Status `ONLINE`, `consecutiveFailures` auf 0 setzen.
-    *   *Failure*: `consecutiveFailures` inkrementieren.
-        *   Wenn `consecutiveFailures < 3` -> Status `DEGRADED` (Orange).
-        *   Wenn `consecutiveFailures >= 3` -> Status `OFFLINE` (Rot).
-4.  **Speichern**:
-    *   Erstelle `HealthCheckLog` Eintrag.
-    *   Update `AdapterConfig` mit neuem Status.
+#### 3. Adapter Integration (`src/lib/adapters/*`)
+Each adapter (`MySQL`, `Postgres`, `S3`, `Local` etc.) implements the `test(config)` method.
+*   This method checks not just TCP connectivity but also performs a minimal logical operation (e.g., `SELECT VERSION()` or Write/Delete test on storage).
 
-### Retention Policy (Cleanup)
-Da minütliche Logs in SQLite schnell anwachsen:
-*   Einbau eines Cleanups am Ende des Healthcheck-Runs oder als separater Task (z.B. `system.cleanup`).
-*   Regel: Behalte detaillierte Logs für 24-48 Stunden. Alles ältere löschen oder aggregieren (vorerst löschen).
+#### 4. Frontend Components
+*   **Status Badge**: Visual indicator (Green/Orange/Red/Grey) in list views.
+*   **Statistics**: Shows uptime (last 60 checks) and average latency.
+*   **History Grid**: Interactive grid in a popover visualizing the history of the last hour.
 
-## 🖥️ 3. UI Komponenten
+## 💻 API Endpoints
 
-### Status Indikator (Sonar)
-Eine Komponente für Listen (Tabellen), die den aktuellen Status anzeigt.
-*   **Grün**: Online.
-*   **Orange**: Degraded (Warnung).
-*   **Rot**: Offline (Blinkende Animation möglich).
+### Get Health History
+`GET /api/adapters/[id]/health-history`
 
-### Health Dashboard / Popover
-Beim Klick auf den Indikator öffnet sich ein Dialog/Popover:
-*   **Aktuelle Metriken**: "Online seit...", "Letzter Check: vor 20s", "Latenz: 45ms".
-*   **History Grid**: Visualisierung wie im Screenshot Request ("GitHub Contribution Graph" Style oder Balken).
-    *   Jedes Kästchen repräsentiert z.B. 10 Minuten oder 1 Stunde (je nach Platz).
-    *   Tooltip beim Hovern über ein Kästchen: "14:00 - 14:10: 100% Uptime (Avg 20ms)".
+Returns ping history and summarized statistics.
 
-## ✅ TODO Liste
+**Parameters:**
+*   `limit` (default: 100): Number of entries to return.
 
-### Backend & Datenbank
-- [x] `prisma/schema.prisma` anpassen (Logs & Config Felder).
-- [x] Migration erstellen (`npx prisma migrate dev`).
-- [x] `src/services/healthcheck-service.ts` erstellen:
-    - [x] `performHealthCheck()` Methode implementieren.
-    - [x] DB Update Logik mit "Consecutive Failures" Logik.
-- [x] `SystemTaskService` erweitern: Task registrieren.
-- [x] `SystemTasksSettings`: Default Config für den neuen Task hinzufügen.
+**Response:**
+```json
+{
+  "history": [
+    { "id": "uuid", "status": "ONLINE", "latencyMs": 23, "createdAt": "...", "error": null },
+    ...
+  ],
+  "stats": {
+    "uptime": 98.5,    // Percentage
+    "avgLatency": 45,  // Milliseconds
+    "totalChecks": 60
+  }
+}
+```
 
-### Adapter Layer
-- [x] Sicherstellen, dass alle `DatabaseAdapter` und `StorageAdapter` eine robuste `test()` Methode haben, die Timeouts schnell erkennt.
-- [x] (Optional) Interface um `ping()` Methode erweitern, falls `test()` zu heavy ist.
+## 🧪 Testing
 
-### API Routes
-- [x] GET `/api/adapters/[id]/health-history`: Endpunkt für die Historien-Daten des Grids.
+### Unit Tests
+The state transition logic (Online -> Degraded -> Offline) is verified in `tests/unit/services/healthcheck-service.test.ts`.
 
-### Frontend (UI/UX)
-- [ ] `HealthStatusBadge.tsx` Komponente erstellen (der rot/grün/orange Punkt).
-- [ ] `HealthHistoryGrid.tsx` Komponente erstellen (die Matrix-Visualisierung).
-- [x] `src/app/dashboard/sources/columns.tsx` anpassen -> Spalte "Status" hinzufügen.
-- [x] `src/app/dashboard/destinations/columns.tsx` anpassen -> Spalte "Status" hinzufügen.
-- [ ] Integration in die Detail-Ansichten (optional).
-
-### Dokumentation & Tests
-- [ ] Dokumentation zur Konfiguration des Intervalls aktualisieren.
-- [ ] Unit Test für die Orange->Rot Übergangslogik schreiben.
+### Manual Testing
+1. Go to **Settings** -> **System Tasks**.
+2. Find "Health Check & Connectivity".
+3. Click on **Run Now**.
+4. Check the logs in the terminal.
+5. Go to **Sources** or **Destinations**, the status should be updated.

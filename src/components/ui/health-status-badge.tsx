@@ -6,6 +6,8 @@ import { HealthHistoryGrid } from "@/components/adapter/health-history-grid";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
 
+import { DateDisplay } from "@/components/utils/date-display";
+
 type HealthStatus = "ONLINE" | "DEGRADED" | "OFFLINE" | "PENDING";
 
 interface HealthStatusBadgeProps {
@@ -53,7 +55,7 @@ export function HealthStatusBadge({ status, adapterId, lastChecked, className }:
                     </div>
                     {lastChecked && (
                         <p className="text-xs text-muted-foreground ml-5">
-                            Last checked: {new Date(lastChecked).toLocaleString()}
+                            Last checked: <DateDisplay date={lastChecked} format="Pp" />
                         </p>
                     )}
                 </div>
