@@ -20,6 +20,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { DateDisplay } from "@/components/utils/date-display"
 import { Badge } from "@/components/ui/badge"
 import { GroupWithStats } from "@/types"
+import { useRouter } from "next/navigation"
 
 // Create an extended User type that includes the group relation
 type UserWithGroup = User & {
@@ -34,6 +35,7 @@ interface UserTableProps {
 
 export function UserTable({ data, groups, canManage }: UserTableProps) {
     const [editingUser, setEditingUser] = useState<UserWithGroup | null>(null)
+    const router = useRouter();
 
     const handleDelete = async (userId: string) => {
          toast.promise(deleteUser(userId), {
@@ -130,7 +132,7 @@ export function UserTable({ data, groups, canManage }: UserTableProps) {
 
     return (
         <>
-            <DataTable columns={columns} data={data} />
+            <DataTable columns={columns} data={data} onRefresh={() => router.refresh()} />
             {editingUser && (
                 <EditUserDialog
                     user={editingUser}

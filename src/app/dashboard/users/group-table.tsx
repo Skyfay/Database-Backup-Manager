@@ -17,6 +17,7 @@ import { useState } from "react"
 import { EditGroupDialog } from "@/app/dashboard/users/edit-group-dialog"
 import { Badge } from "@/components/ui/badge"
 import { GroupWithStats } from "@/types"
+import { useRouter } from "next/navigation"
 
 interface GroupTableProps {
     data: GroupWithStats[];
@@ -25,6 +26,7 @@ interface GroupTableProps {
 
 export function GroupTable({ data, canManage }: GroupTableProps) {
     const [editingGroup, setEditingGroup] = useState<GroupWithStats | null>(null)
+    const router = useRouter()
 
     const handleDelete = async (id: string) => {
         toast.promise(deleteGroup(id), {
@@ -116,7 +118,7 @@ export function GroupTable({ data, canManage }: GroupTableProps) {
 
     return (
         <>
-            <DataTable columns={columns} data={data} />
+            <DataTable columns={columns} data={data} onRefresh={() => router.refresh()} />
             {editingGroup && (
                 <EditGroupDialog
                     group={editingGroup}

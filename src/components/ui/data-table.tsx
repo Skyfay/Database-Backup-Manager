@@ -31,6 +31,8 @@ import {
     DropdownMenuCheckboxItem,
     DropdownMenuContent,
     DropdownMenuTrigger,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import {
     Select,
@@ -46,6 +48,8 @@ import {
     ChevronsLeft,
     ChevronsRight,
     X,
+    Settings2,
+    RefreshCw,
 } from "lucide-react";
 import { DataTableFacetedFilter } from "./data-table-faceted-filter";
 
@@ -67,6 +71,7 @@ interface DataTableProps<TData, TValue> {
     searchKey?: string;
     filterableColumns?: DataTableFilterableColumn<TData>[];
     autoResetPageIndex?: boolean;
+    onRefresh?: () => void;
 }
 
 export function DataTable<TData, TValue>({
@@ -75,6 +80,7 @@ export function DataTable<TData, TValue>({
     searchKey = "name",
     filterableColumns = [],
     autoResetPageIndex = true,
+    onRefresh,
 }: DataTableProps<TData, TValue>) {
     const [sorting, setSorting] = React.useState<SortingState>([]);
     const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
@@ -140,32 +146,42 @@ export function DataTable<TData, TValue>({
                         </Button>
                     )}
                 </div>
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="outline" className="ml-auto">
-                            Columns <ChevronDown className="ml-2 h-4 w-4" />
+                <div className="flex items-center space-x-2">
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="sm" className="h-8 hidden lg:flex ml-auto">
+                                <Settings2 className="mr-2 h-4 w-4" />
+                                View
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-[150px]">
+                            <DropdownMenuLabel>Toggle columns</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            {table
+                                .getAllColumns()
+                                .filter((column) => column.getCanHide())
+                                .map((column) => {
+                                    return (
+                                        <DropdownMenuCheckboxItem
+                                            key={column.id}
+                                            className="capitalize"
+                                            checked={column.getIsVisible()}
+                                            onCheckedChange={(value) =>
+                                                column.toggleVisibility(!!value)
+                                            }
+                                        >
+                                            {column.id}
+                                        </DropdownMenuCheckboxItem>
+                                    );
+                                })}
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                    {onRefresh && (
+                        <Button variant="outline" size="sm" onClick={onRefresh} title="Refresh" className="h-8 w-8 p-0">
+                            <RefreshCw className="h-4 w-4" />
                         </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                        {table
-                            .getAllColumns()
-                            .filter((column) => column.getCanHide())
-                            .map((column) => {
-                                return (
-                                    <DropdownMenuCheckboxItem
-                                        key={column.id}
-                                        className="capitalize"
-                                        checked={column.getIsVisible()}
-                                        onCheckedChange={(value) =>
-                                            column.toggleVisibility(!!value)
-                                        }
-                                    >
-                                        {column.id}
-                                    </DropdownMenuCheckboxItem>
-                                );
-                            })}
-                    </DropdownMenuContent>
-                </DropdownMenu>
+                    )}
+                </div>
             </div>
             <div className="rounded-md border">
                 <Table>

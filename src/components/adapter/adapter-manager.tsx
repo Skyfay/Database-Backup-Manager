@@ -230,6 +230,7 @@ export function AdapterManager({ type, title, description, canManage = true }: A
                             columns={columns}
                             data={configs}
                             searchKey="name"
+                            onRefresh={fetchConfigs}
                         />
                     </CardContent>
                 </Card>

@@ -278,6 +278,7 @@ export function JobsClient({ canManage, canExecute }: JobsClientProps) {
                         columns={columns}
                         data={jobs}
                         searchKey="name"
+                        onRefresh={fetchJobs}
                     />
                 </CardContent>
             </Card>

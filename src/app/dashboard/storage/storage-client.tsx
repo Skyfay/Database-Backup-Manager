@@ -271,6 +271,7 @@ export function StorageClient({ canDownload, canRestore, canDelete }: StorageCli
                                 columns={columns}
                                 data={files}
                                 filterableColumns={filterableColumns}
+                                onRefresh={() => selectedDestination && fetchFiles(selectedDestination)}
                              />
                         )}
                     </CardContent>

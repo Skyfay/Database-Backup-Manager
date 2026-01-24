@@ -237,6 +237,7 @@ export function EncryptionProfilesList() {
                         columns={columns}
                         data={profiles}
                         searchKey="name"
+                        onRefresh={fetchProfiles}
                     />
                 )}
             </CardContent>

@@ -141,6 +141,7 @@ function HistoryContent() {
                         searchKey="jobName"
                         filterableColumns={filterableColumns}
                         autoResetPageIndex={false}
+                        onRefresh={fetchHistory}
                     />
                 </CardContent>
             </Card>
