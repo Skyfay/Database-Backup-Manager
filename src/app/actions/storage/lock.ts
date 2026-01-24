@@ -19,9 +19,9 @@ export async function lockBackup(destinationId: string, filePath: string) {
     await checkPermission(PERMISSIONS.STORAGE.DELETE); // Reuse delete permission for managing retention locks? Or WRITE? Let's use Delete since it prevents deletion.
 
     try {
-        await storageService.toggleLock(destinationId, filePath);
+        const locked = await storageService.toggleLock(destinationId, filePath);
         revalidatePath(`/dashboard/storage`);
-        return { success: true };
+        return { success: true, locked };
     } catch (error: any) {
         console.error("Failed to lock backup:", error);
         return { success: false, error: error.message };

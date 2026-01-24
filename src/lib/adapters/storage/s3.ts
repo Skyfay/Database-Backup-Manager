@@ -1,6 +1,6 @@
 import { StorageAdapter, FileInfo } from "@/lib/core/interfaces";
 import { S3GenericSchema, S3AWSSchema, S3R2Schema, S3HetznerSchema } from "@/lib/adapters/definitions";
-import { S3Client, ListObjectsV2Command, GetObjectCommand, DeleteObjectCommand, HeadBucketCommand, PutObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, ListObjectsV2Command, GetObjectCommand, DeleteObjectCommand, HeadBucketCommand, PutObjectCommand, StorageClass } from "@aws-sdk/client-s3";
 import { Upload } from "@aws-sdk/lib-storage";
 import { createReadStream, createWriteStream } from "fs";
 import { pipeline } from "stream/promises";
@@ -50,7 +50,7 @@ async function s3Upload(internalConfig: S3InternalConfig, localPath: string, rem
                 Bucket: internalConfig.bucket,
                 Key: targetKey,
                 Body: fileStream,
-                StorageClass: internalConfig.storageClass || undefined,
+                StorageClass: (internalConfig.storageClass as StorageClass) || undefined,
             },
         });
 
@@ -100,7 +100,13 @@ async function s3List(internalConfig: S3InternalConfig, dir: string = ""): Promi
     }
 }
 
-async function s3Download(internalConfig: S3InternalConfig, remotePath: string, localPath: string): Promise<boolean> {
+async function s3Download(
+    internalConfig: S3InternalConfig,
+    remotePath: string,
+    localPath: string,
+    onProgress?: (processed: number, total: number) => void,
+    onLog?: (msg: string, level?: LogLevel, type?: LogType, details?: string) => void
+): Promise<boolean> {
     const client = S3ClientFactory.create(internalConfig);
     const targetKey = remotePath; // Usually getting full path from list() result
 
@@ -145,7 +151,11 @@ async function s3Read(internalConfig: S3InternalConfig, remotePath: string): Pro
     }
 }
 
-async function s3Delete(internalConfig: S3InternalConfig, remotePath: string): Promise<boolean> {
+async function s3Delete(
+    internalConfig: S3InternalConfig,
+    remotePath: string,
+    onLog?: (msg: string, level?: LogLevel, type?: LogType, details?: string) => void
+): Promise<boolean> {
     const client = S3ClientFactory.create(internalConfig);
 
     try {

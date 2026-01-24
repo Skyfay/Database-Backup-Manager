@@ -335,7 +335,7 @@ export function JobForm({ sources, destinations, notifications, encryptionProfil
                                                             <FormLabel>Max Backups to Keep</FormLabel>
                                                             <FormControl>
                                                                 <div className="flex items-center gap-2">
-                                                                     <Input type="number" min={1} {...field} onChange={e => field.onChange(parseInt(e.target.value))} className="w-24" />
+                                                                     <Input type="number" min={1} {...field} value={field.value as number} onChange={e => field.onChange(parseInt(e.target.value))} className="w-24" />
                                                                      <span className="text-sm text-muted-foreground">newest backups</span>
                                                                 </div>
                                                             </FormControl>
@@ -359,7 +359,7 @@ export function JobForm({ sources, destinations, notifications, encryptionProfil
                                                         render={({ field }) => (
                                                             <FormItem>
                                                                 <FormLabel>Daily</FormLabel>
-                                                                <FormControl><Input type="number" min={0} {...field} onChange={e => field.onChange(parseInt(e.target.value))} /></FormControl>
+                                                                <FormControl><Input type="number" min={0} {...field} value={field.value as number} onChange={e => field.onChange(parseInt(e.target.value))} /></FormControl>
                                                                 <FormDescription>Days</FormDescription>
                                                             </FormItem>
                                                         )}
@@ -370,7 +370,7 @@ export function JobForm({ sources, destinations, notifications, encryptionProfil
                                                         render={({ field }) => (
                                                             <FormItem>
                                                                 <FormLabel>Weekly</FormLabel>
-                                                                <FormControl><Input type="number" min={0} {...field} onChange={e => field.onChange(parseInt(e.target.value))} /></FormControl>
+                                                                <FormControl><Input type="number" min={0} {...field} value={field.value as number} onChange={e => field.onChange(parseInt(e.target.value))} /></FormControl>
                                                                 <FormDescription>Weeks</FormDescription>
                                                             </FormItem>
                                                         )}
@@ -381,7 +381,7 @@ export function JobForm({ sources, destinations, notifications, encryptionProfil
                                                         render={({ field }) => (
                                                             <FormItem>
                                                                 <FormLabel>Monthly</FormLabel>
-                                                                <FormControl><Input type="number" min={0} {...field} onChange={e => field.onChange(parseInt(e.target.value))} /></FormControl>
+                                                                <FormControl><Input type="number" min={0} {...field} value={field.value as number} onChange={e => field.onChange(parseInt(e.target.value))} /></FormControl>
                                                                 <FormDescription>Months</FormDescription>
                                                             </FormItem>
                                                         )}
@@ -392,7 +392,7 @@ export function JobForm({ sources, destinations, notifications, encryptionProfil
                                                         render={({ field }) => (
                                                             <FormItem>
                                                                 <FormLabel>Yearly</FormLabel>
-                                                                <FormControl><Input type="number" min={0} {...field} onChange={e => field.onChange(parseInt(e.target.value))} /></FormControl>
+                                                                <FormControl><Input type="number" min={0} {...field} value={field.value as number} onChange={e => field.onChange(parseInt(e.target.value))} /></FormControl>
                                                                 <FormDescription>Years</FormDescription>
                                                             </FormItem>
                                                         )}

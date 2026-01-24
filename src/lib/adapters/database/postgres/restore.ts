@@ -179,7 +179,7 @@ log("Starting restore process", "info", "command", `${pgRestoreBinary} ${args.jo
                         const text = data.toString();
                         stderrBuffer += text;
                         const lines = text.trim().split('\n');
-                        lines.forEach(line => {
+                        lines.forEach((line: string) => {
                             if (line && !line.includes('NOTICE:')) {
                                 log(line, 'info');
                             }
@@ -192,7 +192,7 @@ log("Starting restore process", "info", "command", `${pgRestoreBinary} ${args.jo
                         const text = data.toString();
                         stdoutBuffer += text;
                         const lines = text.trim().split('\n');
-                        lines.forEach(line => {
+                        lines.forEach((line: string) => {
                             if (line) log(line, 'info');
                         });
                     });
@@ -280,7 +280,7 @@ log("Starting restore process", "info", "command", `${pgRestoreBinary} ${args.jo
                             const text = data.toString();
                             stderrBuffer += text;
                             const lines = text.trim().split('\n');
-                            lines.forEach(line => {
+                            lines.forEach((line: string) => {
                                 // Filter out noise - only log actual errors
                                 if (line &&
                                     !line.includes('NOTICE:') &&
@@ -518,7 +518,7 @@ log("Starting restore process", "info", "command", `${pgRestoreBinary} ${args.jo
                         stderrBuffer += text;
                         // Log immediately
                         const lines = text.trim().split('\n');
-                        lines.forEach(line => {
+                        lines.forEach((line: string) => {
                             if (line && !line.includes('NOTICE:')) { // Filter out notices
                                 log(line, 'info');
                             }
@@ -531,7 +531,7 @@ log("Starting restore process", "info", "command", `${pgRestoreBinary} ${args.jo
                         const text = data.toString();
                         stdoutBuffer += text;
                         const lines = text.trim().split('\n');
-                        lines.forEach(line => {
+                        lines.forEach((line: string) => {
                             if (line) log(line, 'info');
                         });
                     });

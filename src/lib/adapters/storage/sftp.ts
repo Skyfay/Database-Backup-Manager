@@ -67,7 +67,7 @@ export const SFTPStorageAdapter: StorageAdapter = {
             // However, the signature is (total_transferred, chunk, total).
 
             await sftp.put(createReadStream(localPath), destination, {
-                step: (total_transferred, chunk, total) => {
+                step: (total_transferred: any, chunk: any, total: any) => {
                     if (onProgress && totalSize > 0) {
                         // total param in callback is total bytes to transfer, which is known if we pass it, but put() with stream might not know it unless we checked.
                         // We use our known totalSize.
@@ -75,7 +75,7 @@ export const SFTPStorageAdapter: StorageAdapter = {
                         onProgress(percent);
                     }
                 }
-            });
+            } as any);
 
             if (onLog) onLog(`SFTP upload completed successfully`, 'info', 'storage');
             return true;
