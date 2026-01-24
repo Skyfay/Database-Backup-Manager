@@ -17,7 +17,7 @@ import { toast } from "sonner"
 import { updateSystemSettings } from "@/app/actions/settings"
 import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Loader2, Shield } from "lucide-react"
+import { Loader2, Shield, Cpu } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 
@@ -68,7 +68,10 @@ export function SystemSettingsForm({ initialMaxConcurrentJobs, initialDisablePas
             <div className="space-y-6">
                 <Card>
                     <CardHeader>
-                        <CardTitle>Job Execution</CardTitle>
+                        <div className="flex items-center gap-2">
+                            <Cpu className="h-5 w-5 text-muted-foreground" />
+                            <CardTitle>Job Execution</CardTitle>
+                        </div>
                         <CardDescription>
                             Configure how jobs are executed on the server.
                         </CardDescription>
