@@ -144,5 +144,25 @@ export const LocalFileSystemAdapter: StorageAdapter = {
              console.error("Local delete failed:", error);
              return false;
         }
+    },
+
+    async test(config: { basePath: string }): Promise<{ success: boolean; message: string }> {
+        const testFile = path.join(config.basePath, `.connection-test-${Date.now()}`);
+        try {
+            // Ensure dir exists logic is same as upload, but test explicitly checks if we can write
+            if (!existsSync(config.basePath)) {
+                await fs.mkdir(config.basePath, { recursive: true });
+            }
+
+            // 1. Write
+            await fs.writeFile(testFile, "Connection Test");
+
+            // 2. Delete
+            await fs.unlink(testFile);
+
+            return { success: true, message: `Access to ${config.basePath} verified (Read/Write)` };
+        } catch (error: any) {
+             return { success: false, message: `Access failed: ${error.message}` };
+        }
     }
 };

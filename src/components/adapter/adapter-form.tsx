@@ -345,7 +345,7 @@ export function AdapterForm({ type, adapters, onSuccess, initialData }: { type: 
 
                 {/* Dialog Footer Actions */}
                 <div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 gap-2 pt-4">
-                    {(type === 'notification' || type === 'database') && (
+                    {(type === 'notification' || type === 'database' || type === 'storage') && (
                         <Button
                             type="button"
                             variant="secondary"

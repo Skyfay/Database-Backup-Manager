@@ -1,6 +1,6 @@
 import { StorageAdapter, FileInfo } from "@/lib/core/interfaces";
 import { S3GenericSchema, S3AWSSchema, S3R2Schema, S3HetznerSchema } from "@/lib/adapters/definitions";
-import { S3Client, ListObjectsV2Command, GetObjectCommand, DeleteObjectCommand, HeadBucketCommand } from "@aws-sdk/client-s3";
+import { S3Client, ListObjectsV2Command, GetObjectCommand, DeleteObjectCommand, HeadBucketCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { Upload } from "@aws-sdk/lib-storage";
 import { createReadStream, createWriteStream } from "fs";
 import { pipeline } from "stream/promises";
@@ -164,19 +164,30 @@ async function s3Delete(internalConfig: S3InternalConfig, remotePath: string): P
 
 async function s3Test(internalConfig: S3InternalConfig): Promise<{ success: boolean; message: string }> {
     const client = S3ClientFactory.create(internalConfig);
+    const testFile = `.backup-manager-test-${Date.now()}`;
+    // Use target key logic to respect pathPrefix
+    const targetKey = S3ClientFactory.getTargetKey(internalConfig, testFile);
+
     try {
-        // Check if bucket exists and we have access
-        const command = new HeadBucketCommand({
+        // 1. Try to write
+        await client.send(new PutObjectCommand({
             Bucket: internalConfig.bucket,
-        });
-        await client.send(command);
-        return { success: true, message: "Connection to Bucket successful" };
+            Key: targetKey,
+            Body: "Database Backup Manager - Connection Test"
+        }));
+
+        // 2. Try to delete
+        await client.send(new DeleteObjectCommand({
+            Bucket: internalConfig.bucket,
+            Key: targetKey
+        }));
+
+        return { success: true, message: "Connection successful (Write/Delete verified)" };
     } catch (error: any) {
-        // If 403 or 404, we connected but something is wrong with permissions or bucket name
-        // If connection refused, network error
         return { success: false, message: error.message || "Connection failed" };
     }
 }
+
 
 // --- Specific Adapters ---
 
