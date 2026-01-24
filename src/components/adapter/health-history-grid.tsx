@@ -41,7 +41,7 @@ export function HealthHistoryGrid({ adapterId }: HealthHistoryGridProps) {
                 // Reverse history for display (Oldest -> Newest)
                 json.history = json.history.reverse();
                 setData(json);
-            } catch (e) {
+            } catch (_e) {
                 setError(true);
             } finally {
                 setLoading(false);

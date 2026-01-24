@@ -4,7 +4,6 @@ import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { HealthHistoryGrid } from "@/components/adapter/health-history-grid";
 import { useState } from "react";
-import { Loader2 } from "lucide-react";
 
 import { DateDisplay } from "@/components/utils/date-display";
 

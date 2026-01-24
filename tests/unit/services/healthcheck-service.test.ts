@@ -1,9 +1,7 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { prismaMock } from '@/lib/testing/prisma-mock';
 import { HealthCheckService } from '@/services/healthcheck-service';
 import { registry } from '@/lib/core/registry';
-import { decryptConfig } from '@/lib/crypto';
-import { DatabaseAdapter } from '@/lib/core/interfaces';
 
 // Mock registry and crypto
 vi.mock('@/lib/core/registry', () => ({

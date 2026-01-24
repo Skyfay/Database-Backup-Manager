@@ -53,6 +53,9 @@ describe('StorageService', () => {
                 createdAt: new Date(),
                 updatedAt: new Date(),
                 metadata: null,
+                lastHealthCheck: null,
+                lastStatus: 'ONLINE',
+                consecutiveFailures: 0,
             };
 
             // Prisma Mock
@@ -88,6 +91,9 @@ describe('StorageService', () => {
                 createdAt: new Date(),
                 updatedAt: new Date(),
                 metadata: null,
+                lastHealthCheck: null,
+                lastStatus: 'ONLINE',
+                consecutiveFailures: 0,
             });
 
             await expect(service.listFiles('db-conf'))
@@ -104,6 +110,9 @@ describe('StorageService', () => {
                 createdAt: new Date(),
                 updatedAt: new Date(),
                 metadata: null,
+                lastHealthCheck: null,
+                lastStatus: 'ONLINE',
+                consecutiveFailures: 0,
             });
 
             vi.mocked(registry.get).mockReturnValue(undefined);
@@ -143,6 +152,9 @@ describe('StorageService', () => {
                 createdAt: new Date(),
                 updatedAt: new Date(),
                 metadata: null,
+                lastHealthCheck: null,
+                lastStatus: 'ONLINE',
+                consecutiveFailures: 0,
             };
 
             // Prisma Mocks
@@ -178,6 +190,9 @@ describe('StorageService', () => {
                 createdAt: new Date(),
                 updatedAt: new Date(),
                 metadata: null,
+                lastHealthCheck: null,
+                lastStatus: 'ONLINE',
+                consecutiveFailures: 0,
             };
 
             prismaMock.adapterConfig.findUnique.mockResolvedValue(mockDbConfig);
@@ -204,7 +219,10 @@ describe('StorageService', () => {
                name: 'S3',
                createdAt: new Date(),
                updatedAt: new Date(),
-               metadata: null
+               metadata: null,
+               lastHealthCheck: null,
+               lastStatus: 'ONLINE',
+               consecutiveFailures: 0,
            };
 
            prismaMock.adapterConfig.findUnique.mockResolvedValue(mockDbConfig);
