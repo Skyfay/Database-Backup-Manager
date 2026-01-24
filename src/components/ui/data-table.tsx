@@ -6,6 +6,8 @@ import {
     ColumnFiltersState,
     SortingState,
     VisibilityState,
+    PaginationState,
+    OnChangeFn,
     flexRender,
     getCoreRowModel,
     getFilteredRowModel,
@@ -52,11 +54,13 @@ import {
     RefreshCw,
 } from "lucide-react";
 import { DataTableFacetedFilter } from "./data-table-faceted-filter";
+import { cn } from "@/lib/utils";
 
 export interface DataTableFilterOption {
     label: string
     value: string
     icon?: React.ComponentType<{ className?: string }>
+    count?: number
 }
 
 export interface DataTableFilterableColumn<TData> {
@@ -72,6 +76,20 @@ interface DataTableProps<TData, TValue> {
     filterableColumns?: DataTableFilterableColumn<TData>[];
     autoResetPageIndex?: boolean;
     onRefresh?: () => void;
+    isLoading?: boolean;
+
+    // Manual Pagination & Sorting Capabilities
+    pageCount?: number;
+    rowCount?: number;
+    pagination?: PaginationState;
+    onPaginationChange?: OnChangeFn<PaginationState>;
+    sorting?: SortingState;
+    onSortingChange?: OnChangeFn<SortingState>;
+    columnFilters?: ColumnFiltersState;
+    onColumnFiltersChange?: OnChangeFn<ColumnFiltersState>;
+    manualPagination?: boolean;
+    manualSorting?: boolean;
+    manualFiltering?: boolean;
 }
 
 export function DataTable<TData, TValue>({
@@ -81,36 +99,72 @@ export function DataTable<TData, TValue>({
     filterableColumns = [],
     autoResetPageIndex = true,
     onRefresh,
+    isLoading = false,
+    pageCount,
+    rowCount,
+    pagination: controlledPagination,
+    onPaginationChange,
+    sorting: controlledSorting,
+    onSortingChange,
+    columnFilters: controlledColumnFilters,
+    onColumnFiltersChange,
+    manualPagination = false,
+    manualSorting = false,
+    manualFiltering = false,
 }: DataTableProps<TData, TValue>) {
-    const [sorting, setSorting] = React.useState<SortingState>([]);
-    const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
+    // Internal state (used if no controlled state is provided)
+    const [internalSorting, setInternalSorting] = React.useState<SortingState>([]);
+    const [internalColumnFilters, setInternalColumnFilters] = React.useState<ColumnFiltersState>([]);
+    const [internalPagination, setInternalPagination] = React.useState<PaginationState>({
+        pageIndex: 0,
+        pageSize: 10,
+    });
     const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
     const [rowSelection, setRowSelection] = React.useState({});
+
+    // Resolution (Controlled vs Internal)
+    const sorting = controlledSorting ?? internalSorting;
+    const setSorting = onSortingChange ?? setInternalSorting;
+
+    const columnFilters = controlledColumnFilters ?? internalColumnFilters;
+    const setColumnFilters = onColumnFiltersChange ?? setInternalColumnFilters;
+
+    const pagination = controlledPagination ?? internalPagination;
+    const setPagination = onPaginationChange ?? setInternalPagination;
 
     // eslint-disable-next-line
     const table = useReactTable({
         data,
         columns,
-        autoResetPageIndex,
-        onSortingChange: setSorting,
-        onColumnFiltersChange: setColumnFilters,
-        getCoreRowModel: getCoreRowModel(),
-        getPaginationRowModel: getPaginationRowModel(),
-        getSortedRowModel: getSortedRowModel(),
-        getFilteredRowModel: getFilteredRowModel(),
-        getFacetedRowModel: getFacetedRowModel(),
-        getFacetedUniqueValues: getFacetedUniqueValues(),
-        onColumnVisibilityChange: setColumnVisibility,
-        onRowSelectionChange: setRowSelection,
+        pageCount: pageCount ?? -1,
         state: {
             sorting,
             columnFilters,
             columnVisibility,
             rowSelection,
+            pagination,
         },
+        autoResetPageIndex,
+        manualPagination,
+        manualSorting,
+        manualFiltering,
+        onSortingChange: setSorting,
+        onColumnFiltersChange: setColumnFilters,
+        onPaginationChange: setPagination,
+        onColumnVisibilityChange: setColumnVisibility,
+        onRowSelectionChange: setRowSelection,
+
+        getCoreRowModel: getCoreRowModel(),
+        // Only use client-side models if NOT manual
+        getPaginationRowModel: !manualPagination ? getPaginationRowModel() : undefined,
+        getSortedRowModel: !manualSorting ? getSortedRowModel() : undefined,
+        getFilteredRowModel: !manualFiltering ? getFilteredRowModel() : undefined,
+        getFacetedRowModel: !manualFiltering ? getFacetedRowModel() : undefined,
+        getFacetedUniqueValues: !manualFiltering ? getFacetedUniqueValues() : undefined,
     });
 
     const isFiltered = table.getState().columnFilters.length > 0;
+    const totalRows = rowCount ?? table.getFilteredRowModel().rows.length;
 
     return (
         <div className="w-full">
@@ -177,8 +231,15 @@ export function DataTable<TData, TValue>({
                         </DropdownMenuContent>
                     </DropdownMenu>
                     {onRefresh && (
-                        <Button variant="outline" size="sm" onClick={onRefresh} title="Refresh" className="h-8 w-8 p-0">
-                            <RefreshCw className="h-4 w-4" />
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={onRefresh}
+                            title="Refresh"
+                            className="h-8 w-8 p-0"
+                            disabled={isLoading}
+                        >
+                            <RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} />
                         </Button>
                     )}
                 </div>
@@ -236,8 +297,8 @@ export function DataTable<TData, TValue>({
             <div className="flex items-center justify-between px-2 py-4">
                 <div className="flex-1 text-sm text-muted-foreground">
                     {table.getFilteredSelectedRowModel().rows.length > 0
-                        ? `${table.getFilteredSelectedRowModel().rows.length} of ${table.getFilteredRowModel().rows.length} row(s) selected.`
-                        : `Total ${table.getFilteredRowModel().rows.length} row(s).`
+                        ? `${table.getFilteredSelectedRowModel().rows.length} of ${totalRows} row(s) selected.`
+                        : `Total ${totalRows} row(s).`
                     }
                 </div>
                 <div className="flex items-center space-x-6 lg:space-x-8">

@@ -28,6 +28,7 @@ interface DataTableFacetedFilterProps<TData, TValue> {
     label: string
     value: string
     icon?: React.ComponentType<{ className?: string }>
+    count?: number
   }[]
 }
 
@@ -38,6 +39,11 @@ export function DataTableFacetedFilter<TData, TValue>({
 }: DataTableFacetedFilterProps<TData, TValue>) {
   const facets = column?.getFacetedUniqueValues()
   const selectedValues = new Set(column?.getFilterValue() as string[])
+
+  const optionCountOrFacet = (option: { value: string, count?: number }) => {
+      if (typeof option.count === 'number') return option.count;
+      return facets?.get(option.value) || 0;
+  }
 
   return (
     <Popover>
@@ -98,15 +104,15 @@ export function DataTableFacetedFilter<TData, TValue>({
                   if (aSelected && !bSelected) return -1;
                   if (!aSelected && bSelected) return 1;
 
-                  const countA = facets?.get(a.value) || 0;
-                  const countB = facets?.get(b.value) || 0;
+                  const countA = optionCountOrFacet(a);
+                  const countB = optionCountOrFacet(b);
 
                   if (countA !== countB) return countB - countA;
                   return a.label.localeCompare(b.label);
                 })
                 .map((option) => {
                 const isSelected = selectedValues.has(option.value)
-                const count = facets?.get(option.value)
+                const count = optionCountOrFacet(option)
 
                 // Optional: Hide options with 0 results if they are not selected
                 // if (!isSelected && !count) return null;
@@ -141,9 +147,9 @@ export function DataTableFacetedFilter<TData, TValue>({
                       <option.icon className="mr-2 h-4 w-4 text-muted-foreground" />
                     )}
                     <span>{option.label}</span>
-                    {facets?.get(option.value) && (
+                    {count !== undefined && (
                       <span className="ml-auto flex h-4 w-4 items-center justify-center font-mono text-xs">
-                        {facets.get(option.value)}
+                        {count}
                       </span>
                     )}
                   </CommandItem>
