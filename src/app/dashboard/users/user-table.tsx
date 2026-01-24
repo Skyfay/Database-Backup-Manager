@@ -2,7 +2,7 @@
 
 import { ColumnDef } from "@tanstack/react-table"
 import { Button } from "@/components/ui/button"
-import { MoreHorizontal, Trash, Pencil } from "lucide-react"
+import { MoreHorizontal, Trash, Pencil, ShieldCheck, ShieldAlert } from "lucide-react"
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -86,6 +86,24 @@ export function UserTable({ data, groups, canManage }: UserTableProps) {
                     <span className="text-muted-foreground text-sm">-</span>
                 );
             }
+        },
+        {
+            accessorKey: "twoFactorEnabled",
+            header: "2FA",
+            cell: ({ row }) => {
+                const isEnabled = row.original.twoFactorEnabled;
+                return isEnabled ? (
+                    <div className="flex items-center text-green-500">
+                        <ShieldCheck className="h-4 w-4 mr-1" />
+                        <span className="text-xs font-medium">Enabled</span>
+                    </div>
+                ) : (
+                     <div className="flex items-center text-muted-foreground/50">
+                        <ShieldAlert className="h-4 w-4 mr-1" />
+                        <span className="text-xs">Disabled</span>
+                    </div>
+                );
+            },
         },
         {
             accessorKey: "lastLogin",
