@@ -20,7 +20,7 @@ describe('Discord Adapter', () => {
             status: 200
         });
 
-        const result = await DiscordAdapter.test({ webhookUrl: 'https://discord.com/api/webhooks/xxx' });
+        const result = await DiscordAdapter.test!({ webhookUrl: 'https://discord.com/api/webhooks/xxx' });
 
         expect(result.success).toBe(true);
         expect(mockFetch).toHaveBeenCalledWith('https://discord.com/api/webhooks/xxx', expect.any(Object));
@@ -35,7 +35,7 @@ describe('Discord Adapter', () => {
             statusText: 'Not Found'
         });
 
-        const result = await DiscordAdapter.test({ webhookUrl: 'https://bad-url' });
+        const result = await DiscordAdapter.test!({ webhookUrl: 'https://bad-url' });
 
         expect(result.success).toBe(false);
         expect(result.message).toContain('404');

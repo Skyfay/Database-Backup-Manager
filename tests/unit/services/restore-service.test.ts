@@ -228,6 +228,7 @@ describe('RestoreService', () => {
                 return undefined;
             });
 
+            // @ts-expect-error -- Mock return type mismatch
             prismaMock.adapterConfig.findUnique.mockImplementation(async (args: any) => {
                 if (args.where.id === 'storage-1') return mockStorageConfig as any;
                 if (args.where.id === 'source-1') return mockSourceConfig as any;

@@ -86,7 +86,7 @@ describe('LocalFileSystemAdapter Security', () => {
 
       vi.mocked(existsSync).mockReturnValue(true);
 
-      await expect(LocalFileSystemAdapter.read(config, maliciousPath))
+      await expect(LocalFileSystemAdapter.read!(config, maliciousPath))
           .rejects
           .toThrow(/Access denied|illegal/i);
   });

@@ -1,5 +1,5 @@
 export type LogLevel = "info" | "success" | "warning" | "error";
-export type LogType = "general" | "command" | "storage";
+export type LogType = "general" | "command" | "storage" | "security";
 
 export interface LogEntry {
   timestamp: string; // ISO String

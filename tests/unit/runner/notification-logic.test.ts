@@ -145,7 +145,6 @@ describe('Runner Step: Finalize & Notifications', () => {
 
     it('should log error instead of throwing if notification fails', async () => {
         mockCtx.job!.notifications = [{ adapterId: 'discord', config: '{}', name: 'Discord' } as any];
-        // @ts-expect-error -- Mock setup -- Mock setup
         mockSend.mockRejectedValueOnce(new Error('Network error'));
 
         // Should not throw

@@ -25,7 +25,7 @@ vi.mock('@/services/system-task-service', () => ({
         runTask: vi.fn().mockResolvedValue(undefined),
     },
     SYSTEM_TASKS: {
-        CLEANUP: 'cleanup',
+        HEALTH_CHECK: 'health_check',
     }
 }));
 
@@ -58,7 +58,6 @@ describe('BackupScheduler', () => {
     it('should initialize and refresh jobs', async () => {
         await scheduler.init();
         expect(prisma.job.findMany).toHaveBeenCalledWith({ where: { enabled: true } });
-        // @ts-expect-error -- Mock setup
         expect(systemTaskService.getTaskConfig).toHaveBeenCalled();
     });
 
@@ -135,7 +134,7 @@ describe('BackupScheduler', () => {
         // @ts-expect-error -- Mock setup
         const callback = cron.schedule.mock.lastCall[1];
         callback();
-        expect(systemTaskService.runTask).toHaveBeenCalledWith(SYSTEM_TASKS.CLEANUP);
+        expect(systemTaskService.runTask).toHaveBeenCalledWith(SYSTEM_TASKS.HEALTH_CHECK);
     });
 
     it('should not update schedule if loading from DB fails', async () => {
