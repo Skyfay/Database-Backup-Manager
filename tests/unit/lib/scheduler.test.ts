@@ -1,5 +1,5 @@
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { BackupScheduler } from '@/lib/scheduler';
 import prisma from '@/lib/prisma';
 import cron from 'node-cron';
@@ -45,20 +45,20 @@ describe('BackupScheduler', () => {
         scheduler = new BackupScheduler();
 
         // Default mocks
-        // @ts-ignore
+        // @ts-expect-error -- Mock setup
         cron.validate.mockReturnValue(true);
-        // @ts-ignore
+        // @ts-expect-error -- Mock setup
         cron.schedule.mockReturnValue({ stop: vi.fn() });
-        // @ts-ignore
+        // @ts-expect-error -- Mock setup
         prisma.job.findMany.mockResolvedValue([]);
-        // @ts-ignore
+        // @ts-expect-error -- Mock setup
         systemTaskService.getTaskConfig.mockResolvedValue(null);
     });
 
     it('should initialize and refresh jobs', async () => {
         await scheduler.init();
         expect(prisma.job.findMany).toHaveBeenCalledWith({ where: { enabled: true } });
-        // @ts-ignore
+        // @ts-expect-error -- Mock setup
         expect(systemTaskService.getTaskConfig).toHaveBeenCalled();
     });
 
@@ -67,7 +67,7 @@ describe('BackupScheduler', () => {
             { id: 'job1', name: 'Job 1', schedule: '0 0 * * *', enabled: true },
             { id: 'job2', name: 'Job 2', schedule: '*/5 * * * *', enabled: true },
         ];
-        // @ts-ignore
+        // @ts-expect-error -- Mock setup
         prisma.job.findMany.mockResolvedValue(jobs);
 
         await scheduler.refresh();
@@ -79,7 +79,7 @@ describe('BackupScheduler', () => {
 
         // Verify scheduled callback calls runJob
         // Get the callback passed to schedule for the first job
-        // @ts-ignore
+        // @ts-expect-error -- Mock setup
         const callback = cron.schedule.mock.calls[0][1];
         callback();
         expect(runJob).toHaveBeenCalledWith('job1');
@@ -89,9 +89,9 @@ describe('BackupScheduler', () => {
         const jobs = [
             { id: 'job1', name: 'Job 1', schedule: 'invalid-cron', enabled: true },
         ];
-        // @ts-ignore
+        // @ts-expect-error -- Mock setup
         prisma.job.findMany.mockResolvedValue(jobs);
-        // @ts-ignore
+        // @ts-expect-error -- Mock setup
         cron.validate.mockImplementation((s: string) => s !== 'invalid-cron');
 
         await scheduler.refresh();
@@ -103,11 +103,11 @@ describe('BackupScheduler', () => {
         const jobs = [
             { id: 'job1', name: 'Job 1', schedule: '0 0 * * *', enabled: true },
         ];
-        // @ts-ignore
+        // @ts-expect-error -- Mock setup
         prisma.job.findMany.mockResolvedValue(jobs);
 
         const stopMock = vi.fn();
-        // @ts-ignore
+        // @ts-expect-error -- Mock setup
         cron.schedule.mockReturnValue({ stop: stopMock });
 
         // First load
@@ -124,7 +124,7 @@ describe('BackupScheduler', () => {
     });
 
     it('should schedule system tasks if configured', async () => {
-        // @ts-ignore
+        // @ts-expect-error -- Mock setup
         systemTaskService.getTaskConfig.mockResolvedValue('0 2 * * *'); // Daily at 2am
 
         await scheduler.refresh();
@@ -132,14 +132,14 @@ describe('BackupScheduler', () => {
         expect(cron.schedule).toHaveBeenCalledWith('0 2 * * *', expect.any(Function));
 
         // Verify callback executes system task
-        // @ts-ignore
+        // @ts-expect-error -- Mock setup
         const callback = cron.schedule.mock.lastCall[1];
         callback();
         expect(systemTaskService.runTask).toHaveBeenCalledWith(SYSTEM_TASKS.CLEANUP);
     });
 
     it('should not update schedule if loading from DB fails', async () => {
-        // @ts-ignore
+        // @ts-expect-error -- Mock setup
         prisma.job.findMany.mockRejectedValue(new Error('DB connection failed'));
         const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 

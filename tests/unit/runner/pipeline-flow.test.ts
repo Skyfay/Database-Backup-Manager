@@ -4,7 +4,6 @@ import { performExecution } from '@/lib/runner';
 import prisma from '@/lib/prisma';
 import { registry } from '@/lib/core/registry';
 import fs from 'fs';
-import path from 'path';
 import os from 'os';
 
 // Mocks
@@ -69,7 +68,7 @@ describe('Backup Pipeline Integration', () => {
         createdFiles = [];
 
         // Setup Registry
-        // @ts-ignore
+        // @ts-expect-error -- Mock setup -- Mock setup
         registry.get.mockImplementation((id) => {
             if (id === 'mock-db') return mockDbAdapter;
             if (id === 'mock-storage') return mockStorageAdapter;
@@ -96,11 +95,11 @@ describe('Backup Pipeline Integration', () => {
         };
 
         // Prisma Mocks
-        // @ts-ignore
+        // @ts-expect-error -- Mock setup -- Mock setup
         prisma.job.findUnique.mockResolvedValue(mockJob);
-        // @ts-ignore
+        // @ts-expect-error -- Mock setup -- Mock setup
         prisma.execution.update.mockResolvedValue(mockExecution);
-        // @ts-ignore
+        // @ts-expect-error -- Mock setup -- Mock setup
         prisma.execution.create.mockResolvedValue(mockExecution);
     });
 

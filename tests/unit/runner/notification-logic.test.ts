@@ -2,7 +2,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { stepFinalize } from '@/lib/runner/steps/04-completion';
 import { registry } from '@/lib/core/registry';
-import { decryptConfig } from '@/lib/crypto';
 import prisma from '@/lib/prisma';
 import { RunnerContext } from '@/lib/runner/types';
 
@@ -34,7 +33,7 @@ describe('Runner Step: Finalize & Notifications', () => {
         mockSend = vi.fn();
 
         // Setup registry to return a valid adapter
-        // @ts-ignore
+        // @ts-expect-error -- Mock setup -- Mock setup
         registry.get.mockReturnValue({
             type: 'notification',
             send: mockSend
@@ -146,7 +145,7 @@ describe('Runner Step: Finalize & Notifications', () => {
 
     it('should log error instead of throwing if notification fails', async () => {
         mockCtx.job!.notifications = [{ adapterId: 'discord', config: '{}', name: 'Discord' } as any];
-        // @ts-ignore
+        // @ts-expect-error -- Mock setup -- Mock setup
         mockSend.mockRejectedValueOnce(new Error('Network error'));
 
         // Should not throw

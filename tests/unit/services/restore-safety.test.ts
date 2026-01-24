@@ -60,7 +60,7 @@ describe('Restore Service Safety Checks', () => {
             prepareRestore: vi.fn(),
         };
 
-        // @ts-ignore
+        // @ts-expect-error -- Mock setup -- Mock setup
         registry.get.mockImplementation((id: string) => {
             if (id === 's3') return mockStorageAdapter;
             if (id === 'postgres') return mockTargetAdapter;
@@ -68,7 +68,7 @@ describe('Restore Service Safety Checks', () => {
         });
 
         // Default Prisma mocks
-        // @ts-ignore
+        // @ts-expect-error -- Mock setup -- Mock setup
         prisma.adapterConfig.findUnique.mockImplementation(({ where }: any) => {
             if (where.id === 'storage-1') return { id: 'storage-1', adapterId: 's3', config: '{}', type: 'storage' };
             if (where.id === 'target-1') return { id: 'target-1', adapterId: 'postgres', config: '{}', type: 'database' };
@@ -95,7 +95,7 @@ describe('Restore Service Safety Checks', () => {
         });
 
         // Mock compareVersions logic: 15 > 14 returns 1
-        // @ts-ignore
+        // @ts-expect-error -- Mock setup -- Mock setup
         compareVersions.mockReturnValue(1);
 
         await expect(service.restore({
@@ -120,11 +120,11 @@ describe('Restore Service Safety Checks', () => {
             version: '14.0.0'
         });
 
-        // @ts-ignore
+        // @ts-expect-error -- Mock setup -- Mock setup
         compareVersions.mockReturnValue(-1);
 
         // Expect to reach execution creation
-        // @ts-ignore
+        // @ts-expect-error -- Mock setup -- Mock setup
         prisma.execution.create.mockRejectedValue(new Error('PASSED_CHECKS'));
 
         await expect(service.restore({
@@ -137,7 +137,7 @@ describe('Restore Service Safety Checks', () => {
     it('should skip check if metadata is missing', async () => {
         mockStorageAdapter.read.mockResolvedValue(null);
 
-        // @ts-ignore
+        // @ts-expect-error -- Mock setup -- Mock setup
         prisma.execution.create.mockRejectedValue(new Error('PASSED_CHECKS'));
 
         await expect(service.restore({
@@ -148,7 +148,7 @@ describe('Restore Service Safety Checks', () => {
     });
 
     it('should fail if target adapter is not found', async () => {
-        // @ts-ignore
+        // @ts-expect-error -- Mock setup -- Mock setup
         prisma.adapterConfig.findUnique.mockResolvedValue(null);
 
         await expect(service.restore({

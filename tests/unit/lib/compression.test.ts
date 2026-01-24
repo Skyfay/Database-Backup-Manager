@@ -4,13 +4,8 @@ import { pipeline } from 'stream/promises';
 import { Readable } from 'stream';
 
 // Helper to accumulate stream output into a Buffer
-async function streamToBuffer(stream: NodeJS.ReadableStream): Promise<Buffer> {
-    const chunks: Buffer[] = [];
-    for await (const chunk of stream) {
-        chunks.push(Buffer.from(chunk));
-    }
-    return Buffer.concat(chunks);
-}
+// async function streamToBuffer removed (unused)
+
 
 describe('Compression Library', () => {
 
