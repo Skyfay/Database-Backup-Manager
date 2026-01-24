@@ -24,6 +24,18 @@ import { Textarea } from "@/components/ui/textarea";
 import { AdapterDefinition } from "@/lib/adapters/definitions";
 import { AdapterConfig } from "./types";
 
+// Constant keys for grouping
+const STORAGE_CONNECTION_KEYS = [
+    'host', 'port',
+    'endpoint', 'region',
+    'accountId', 'bucket', 'basePath',
+    'user', 'username',
+    'password', 'accessKeyId', 'secretAccessKey',
+    'privateKey', 'passphrase'
+];
+
+const STORAGE_CONFIG_KEYS = ['pathPrefix', 'storageClass', 'forcePathStyle', 'options'];
+
 export function AdapterForm({ type, adapters, onSuccess, initialData }: { type: string, adapters: AdapterDefinition[], onSuccess: () => void, initialData?: AdapterConfig }) {
     const [selectedAdapterId, setSelectedAdapterId] = useState<string>(initialData?.adapterId || "");
     const [connectionError, setConnectionError] = useState<string | null>(null);
@@ -227,6 +239,13 @@ export function AdapterForm({ type, adapters, onSuccess, initialData }: { type: 
         }
     };
 
+    // Helper to check if adapter has specific fields
+    function hasFields(keys: string[]) {
+         if (!selectedAdapter) return false;
+         const shape = (selectedAdapter.configSchema as any).shape;
+         return keys.some(key => key in shape);
+    }
+
     return (
         <>
             <Form {...form}>
@@ -330,7 +349,30 @@ export function AdapterForm({ type, adapters, onSuccess, initialData }: { type: 
                     </Tabs>
                 )}
 
-                {selectedAdapter && type !== 'database' && (
+                {selectedAdapter && type === 'storage' && (
+                    <Tabs defaultValue="connection" className="w-full">
+                        <TabsList className={cn("grid w-full", hasFields(STORAGE_CONFIG_KEYS) ? "grid-cols-2" : "grid-cols-1")}>
+                            <TabsTrigger value="connection">Connection</TabsTrigger>
+                            {hasFields(STORAGE_CONFIG_KEYS) && (
+                                <TabsTrigger value="configuration">Configuration</TabsTrigger>
+                            )}
+                        </TabsList>
+
+                        {/* TAB 1: CONNECTION */}
+                        <TabsContent value="connection" className="space-y-4 pt-4">
+                            {renderStorageConnectionFields()}
+                        </TabsContent>
+
+                        {/* TAB 2: CONFIGURATION */}
+                        {hasFields(STORAGE_CONFIG_KEYS) && (
+                            <TabsContent value="configuration" className="space-y-4 pt-4">
+                                {renderStorageConfigurationFields()}
+                            </TabsContent>
+                        )}
+                    </Tabs>
+                )}
+
+                {selectedAdapter && type !== 'database' && type !== 'storage' && (
                     <div className="space-y-4 border p-4 rounded-md bg-muted/30">
                         <div className="flex items-center justify-between">
                              <h4 className="text-sm font-medium">Configuration</h4>
@@ -432,6 +474,49 @@ export function AdapterForm({ type, adapters, onSuccess, initialData }: { type: 
                     </div>
                 )}
                 {renderFields(configFields)}
+            </>
+        );
+    }
+    function renderStorageConnectionFields() {
+        if (!selectedAdapter) return null;
+
+        // Custom Layout for SFTP
+        if (selectedAdapter.id === 'sftp') {
+            return (
+                <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div className="md:col-span-3">
+                             {renderFields(['host'])}
+                        </div>
+                        <div className="md:col-span-1">
+                             {renderFields(['port'])}
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {renderFields(['username'])}
+                        {renderFields(['password'])}
+                    </div>
+
+                    {renderFields(['privateKey', 'passphrase'])}
+                </div>
+            );
+        }
+
+        // Generic Layout for others
+        return (
+            <>
+                 {renderFields(STORAGE_CONNECTION_KEYS)}
+            </>
+        );
+    }
+
+    function renderStorageConfigurationFields() {
+        if (!selectedAdapter) return null;
+
+        return (
+            <>
+                {renderFields(STORAGE_CONFIG_KEYS)}
             </>
         );
     }
