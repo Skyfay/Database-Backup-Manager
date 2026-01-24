@@ -30,27 +30,26 @@ export async function test(config: any): Promise<{ success: boolean; message: st
         // Increased timeout to 10s to handle heavy load during integration tests
         const pingArgs = ['ping', '-h', config.host, '-P', String(config.port), '-u', config.user, '--protocol=tcp', '--connect-timeout=10'];
 
+        // Use MYSQL_PWD env var for password to avoid leaking it in process list
+        const env = { ...process.env };
         if (config.password) {
-            pingArgs.push(`-p${config.password}`);
+            env.MYSQL_PWD = config.password;
         }
 
         if (config.disableSsl) {
             pingArgs.push('--skip-ssl');
         }
 
-        await execFileAsync('mysqladmin', pingArgs);
+        await execFileAsync('mysqladmin', pingArgs, { env });
 
         // 2. Version Check (if ping successful)
         const versionArgs = ['-h', config.host, '-P', String(config.port), '-u', config.user, '--protocol=tcp', '-N', '-s', '-e', 'SELECT VERSION()'];
 
-        if (config.password) {
-            versionArgs.push(`-p${config.password}`);
-        }
         if (config.disableSsl) {
             versionArgs.push('--skip-ssl');
         }
 
-        const { stdout } = await execFileAsync('mysql', versionArgs);
+        const { stdout } = await execFileAsync('mysql', versionArgs, { env });
         const rawVersion = stdout.trim();
 
         // Extract version number only (e.g. "11.4.9-MariaDB-ubu2404" → "11.4.9" or "8.0.44" → "8.0.44")
@@ -68,12 +67,16 @@ export async function getDatabases(config: any): Promise<string[]> {
     if (config.disableSsl) {
         args.push('--skip-ssl');
     }
+
+    // Use MYSQL_PWD env var for password
+    const env = { ...process.env };
     if (config.password) {
-        args.push(`-p${config.password}`);
+        env.MYSQL_PWD = config.password;
     }
+
     args.push('-e', 'SHOW DATABASES', '--skip-column-names');
 
-    const { stdout } = await execFileAsync('mysql', args);
+    const { stdout } = await execFileAsync('mysql', args, { env });
     const sysDbs = ['information_schema', 'mysql', 'performance_schema', 'sys'];
     return stdout.split('\n').map(s => s.trim()).filter(s => s && !sysDbs.includes(s));
 }

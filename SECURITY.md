@@ -1,77 +1,54 @@
-# Security Audit Report 2.0
+# Security Audit Report 3.0
 
-**Datum:** 24. Mai 2024
-**Status:** In Review
-**Auditor:** GitHub Copilot (DevSecOps)
+**Datum:** 27. Januar 2026
+**Status:** Action Required
+**Auditor:** GitHub Copilot
 
-## 1. Kritische Schwachstellen (High Risk)
+## 1. 🚨 Kritische Schwachstellen (High Risk)
 
-### 1.1. Server-Side Request Forgery (SSRF) via DB Host
-**Ort:** Datenbank-Verbindungsaufbau (`checkConnection`, Backup Jobs)
+### 1.1. Server-Side Request Forgery (SSRF)
+**Fundort:** Adapter API & Connection Logic
+**Status:** 🔴 **Unbehoben** (Bestand aus Report 2.0)
+**Beschreibung:**
+Die API akzeptiert beliebige Hostnamen/IPs für Datenbankverbindungen. Es findet keine Validierung gegen private IP-Bereiche (`127.0.0.1`, `10.0.0.0/8`, etc.) statt.
 **Risiko:**
-Ein Benutzer kann als `host` interne IP-Adressen (z.B. `127.0.0.1`, `169.254.169.254` für Cloud-Metadaten) oder lokale Dienste angeben.
-Da der `mysqldump`/`pg_dump` Prozess vom Server ausgeführt wird, könnte ein Angreifer das Netzwerk scannen oder interne Dienste angreifen.
+Ein Angreifer kann das interne Netzwerk scannen oder interne Services missbrauchen, auf die der Container Zugriff hat.
 **Empfehlung:**
-- Implementierung einer `Blocklist` für private IP-Ranges (RFC 1918), sofern nicht explizit erlaubt.
-- Docker Network Isolation: Der Container sollte nur Zugriff auf konfigurierte Bridges haben.
+- Implementierung einer Validierungslogik, die Verbindungen zu privaten IPs blockiert (Allow-List für Ausnahmen).
 
-### 1.2. Path Traversal bei Backup-Dateinamen
-**Ort:** `Dump`-Service & `Storage`-Service
-**Risiko:**
-Wenn der Benutzer den Namen eines Backups oder Jobs beeinflussen kann, besteht die Gefahr, dass Dateien außerhalb des erlaubten `storage/`-Verzeichnisses geschrieben werden.
-Beispiel Input: `../../../../etc/cron.d/malicious`
-**Empfehlung:**
-- Strenge Validierung aller Dateinamen mit `path.basename()`.
-- Verwendung eines festen `safeJoin`-Utilitys, das sicherstellt, dass der resultierende Pfad *innerhalb* des `ROOT_BACKUP_DIR` liegt.
+## 2. ⚠️ Mittlere Risiken (Medium Risk)
 
-### 1.3 Man-in-the-Middle (MitM) durch "Disable SSL"
-**Ort:** Neue MySQL/MariaDB Konfiguration
-**Risiko:**
-Die angefragte Funktion `disableSsl` erlaubt Verbindungen ohne Zertifikatsvalidierung.
+### 2.1. Audit Log Flooding (DoS)
+**Fundort:** `src/app/api/adapters/route.ts`
+**Status:** 🟠 **Neu Entdeckt**
+**Beschreibung:**
+Es gibt kein Rate-Limiting für Endpunkte, die Audit-Logs erzeugen. Ein authentifizierter Nutzer kann durch Skripte tausende Anfragen senden, die Datenbank vollschreiben (Disk Filling) und das System verlangsamen.
 **Empfehlung:**
-- In der UI muss dies als **"Unsicher"** markiert werden (rotes Warnschild).
-- Im Code muss sichergestellt werden, dass dies *niemals* der Default ist.
+- Rate-Limiting für schreibende API-Endpunkte.
+- Sicherstellen, dass der `cleanOldLogs` Job regelmäßig läuft.
+
+### 2.2. SSL-Standardkonfiguration
+**Fundort:** MySQL/PostgreSQL Adapter
+**Status:** 🟠 **Beobachtung**
+**Beschreibung:**
+Optionen wie `disableSsl` verleiten dazu, Sicherheit für Bequemlichkeit zu opfern.
+**Empfehlung:**
+- UI sollte bei deaktiviertem SSL warnen.
+- Standard muss "Preferred" oder "Required" sein.
+
+## 3. ✅ Status geschlossener Punkte (Aus Report 2.0 & 3.0)
+
+| ID | Schwachstelle | Status | Bemerkung |
+|----|---------------|--------|-----------|
+| 1.1 | Sensible Daten (Passwörter) Prozess-Liste | ✅ Fixed | Passwörter werden nun per `ENV` übergeben. (Audit 3.0) |
+| 1.3 | Man-in-the-Middle (Disable SSL Default) | ✅ Fixed | Standard ist nun sicherer, Flag muss explizit gesetzt werden. |
+| 3.1 | Auth & RBAC Checks | ✅ Verified | `checkPermission` wird in Actions konsistent verwendet. |
+| 1.2 | Path Traversal Backup-Namen | ✅ Mitigated | Validierung und Tests (`local-security.test.ts`) vorhanden. |
+| 3.2 | Encryption at Rest | ✅ Implemented | Config-Objekte werden vor DBMS-Speicherung verschlüsselt. |
 
 ---
 
-## 2. Mittlere Risiken (Medium Risk)
+## 4. Sofortmaßnahmen (Next Steps)
 
-### 2.1. DoS durch "Zip Bomb" oder massive Logs
-**Ort:** Restore-Funktion & Log-Dateien
-**Risiko:**
-Das System lädt SQL-Dumps oder Zip-Dateien hoch. Eine speziell präparierte Datei ("Zip Bomb") kann beim Entpacken den Speicher (RAM) oder die Festplatte (Disk usage) sprengen und den Server zum Absturz bringen.
-**Empfehlung:**
-- Limits für Dateigrößen in Nginx/Next.js Config.
-- Stream-Verarbeitung statt Buffer im RAM (wird teilweise schon genutzt, muss aber für *alle* Adapter gelten).
-
-### 2.2. Privilege Escalation via Docker Socket
-**Ort:** `docker-compose.yml` (potenziell)
-**Risiko:**
-Falls die App in Zukunft Docker-Container steuern soll (z.B. um DBs zu stoppen) und der `/var/run/docker.sock` gemountet wird, ist das gleichbedeutend mit Root-Zugriff auf den Host.
-**Empfehlung:**
-- **Niemals** den Docker Socket mounten.
-- App-Container sollte als `USER node` (nicht root) laufen (siehe Dockerfile-Check).
-
----
-
-## 3. Architektur-Review & Best Practices
-
-### 3.1. Authentication & Authorization (Better-Auth)
-**Status:** ✅ Solide
-- Die Trennung von `auth-client` und Server-Side `auth` ist korrekt.
-- Middleware prüft Session-Existenz.
-- **Zu prüfen:** Wird `checkPermission()` wirklich in *jeder* Server Action aufgerufen? (Automatischer Test empfohlen).
-
-### 3.2. Secret Management
-**Status:** ⚠️ Beobachtung
-- Passwörter werden nun via Environment-Variablen an Adapter übergeben (`MYSQL_PWD`). Das ist gut.
-- **Aber:** Bei MongoDB (`mongodump`) ist die Übergabe per CLI oft unumgänglich oder schwierig. Hier muss geprüft werden, ob die Prozess-Liste (`ps aux`) Passwörter leakt, während der Job läuft.
-
----
-
-## 4. Action Plan (Sofortmaßnahmen)
-
-1.  **Code-Check Adapter:** Sicherstellen, dass Argumente für `execFile` strikt typisiert sind (keine String-Konkatenation).
-2.  **Path Sanitization Utility:** Erstellen einer zentralen Funktion `resolveSafePath(base, input)`, die überall genutzt wird, wo Dateien geschrieben/gelesen werden.
-3.  **Permissions Audit:** Ein Skript schreiben, das alle `actions/*.ts` Dateien scannt und warnt, wenn `checkPermission` fehlt.
-4.  **Network Policy:** Festlegen, ob der Docker-Container nach außen telefonieren darf (Egress Filtering).
+1.  **Network-Hardening**: SSRF-Schutz durch DNS-Resolution-Check vor Verbindungsaufbau.
+2.  **Rate-Limiting**: Schutz vor Log-Flooding implementieren.
