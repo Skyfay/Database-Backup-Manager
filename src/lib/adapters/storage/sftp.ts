@@ -93,20 +93,57 @@ export const SFTPStorageAdapter: StorageAdapter = {
         try {
             sftp = await connectSFTP(config);
 
-            const remoteDir = config.pathPrefix
-                ? path.posix.join(config.pathPrefix, dir)
-                : dir || ".";
+            // Normalize path helper
+            const normalize = (p: string) => p.replace(/\\/g, '/');
 
-            const fileList = await sftp.list(remoteDir);
+            // Determine where to start listing
+            const prefix = config.pathPrefix ? normalize(config.pathPrefix) : "";
+            const startDir = prefix
+                ? path.posix.join(prefix, dir)
+                : (dir || ".");
 
-            return fileList
-                .filter(f => f.type !== 'd') // Filter out directories
-                .map(f => ({
-                    name: f.name,
-                    path: path.posix.join(dir, f.name), // Relative path for UI
-                    size: f.size,
-                    modTime: new Date(f.modifyTime),
-                }));
+            const files: FileInfo[] = [];
+
+            // Helper for recursive listing
+            const walk = async (currentDir: string) => {
+                const items = await sftp!.list(currentDir);
+
+                for (const item of items) {
+                    const fullPath = path.posix.join(currentDir, item.name);
+
+                    if (item.type === 'd') {
+                        await walk(fullPath);
+                    } else if (item.type === '-') {
+                        // Calculate UI-friendly relative path
+                        // e.g. /home/user/backups/Job1/file.sql -> Job1/file.sql (if prefix is /home/user/backups)
+                        let relativePath = fullPath;
+
+                        // Strip the prefix part to make it relative to the "root" of the adapter
+                        if (prefix && fullPath.startsWith(prefix)) {
+                            relativePath = fullPath.substring(prefix.length);
+                        }
+
+                        // Remove leading slash
+                        if (relativePath.startsWith('/')) relativePath = relativePath.substring(1);
+
+                        files.push({
+                            name: item.name,
+                            path: relativePath,
+                            size: item.size,
+                            lastModified: new Date(item.modifyTime),
+                        });
+                    }
+                }
+            };
+
+            // Start walking if directory exists
+            const type = await sftp.exists(startDir);
+            if (type === 'd') {
+                await walk(startDir);
+            }
+
+            return files;
+
         } catch (error) {
             console.error("SFTP list failed:", error);
             return [];

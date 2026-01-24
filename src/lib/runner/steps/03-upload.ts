@@ -125,9 +125,9 @@ export async function stepUpload(ctx: RunnerContext) {
 
     const destConfig = decryptConfig(JSON.parse(job.destination.config));
 
-    // Define remote path (Standard: /backups/JobName/FileName)
-    // We maintain 'backups/' root prefix as per convention
-    const remotePath = `/backups/${job.name}/${path.basename(ctx.tempFile)}`;
+    // Define remote path (Standard: JobName/FileName)
+    // We let the adapter configuration determine the root (via pathPrefix or basePath)
+    const remotePath = `${job.name}/${path.basename(ctx.tempFile)}`;
     ctx.finalRemotePath = remotePath;
 
     // Create and upload metadata sidecar

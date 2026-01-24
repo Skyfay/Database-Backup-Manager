@@ -92,7 +92,7 @@ async function s3List(internalConfig: S3InternalConfig, dir: string = ""): Promi
             name: path.basename(obj.Key || ""),
             path: obj.Key || "",
             size: obj.Size || 0,
-            modTime: obj.LastModified || new Date(),
+            lastModified: obj.LastModified || new Date(),
         })).filter(f => f.name && f.size > 0); // Filter folders or empty keys
     } catch (error) {
         console.error("S3 list failed:", error);
