@@ -4,7 +4,6 @@ import prisma from "./prisma";
 import { twoFactor } from "better-auth/plugins";
 import { passkey } from "@better-auth/passkey";
 import { sso } from "@better-auth/sso";
-import { PERMISSIONS } from "@/lib/permissions";
 
 /**
  * Dynamically fetch trusted origins from SSO providers in the database.
@@ -72,7 +71,7 @@ export const auth = betterAuth({
         level: "debug"
     },
     baseURL: process.env.NEXT_PUBLIC_APP_URL || process.env.BETTER_AUTH_URL || "http://localhost:3000",
-    trustedOrigins: async (request) => {
+    trustedOrigins: async (_request) => {
         // Refresh trusted providers on every auth request
         // This ensures newly added SSO providers work immediately without server restart
         // We mutate the same array reference, so better-auth sees the changes
