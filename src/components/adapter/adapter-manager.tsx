@@ -103,12 +103,10 @@ export function AdapterManager({ type, title, description, canManage = true }: A
             id: "status",
             header: "Status",
             cell: ({ row }) => {
-                // Determine health status from config props (these are injected by updated prisma schema)
-                // We need to extend our frontend Type for AdapterConfig to include these fields first,
-                // but usually the fetch endpoint just returns what's in prisma.
-                // Assuming `lastStatus` is available.
-                const status = (row.original as any).lastStatus || "ONLINE"; // Default or unknown
+                // Determine health status from config props
                 const lastCheck = (row.original as any).lastHealthCheck;
+                // If lastHeathCheck is null, default to PENDING
+                const status = lastCheck ? ((row.original as any).lastStatus || "ONLINE") : "PENDING";
 
                 return (
                     <HealthStatusBadge

@@ -6,7 +6,7 @@ import { HealthHistoryGrid } from "@/components/adapter/health-history-grid";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
 
-type HealthStatus = "ONLINE" | "DEGRADED" | "OFFLINE";
+type HealthStatus = "ONLINE" | "DEGRADED" | "OFFLINE" | "PENDING";
 
 interface HealthStatusBadgeProps {
     status: HealthStatus;
@@ -22,12 +22,14 @@ export function HealthStatusBadge({ status, adapterId, lastChecked, className }:
         ONLINE: "bg-green-500",
         DEGRADED: "bg-orange-500",
         OFFLINE: "bg-red-500 animate-pulse",
+        PENDING: "bg-slate-300 dark:bg-slate-600",
     }[status] || "bg-gray-300";
 
     const statusLabel = {
         ONLINE: "Online",
         DEGRADED: "Degraded",
         OFFLINE: "Offline",
+        PENDING: "Pending",
     }[status] || "Unknown";
 
     return (
