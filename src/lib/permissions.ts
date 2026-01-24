@@ -71,6 +71,7 @@ export type Permission =
   | typeof PERMISSIONS.STORAGE.RESTORE
   | typeof PERMISSIONS.STORAGE.DELETE
   | typeof PERMISSIONS.HISTORY.READ
+  | typeof PERMISSIONS.AUDIT.READ
   | typeof PERMISSIONS.NOTIFICATIONS.READ
   | typeof PERMISSIONS.NOTIFICATIONS.WRITE
   | typeof PERMISSIONS.VAULT.READ
@@ -107,6 +108,7 @@ export const AVAILABLE_PERMISSIONS = [
   { id: PERMISSIONS.STORAGE.RESTORE, label: "Restore Backups", category: "Storage" },
   { id: PERMISSIONS.STORAGE.DELETE, label: "Delete Backups", category: "Storage" },
   { id: PERMISSIONS.HISTORY.READ, label: "View Execution History", category: "History" },
+  { id: PERMISSIONS.AUDIT.READ, label: "View Audit Logs", category: "Audit" },
 
   // Notifications
   { id: PERMISSIONS.NOTIFICATIONS.READ, label: "View Notifications", category: "Notifications" },

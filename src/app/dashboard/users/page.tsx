@@ -12,14 +12,16 @@ import { getUserPermissions } from "@/lib/access-control";
 import { PERMISSIONS } from "@/lib/permissions";
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { AuditTable } from "@/components/audit/audit-table";
 
 export default async function UsersPage() {
     const permissions = await getUserPermissions();
 
     const hasReadUsers = permissions.includes(PERMISSIONS.USERS.READ);
     const hasReadGroups = permissions.includes(PERMISSIONS.GROUPS.READ);
+    const hasReadAudit = permissions.includes(PERMISSIONS.AUDIT.READ);
 
-    if (!hasReadUsers && !hasReadGroups) {
+    if (!hasReadUsers && !hasReadGroups && !hasReadAudit) {
         redirect("/dashboard");
     }
 
@@ -44,10 +46,11 @@ export default async function UsersPage() {
                 </div>
             </div>
 
-            <Tabs defaultValue={hasReadUsers ? "users" : "groups"} className="space-y-4">
+            <Tabs defaultValue={hasReadUsers ? "users" : hasReadGroups ? "groups" : "audit"} className="space-y-4">
                 <TabsList>
                     {hasReadUsers && <TabsTrigger value="users">Users</TabsTrigger>}
                     {hasReadGroups && <TabsTrigger value="groups">Groups</TabsTrigger>}
+                    {hasReadAudit && <TabsTrigger value="audit">Audit Log</TabsTrigger>}
                     {hasReadSettings && <TabsTrigger value="sso">SSO / OIDC</TabsTrigger>}
                 </TabsList>
                 {hasReadUsers && (
@@ -82,6 +85,19 @@ export default async function UsersPage() {
                             </CardHeader>
                             <CardContent>
                                 <GroupTable data={groups} canManage={canManageGroups} />
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+                )}
+                {hasReadAudit && (
+                    <TabsContent value="audit" className="space-y-4">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Audit Logs</CardTitle>
+                                <CardDescription>View system activity and user actions.</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <AuditTable />
                             </CardContent>
                         </Card>
                     </TabsContent>
