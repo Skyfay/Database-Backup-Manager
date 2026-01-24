@@ -3,12 +3,14 @@ import { registry } from "@/lib/core/registry";
 import { registerAdapters } from "@/lib/adapters";
 import { DatabaseAdapter } from "@/lib/core/interfaces";
 import { decryptConfig } from "@/lib/crypto";
+import { healthCheckService } from "./healthcheck-service";
 
 // Ensure adapters are registered for worker context
 registerAdapters();
 
 export const SYSTEM_TASKS = {
-    UPDATE_DB_VERSIONS: "system.update_db_versions"
+    UPDATE_DB_VERSIONS: "system.update_db_versions",
+    HEALTH_CHECK: "system.health_check"
 };
 
 export const DEFAULT_TASK_CONFIG = {
@@ -16,6 +18,11 @@ export const DEFAULT_TASK_CONFIG = {
         interval: "0 * * * *", // Every hour
         label: "Update Database Versions",
         description: "Checks connectivity and fetches version information from all configured database sources."
+    },
+    [SYSTEM_TASKS.HEALTH_CHECK]: {
+        interval: "*/1 * * * *", // Every minute
+        label: "Health Check & Connectivity",
+        description: "Periodically pings all configured database and storage adapters to track availability and latency."
     }
 };
 
@@ -42,6 +49,9 @@ export class SystemTaskService {
         switch (taskId) {
             case SYSTEM_TASKS.UPDATE_DB_VERSIONS:
                 await this.runUpdateDbVersions();
+                break;
+            case SYSTEM_TASKS.HEALTH_CHECK:
+                await healthCheckService.performHealthCheck();
                 break;
             default:
                 console.warn(`[SystemTask] Unknown task: ${taskId}`);

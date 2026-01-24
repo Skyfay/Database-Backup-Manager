@@ -19,6 +19,13 @@ model AdapterConfig {
   jobsDestination  Job[]    @relation("Destination")
   jobsSource       Job[]    @relation("Source")
   jobsNotification Job[]    @relation("Notifications")
+
+  // Caching-Felder für schnelle UI-Anzeige ohne Joins
+  lastHealthCheck      DateTime?
+  lastStatus           String        @default("ONLINE") // ONLINE, DEGRADED, OFFLINE
+  consecutiveFailures  Int           @default(0) // Zähler für Logik (Grün -> Orange -> Rot)
+
+  healthLogs           HealthCheckLog[]
 }
 
 model EncryptionProfile {
@@ -210,4 +217,21 @@ model SsoProvider {
   updatedAt      DateTime @updatedAt
 
   @@map("sso_provider")
+}
+
+// Status-Enum values: ONLINE, DEGRADED, OFFLINE
+// SQLite doesn't support enums, so we use String
+
+// Log-Eintrag für jeden Prüfzyklus (wird regelmäßig bereinigt)
+model HealthCheckLog {
+  id              String        @id @default(uuid())
+  adapterConfigId String
+  status          String        // ONLINE, DEGRADED, OFFLINE
+  latencyMs       Int           // Antwortzeit in Millisekunden
+  error           String?       // Fehlermeldung falls fehlgeschlagen
+  createdAt       DateTime      @default(now())
+
+  adapterConfig   AdapterConfig @relation(fields: [adapterConfigId], references: [id], onDelete: Cascade)
+
+  @@index([adapterConfigId, createdAt])
 }

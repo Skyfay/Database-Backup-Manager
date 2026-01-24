@@ -88,13 +88,13 @@ Beim Klick auf den Indikator öffnet sich ein Dialog/Popover:
 ## ✅ TODO Liste
 
 ### Backend & Datenbank
-- [ ] `prisma/schema.prisma` anpassen (Logs & Config Felder).
-- [ ] Migration erstellen (`npx prisma migrate dev`).
-- [ ] `src/services/healthcheck-service.ts` erstellen:
-    - [ ] `performHealthCheck()` Methode implementieren.
-    - [ ] DB Update Logik mit "Consecutive Failures" Logik.
-- [ ] `SystemTaskService` erweitern: Task registrieren.
-- [ ] `SystemTasksSettings`: Default Config für den neuen Task hinzufügen.
+- [x] `prisma/schema.prisma` anpassen (Logs & Config Felder).
+- [x] Migration erstellen (`npx prisma migrate dev`).
+- [x] `src/services/healthcheck-service.ts` erstellen:
+    - [x] `performHealthCheck()` Methode implementieren.
+    - [x] DB Update Logik mit "Consecutive Failures" Logik.
+- [x] `SystemTaskService` erweitern: Task registrieren.
+- [x] `SystemTasksSettings`: Default Config für den neuen Task hinzufügen.
 
 ### Adapter Layer
 - [ ] Sicherstellen, dass alle `DatabaseAdapter` und `StorageAdapter` eine robuste `test()` Methode haben, die Timeouts schnell erkennt.
