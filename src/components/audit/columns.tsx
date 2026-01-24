@@ -110,7 +110,7 @@ export const columns: ColumnDef<AuditLogWithUser>[] = [
   },
   {
     accessorKey: "createdAt",
-    header: ({ column }) => <div className="text-right">Date</div>,
+    header: ({ column: _column }) => <div className="text-right">Date</div>,
     cell: ({ row }) => {
       return (
         <div className="text-right">

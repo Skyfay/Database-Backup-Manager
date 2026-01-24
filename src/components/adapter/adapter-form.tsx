@@ -69,10 +69,10 @@ export function AdapterForm({ type, adapters, onSuccess, initialData }: { type: 
     useEffect(() => {
         if (!initialData && adapters.length === 1) {
             const firstId = adapters[0].id;
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setSelectedAdapterId(firstId);
             form.setValue("adapterId", firstId);
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [adapters, initialData, form]);
 
 

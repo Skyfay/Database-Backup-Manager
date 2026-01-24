@@ -45,8 +45,8 @@ export function EncryptionProfilesList() {
     }
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         fetchProfiles();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
     const handleCreate = async () => {
