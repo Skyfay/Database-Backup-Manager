@@ -1,14 +1,10 @@
 import { BackupResult } from "@/lib/core/interfaces";
 import { LogLevel, LogType } from "@/lib/core/logs";
-import { execFileAsync } from "./connection";
 import { getDialect } from "./dialects";
 import { spawn } from "child_process";
-import { createWriteStream } from "fs";
 import fs from "fs/promises";
-import { waitForProcess } from "@/lib/adapters/process";
-import { getPostgresBinary } from "./version-utils";
 
-export async function dump(config: any, destinationPath: string, onLog?: (msg: string, level?: LogLevel, type?: LogType, details?: string) => void, onProgress?: (percentage: number) => void): Promise<BackupResult> {
+export async function dump(config: any, destinationPath: string, onLog?: (msg: string, level?: LogLevel, type?: LogType, details?: string) => void, _onProgress?: (percentage: number) => void): Promise<BackupResult> {
     const startedAt = new Date();
     const logs: string[] = [];
 

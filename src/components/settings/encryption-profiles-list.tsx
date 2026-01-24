@@ -5,11 +5,10 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { toast } from "sonner"
-import { Loader2, Lock, Plus, Trash2, AlertTriangle, ShieldCheck, Key, Download, Copy, Eye, EyeOff } from "lucide-react"
+import { Loader2, Lock, Plus, Trash2, AlertTriangle, ShieldCheck, Download, Copy, Eye } from "lucide-react"
 import { EncryptionProfile } from "@prisma/client"
 import { createEncryptionProfile, deleteEncryptionProfile, getEncryptionProfiles, revealMasterKey } from "@/app/actions/encryption"
 import { DateDisplay } from "@/components/utils/date-display"
@@ -46,7 +45,8 @@ export function EncryptionProfilesList() {
     }
 
     useEffect(() => {
-        fetchProfiles()
+        fetchProfiles();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
     const handleCreate = async () => {

@@ -1,7 +1,7 @@
 import { DatabaseDialect } from "../../common/dialect";
 
 export class MongoDBBaseDialect implements DatabaseDialect {
-    supportsVersion(version: string): boolean {
+    supportsVersion(_version: string): boolean {
         return true;
     }
 
@@ -56,7 +56,7 @@ export class MongoDBBaseDialect implements DatabaseDialect {
         return args;
     }
 
-    getRestoreArgs(config: any, targetDatabase?: string): string[] {
+    getRestoreArgs(config: any, _targetDatabase?: string): string[] {
         const args: string[] = [];
 
         if (config.uri) {

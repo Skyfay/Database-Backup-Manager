@@ -26,13 +26,7 @@ export function AdapterManager({ type, title, description, canManage = true }: A
     const [deletingId, setDeletingId] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
-    useEffect(() => {
-        // Filter definitions by type
-        setAvailableAdapters(ADAPTER_DEFINITIONS.filter(d => d.type === type));
-        fetchConfigs();
-    }, [type]);
-
-    const fetchConfigs = async () => {
+    const fetchConfigs = useCallback(async () => {
         setIsLoading(true);
         try {
             const res = await fetch(`/api/adapters?type=${type}`);
@@ -48,7 +42,13 @@ export function AdapterManager({ type, title, description, canManage = true }: A
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [type]);
+
+    useEffect(() => {
+        // Filter definitions by type
+        setAvailableAdapters(ADAPTER_DEFINITIONS.filter(d => d.type === type));
+        fetchConfigs();
+    }, [type, fetchConfigs]);
 
     const handleDelete = (id: string) => {
         setDeletingId(id);

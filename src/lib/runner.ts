@@ -60,15 +60,31 @@ export async function performExecution(executionId: string, jobId: string) {
         }
     });
 
-    let currentProgress = 0;
-    let currentStage = "Initializing";
-    let lastLogUpdate = 0;
+    let _currentProgress = 0;
+    let _currentStage = "Initializing";
+    let _lastLogUpdate = 0;
 
     // Declare ctx early
-    let ctx: RunnerContext;
-
-    // Fetch initial logs (the "Job queued" message)
-    const initialExe = await prisma.execution.findUnique({ where: { id: executionId } });
+    const ctx = {
+        execution: initialExe!,
+        job: initialExe!.job!,
+        log: (msg: string, level: LogLevel = 'info', type: LogType = 'general', details?: string) => {
+             const entry: LogEntry = {
+                 timestamp: new Date().toISOString(),
+                 level,
+                 type,
+                 message: msg,
+                 details,
+                 stage: _currentStage
+             };
+             logs.push(entry);
+             _lastLogUpdate = Date.now();
+        },
+        updateProgress: async (p: number, s?: string) => {
+            if (s) _currentStage = s;
+            _currentProgress = p;
+        }
+    } as unknown as RunnerContext;
 
     // Parse logs and normalize to LogEntry[]
     const rawLogs: (string | LogEntry)[] = initialExe?.logs ? JSON.parse(initialExe.logs) : [];

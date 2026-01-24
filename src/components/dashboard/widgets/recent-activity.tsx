@@ -50,7 +50,7 @@ export async function RecentActivity() {
                             // Status Logic
                             const isRunning = execution.status === "Running";
                             const isSuccess = execution.status === "Success";
-                            const isFailed = execution.status === "Failed";
+                            const _isFailed = execution.status === "Failed";
 
                             let iconColor = isSuccess ? 'text-green-600' : 'text-red-600';
                             let iconBg = isSuccess ? 'border-green-200 bg-green-100' : 'border-red-200 bg-red-100';

@@ -14,7 +14,7 @@ export async function GET(_req: NextRequest) {
     await checkPermission(PERMISSIONS.SETTINGS.READ); // assuming generic settings permission
 
     const tasks = [];
-    for (const [id, key] of Object.entries(SYSTEM_TASKS)) {
+    for (const [key, _val] of Object.entries(SYSTEM_TASKS)) {
         const schedule = await systemTaskService.getTaskConfig(key);
         const config = DEFAULT_TASK_CONFIG[key as keyof typeof DEFAULT_TASK_CONFIG];
         tasks.push({

@@ -79,7 +79,7 @@ export async function stepExecuteDump(ctx: RunnerContext) {
                     engineVersion = testRes.version;
                     ctx.log(`Detected engine version: ${engineVersion}`);
                 }
-            } catch(e) { /* ignore */ }
+            } catch(_e) { /* ignore */ }
         }
 
         ctx.metadata = {

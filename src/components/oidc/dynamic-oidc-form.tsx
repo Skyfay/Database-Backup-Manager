@@ -1,4 +1,4 @@
-import { OIDCAdapter, OIDCInput } from "@/lib/core/oidc-adapter";
+import { OIDCInput } from "@/lib/core/oidc-adapter";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff } from "lucide-react";

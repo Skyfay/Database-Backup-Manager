@@ -59,7 +59,7 @@ function ProviderCard({ provider }: { provider: SsoProvider }) {
             } else {
                 toast.error(res.error || "Failed to remove provider");
             }
-        } catch (e) {
+        } catch (_e) {
             toast.error("Error removing provider");
         } finally {
             setIsDeleting(false);
@@ -74,7 +74,7 @@ function ProviderCard({ provider }: { provider: SsoProvider }) {
             } else {
                 toast.error(res.error || "Failed to update status");
             }
-        } catch (e) {
+        } catch (_e) {
              toast.error("Error updating status");
         }
     };

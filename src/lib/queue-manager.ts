@@ -1,5 +1,4 @@
 import prisma from "@/lib/prisma";
-import { RunnerContext } from "@/lib/runner/types";
 import { stepExecuteDump } from "@/lib/runner/steps/02-dump";
 import { stepUpload } from "@/lib/runner/steps/03-upload";
 import { stepCleanup, stepFinalize } from "@/lib/runner/steps/04-completion";
@@ -63,9 +62,9 @@ async function executeQueuedJob(executionId: string, jobId: string) {
     // We should probably load existing logs from DB if any?
     // Usually PENDING has no logs yet.
 
-    const currentProgress = 0;
-    const currentStage = "Starting";
-    const lastLogUpdate = 0;
+    const _currentProgress = 0;
+    const _currentStage = "Starting";
+    const _lastLogUpdate = 0;
 
     // We need a flush function similar to runner.ts
     // Duplication here is unfortunate. Ideally runner.ts exports the sensitive logic.

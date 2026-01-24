@@ -104,8 +104,8 @@ async function s3Download(
     internalConfig: S3InternalConfig,
     remotePath: string,
     localPath: string,
-    onProgress?: (processed: number, total: number) => void,
-    onLog?: (msg: string, level?: LogLevel, type?: LogType, details?: string) => void
+    _onProgress?: (processed: number, total: number) => void,
+    _onLog?: (msg: string, level?: LogLevel, type?: LogType, details?: string) => void
 ): Promise<boolean> {
     const client = S3ClientFactory.create(internalConfig);
     const targetKey = remotePath; // Usually getting full path from list() result
@@ -154,7 +154,7 @@ async function s3Read(internalConfig: S3InternalConfig, remotePath: string): Pro
 async function s3Delete(
     internalConfig: S3InternalConfig,
     remotePath: string,
-    onLog?: (msg: string, level?: LogLevel, type?: LogType, details?: string) => void
+    _onLog?: (msg: string, level?: LogLevel, type?: LogType, details?: string) => void
 ): Promise<boolean> {
     const client = S3ClientFactory.create(internalConfig);
 

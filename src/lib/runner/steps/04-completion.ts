@@ -11,7 +11,7 @@ export async function stepCleanup(ctx: RunnerContext) {
         try {
             fs.unlinkSync(ctx.tempFile);
             ctx.log("Temporary file cleaned up");
-        } catch (e) {
+        } catch (_e) {
             ctx.log("Warning: Failed to cleanup temp file");
         }
     }

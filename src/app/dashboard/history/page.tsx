@@ -42,6 +42,7 @@ function HistoryContent() {
             // Only update if the content has actually changed to prevent loops
             if (updatedLog && JSON.stringify(updatedLog) !== JSON.stringify(selectedLog)) {
                 setSelectedLog(updatedLog);
+                // eslint-disable-next-line react-hooks/exhaustive-deps
             }
         }
     }, [executions, selectedLog]);
@@ -53,26 +54,28 @@ function HistoryContent() {
             const found = executions.find(e => e.id === executionId);
             if (found && !selectedLog) {
                 setSelectedLog(found);
+                // eslint-disable-next-line react-hooks/exhaustive-deps
                 // Clear the query param so it doesn't re-trigger on close
                 router.replace("/dashboard/history", { scroll: false });
             }
         }
     }, [executions, executionId, selectedLog, router]);
 
-    useEffect(() => {
-        fetchHistory();
-        const interval = setInterval(fetchHistory, 1000); // Poll faster (1s) for live feel
-        return () => clearInterval(interval);
-    }, []);
-
     const fetchHistory = async () => {
         try {
             const res = await fetch("/api/history");
             if (res.ok) setExecutions(await res.json());
-        } catch (e) {
-            console.error(e);
+        } catch (_e) {
+            console.error(_e);
         }
     };
+
+    useEffect(() => {
+        fetchHistory();
+        const interval = setInterval(fetchHistory, 1000); // Poll faster (1s) for live feel
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        return () => clearInterval(interval);
+    }, []);
 
     const parseLogs = (json: string) => {
         try {

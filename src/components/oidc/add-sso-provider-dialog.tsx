@@ -81,7 +81,7 @@ export function AddSsoProviderDialog() {
                     toast.error(typeof res.error === 'string' ? res.error : "Failed to create provider");
                  }
             }
-        } catch (error) {
+        } catch (_error) {
             toast.error("An unexpected error occurred");
         } finally {
             setIsLoading(false);

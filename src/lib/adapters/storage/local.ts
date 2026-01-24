@@ -51,8 +51,8 @@ export const LocalFileSystemAdapter: StorageAdapter = {
         config: { basePath: string },
         remotePath: string,
         localPath: string,
-        onProgress?: (processed: number, total: number) => void,
-        onLog?: (msg: string, level?: LogLevel, type?: LogType, details?: string) => void
+        _onProgress?: (processed: number, total: number) => void,
+        _onLog?: (msg: string, level?: LogLevel, type?: LogType, details?: string) => void
     ): Promise<boolean> {
         try {
             const sourcePath = path.join(config.basePath, remotePath);

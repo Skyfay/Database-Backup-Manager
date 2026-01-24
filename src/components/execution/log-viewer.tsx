@@ -1,15 +1,12 @@
 "use client";
 
 import React, { useRef, useEffect, useState, useMemo } from "react";
-import { format } from "date-fns";
 import {
   CheckCircle2,
-  Info,
   AlertCircle,
   Terminal,
   ChevronRight,
   ChevronDown,
-  Clock,
   ArrowDown,
   Loader2
 } from "lucide-react";
@@ -82,33 +79,22 @@ export function LogViewer({ logs, className, autoScroll = true, status }: LogVie
               }
 
               // Start new group
-              currentGroup = {
-                  stage: stageName,
-                  logs: [],
-                  status: 'running', // Initially running
-                  startTime: log.timestamp
-              };
-              groups.push(currentGroup);
-          }
+                  // Start new group
+                  currentGroup = {
+                      stage: stageName,
+                      logs: [],
+                      status: 'running', // Initially running
+                      startTime: log.timestamp
+                  };
+                  groups.push(currentGroup);
+              }
 
-          currentGroup.logs.push(log);
-          if (log.level === 'error') currentGroup.status = 'failed';
-      });
+              currentGroup.logs.push(log);
+              if (log.level === 'error') currentGroup.status = 'failed';
+          });
 
-      // Cleanup final group status if job is done
-      if (currentGroup) {
-           const group = currentGroup as LogGroup;
-           const hasError = group.logs.some(l => l.level === 'error');
-           if (hasError) {
-               group.status = 'failed';
-           } else if (status && status !== 'Running') {
-               group.status = 'success';
-           }
-      }
-
-      return groups;
-  }, [parsedLogs, status]);
-
+          return groups;
+      }, [parsedLogs]);
   // Auto-expand latest running stage only if user hasn't manually collapsed/expanded things
   useEffect(() => {
      if (userInteracted) return;

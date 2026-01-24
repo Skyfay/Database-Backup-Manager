@@ -1,13 +1,10 @@
 import { BackupResult } from "@/lib/core/interfaces";
 import { LogLevel, LogType } from "@/lib/core/logs";
-import { execFileAsync } from "./connection";
 import { getDialect } from "./dialects";
 import fs from "fs/promises";
-import { createWriteStream } from "fs";
-import { waitForProcess } from "@/lib/adapters/process";
 import { spawn } from "child_process";
 
-export async function dump(config: any, destinationPath: string, onLog?: (msg: string, level?: LogLevel, type?: LogType, details?: string) => void, onProgress?: (percentage: number) => void): Promise<BackupResult> {
+export async function dump(config: any, destinationPath: string, onLog?: (msg: string, level?: LogLevel, type?: LogType, details?: string) => void, _onProgress?: (percentage: number) => void): Promise<BackupResult> {
     const startedAt = new Date();
     const logs: string[] = [];
     const log = (msg: string, level: LogLevel = 'info', type: LogType = 'general', details?: string) => {

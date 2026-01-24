@@ -187,7 +187,7 @@ export const SFTPStorageAdapter: StorageAdapter = {
                 return buffer.toString('utf-8');
             }
             return null;
-        } catch (error) {
+        } catch (_error) {
             // Quietly fail if file not found (expected for missing .meta.json)
             return null;
         } finally {

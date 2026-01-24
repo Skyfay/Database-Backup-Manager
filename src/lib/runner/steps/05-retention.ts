@@ -1,7 +1,7 @@
 import { RunnerContext } from "../types";
 import { decryptConfig } from "@/lib/crypto";
 import { RetentionService } from "@/services/retention-service";
-import { RetentionConfiguration, DEFAULT_RETENTION_CONFIG } from "@/lib/core/retention";
+import { RetentionConfiguration } from "@/lib/core/retention";
 import { FileInfo } from '@/lib/core/interfaces';
 import path from "path";
 
@@ -20,7 +20,7 @@ export async function stepRetention(ctx: RunnerContext) {
     let policy: RetentionConfiguration;
     try {
         policy = JSON.parse(retentionJson);
-    } catch (e) {
+    } catch (_e) {
         ctx.log("Retention: Failed to parse configuration. Skipping.");
         return;
     }
@@ -73,7 +73,7 @@ export async function stepRetention(ctx: RunnerContext) {
                               file.locked = true; // Mark as locked
                           }
                       }
-                  } catch (e) {
+                  } catch (_e) {
                       // Ignore read errors
                   }
              }

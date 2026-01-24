@@ -26,11 +26,11 @@ export abstract class BaseDialect implements DatabaseDialect {
     abstract getRestoreArgs(config: any, targetDatabase?: string): string[];
     abstract getConnectionArgs(config: any): string[];
 
-    supportsVersion(version: string): boolean {
+    supportsVersion(_version: string): boolean {
         return true; // Default fallback
     }
 
-    protected appendAuthArgs(args: string[], config: any) {
+    protected appendAuthArgs(_args: string[], _config: any) {
         // Implementation provided by subclasses or specific common logic
     }
 }

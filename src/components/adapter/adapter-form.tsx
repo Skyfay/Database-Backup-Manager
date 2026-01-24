@@ -68,9 +68,11 @@ export function AdapterForm({ type, adapters, onSuccess, initialData }: { type: 
     // Update form schema/values when adapter changes
     useEffect(() => {
         if (!initialData && adapters.length === 1) {
-            setSelectedAdapterId(adapters[0].id);
-            form.setValue("adapterId", adapters[0].id);
+            const firstId = adapters[0].id;
+            setSelectedAdapterId(firstId);
+            form.setValue("adapterId", firstId);
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [adapters, initialData, form]);
 
 
@@ -97,7 +99,7 @@ export function AdapterForm({ type, adapters, onSuccess, initialData }: { type: 
             } else {
                 toast.error("Operation failed");
             }
-        } catch (error) {
+        } catch (_error) {
             toast.error("An error occurred");
         }
     };
@@ -123,7 +125,7 @@ export function AdapterForm({ type, adapters, onSuccess, initialData }: { type: 
                      setConnectionError(testResult.message);
                      setPendingSubmission(data);
                  }
-             } catch (e) {
+             } catch (_e) {
                  toast.dismiss(toastId);
                  setConnectionError("Could not test connection due to an unexpected error.");
                  setPendingSubmission(data);
