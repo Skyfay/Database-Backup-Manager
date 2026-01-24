@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Loader2, ChevronsUpDown, Check, AlertCircle } from "lucide-react";
+import { Loader2, ChevronsUpDown, Check, AlertCircle, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,6 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { Textarea } from "@/components/ui/textarea";
 
@@ -616,10 +617,28 @@ export function AdapterForm({ type, adapters, onSuccess, initialData }: { type: 
                    name={`config.${key}`}
                    render={({ field }) => (
                        <FormItem className={isBoolean ? "flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm" : ""}>
-                           <div className="space-y-0.5">
-                               <FormLabel>{label}</FormLabel>
-                               {description && <FormDescription>{description}</FormDescription>}
-                           </div>
+                           {isBoolean ? (
+                               <div className="space-y-0.5">
+                                   <FormLabel>{label}</FormLabel>
+                                   {description && <FormDescription>{description}</FormDescription>}
+                               </div>
+                           ) : (
+                               <div className="flex items-center gap-1.5">
+                                   <FormLabel>{label}</FormLabel>
+                                   {description && (
+                                       <TooltipProvider>
+                                           <Tooltip delayDuration={300}>
+                                               <TooltipTrigger asChild>
+                                                   <Info className="h-3.5 w-3.5 text-muted-foreground/70 hover:text-foreground transition-colors cursor-help" />
+                                               </TooltipTrigger>
+                                               <TooltipContent side="right">
+                                                   <p className="max-w-[300px] text-xs">{description}</p>
+                                               </TooltipContent>
+                                           </Tooltip>
+                                       </TooltipProvider>
+                                   )}
+                               </div>
+                           )}
                            <FormControl>
                                {isBoolean ? (
                                    <Switch
