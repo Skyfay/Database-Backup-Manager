@@ -1,0 +1,127 @@
+# Storage Adapter Development Guide
+
+This guide explains how to add new storage destinations (S3, SFTP, WebDAV, etc.) to the Database Backup Manager.
+
+## Architecture Overview
+
+Storage adapters are responsible for transferring backup files to a remote location.
+Crucially, **we use a streaming architecture**.
+An adapter receives a `localPath` (temp file) but should ideally stream it to the destination for performance and memory efficiency, although some libraries might require a file path.
+
+**Key Rule**:
+Prefer **Native Node.js implementations** over CLI wrappers (like `rclone`) whenever possible.
+*   ✅ `@aws-sdk/client-s3` (Native, robust)
+*   ❌ `rclone` (External binary dependency, fragile parsing)
+*   Exception: `rsync` or `smbclient` if no robust JS alternative exists.
+
+---
+
+## Step 1: Define Configuration Schema
+
+All adapters must define a Zod schema for their configuration usage in the UI.
+Edit `src/lib/adapters/definitions.ts`:
+
+```typescript
+// src/lib/adapters/definitions.ts
+
+export const S3Schema = z.object({
+  endpoint: z.string().optional().describe("API Endpoint (e.g. for MinIO/R2)"),
+  region: z.string().default("us-east-1"),
+  bucket: z.string().min(1, "Bucket name is required"),
+  accessKeyId: z.string().min(1, "Access Key is required"),
+  secretAccessKey: z.string().min(1, "Secret Key is required"),
+  pathPrefix: z.string().optional().describe("Folder prefix (e.g. /backups)"),
+});
+```
+
+*   **Tip**: Use `.describe()` to add help text in the UI.
+*   **Tip**: Use `.default()` to pre-fill values.
+
+---
+
+## Step 2: Implement the Adapter
+
+Create a new file in `src/lib/adapters/storage/` (e.g., `s3.ts`).
+It must implement the `StorageAdapter` interface from `@/lib/core/interfaces`.
+
+### Required Methods
+
+*   `upload(config, localPath, remotePath, onProgress, onLog)`: Uploads a file.
+*   `download(config, remotePath, localPath)`: Downloads a file (for restore).
+*   `list(config, remotePath)`: Lists files (for the storage explorer).
+*   `delete(config, remotePath)`: Deletes a file (for retention policy).
+*   `test(config)`: Verifies connectivity.
+
+### Implementation Template
+
+```typescript
+import { StorageAdapter, FileInfo } from "@/lib/core/interfaces";
+import { S3Schema } from "@/lib/adapters/definitions";
+import { createReadStream } from "fs";
+
+export const S3StorageAdapter: StorageAdapter = {
+    id: "s3-compatible",  // Unique ID
+    type: "storage",
+    name: "S3 Compatible", // Display Name
+    configSchema: S3Schema,
+
+    async upload(config: any, localPath: string, remotePath: string, onProgress) {
+        // 1. Create Read Stream
+        const stream = createReadStream(localPath);
+
+        // 2. Upload via SDK (Example with AWS SDK)
+        // const upload = new Upload({ body: stream, ... });
+        // upload.on("httpUploadProgress", p => onProgress(percentage));
+
+        return true;
+    },
+
+    async list(config: any, dir: string): Promise<FileInfo[]> {
+        // Return array of files
+        return [{
+            name: "backup-2024.sql.gz",
+            path: "backups/backup-2024.sql.gz",
+            size: 1024000,
+            modTime: new Date()
+        }];
+    },
+
+    // ... implement download, delete, test
+};
+```
+
+---
+
+## Step 3: Register the Adapter
+
+Finally, register your new adapter in the global registry.
+Edit `src/lib/adapters/index.ts`:
+
+```typescript
+// src/lib/adapters/index.ts
+import { S3StorageAdapter } from "./storage/s3";
+
+export function registerAdapters() {
+    // ... existing adapters
+    registry.register(S3StorageAdapter); // <--- Add this
+}
+```
+
+---
+
+## UI Integration
+
+You do **not** need to create any React components.
+The `src/components/adapter/adapter-form.tsx` component automatically generates the configuration form based on your Zod schema defined in Step 1.
+
+*   `z.string()` -> Input field
+*   `z.boolean()` -> Switch
+*   `z.number()` -> Input (type=number)
+*   `z.enum()` -> Select dropdown
+
+## Testing
+
+1.  Restart the dev server (`pnpm dev`).
+2.  Go to `Destinations` -> `New Destination`.
+3.  Your new adapter should appear in the "Type" dropdown.
+4.  Configure it and use the "Test Connection" button (implement the `test()` method for this to work!).

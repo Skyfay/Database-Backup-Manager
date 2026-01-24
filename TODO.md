@@ -58,9 +58,23 @@
 
 ### Storage Destinations
 - [x] **Local Filesystem Adapter**
-- [ ] **S3 Compatible Storage Adapter** (AWS, MinIO, Cloudflare R2)
-- [ ] **FTP / SFTP Adapter**
-- [ ] **Cloud Providers** (Google Drive, Dropbox, OneDrive) - *Optional/Later*
+- [ ] **S3 Compatible Storage Adapter** (AWS, MinIO, Cloudflare R2, Hetzner)
+    - *Recommended Package*: `@aws-sdk/client-s3` + `@aws-sdk/lib-storage` (Streaming Support)
+- [ ] **SFTP Adapter** (SSH File Transfer Protocol)
+    - *Recommended Package*: `ssh2-sftp-client`
+- [ ] **FTP / FTPS Adapter**
+    - *Recommended Package*: `basic-ftp`
+- [ ] **WebDAV Adapter** (Nextcloud, OwnCloud)
+    - *Recommended Package*: `webdav`
+- [ ] **SMB / CIFS Adapter** (Windows Share)
+    - *Recommended Package*: `samba-client`
+    - *Note*: Wrapper for system `smbclient`. Robust SMB2/3 support but requires binary.
+- [ ] **Rsync Adapter**
+    - *Note*: Requires `rsync` binary on host. Wrapper package: `rsync`
+- [ ] **Cloud Providers** (OAuth based) - *Optional/Later*
+    - [ ] **Google Drive** (*Package*: `googleapis`)
+    - [ ] **Dropbox** (*Package*: `dropbox`)
+    - [ ] **OneDrive** (*Package*: `@microsoft/microsoft-graph-client`)
 
 ### Notifications
 - [x] **Discord Webhook**
