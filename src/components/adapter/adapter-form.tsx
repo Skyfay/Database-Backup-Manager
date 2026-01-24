@@ -182,7 +182,7 @@ export function AdapterForm({ type, adapters, onSuccess, initialData }: { type: 
                                             </Button>
                                         </FormControl>
                                     </PopoverTrigger>
-                                    <PopoverContent className="w-[250px] p-0" align="start">
+                                    <PopoverContent className="w-62.5 p-0" align="start">
                                         <Command>
                                             <CommandInput placeholder="Search type..." />
                                             <CommandList>
