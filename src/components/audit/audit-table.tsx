@@ -21,6 +21,14 @@ import {
   DialogTrigger
 } from "@/components/ui/dialog";
 import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -29,7 +37,7 @@ import {
 } from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, Eye, ChevronLeft, ChevronRight, Search, ChevronsLeft, ChevronsRight, X } from "lucide-react";
+import { Loader2, Eye, ChevronLeft, ChevronRight, Search, ChevronsLeft, ChevronsRight, X, RefreshCw, Settings2 } from "lucide-react";
 import { format } from "date-fns";
 import { AuditLog, User } from "@prisma/client";
 import { AUDIT_ACTIONS, AUDIT_RESOURCES } from "@/lib/core/audit-types";
@@ -71,8 +79,20 @@ export function AuditTable() {
   const [debouncedSearch, setDebouncedSearch] = useState<string>("");
 
   // Dynamic Options
-  const [availableActions, setAvailableActions] = useState<FilterOption[]>([]);
-  const [availableResources, setAvailableResources] = useState<FilterOption[]>([]);
+  const [availableActions, setAvailableActions] = useState<FilterOption[]>(
+    Object.values(AUDIT_ACTIONS).map(val => ({ value: val, count: 0 }))
+  );
+  const [availableResources, setAvailableResources] = useState<FilterOption[]>(
+    Object.values(AUDIT_RESOURCES).map(val => ({ value: val, count: 0 }))
+  );
+
+  const [visibleColumns, setVisibleColumns] = useState({
+      user: true,
+      action: true,
+      resource: true,
+      details: true,
+      date: true,
+  });
 
   // Debounce search
   useEffect(() => {
@@ -105,8 +125,18 @@ export function AuditTable() {
       }
 
       if (statsResult.success && statsResult.data) {
-          setAvailableActions(statsResult.data.actions.map((a: any) => ({ value: a.value, count: a.count })));
-          setAvailableResources(statsResult.data.resources.map((r: any) => ({ value: r.value, count: r.count })));
+          const actionCounts = new Map(statsResult.data.actions.map((a: any) => [a.value, a.count]));
+          const resourceCounts = new Map(statsResult.data.resources.map((r: any) => [r.value, r.count]));
+
+          setAvailableActions(Object.values(AUDIT_ACTIONS).map(val => ({
+              value: val,
+              count: actionCounts.get(val) || 0
+          })));
+
+          setAvailableResources(Object.values(AUDIT_RESOURCES).map(val => ({
+              value: val,
+              count: resourceCounts.get(val) || 0
+          })));
       }
     } catch (error) {
       console.error(error);
@@ -176,9 +206,35 @@ export function AuditTable() {
               <X className="ml-2 h-4 w-4" />
             </Button>
           )}
+        </div>
+        <div className="flex items-center space-x-2">
+          <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="h-8 hidden lg:flex">
+                  <Settings2 className="mr-2 h-4 w-4" />
+                  View
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-[150px]">
+                <DropdownMenuLabel>Toggle columns</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {Object.keys(visibleColumns).map((column) => (
+                  <DropdownMenuCheckboxItem
+                    key={column}
+                    className="capitalize"
+                    checked={visibleColumns[column as keyof typeof visibleColumns]}
+                    onCheckedChange={(value) =>
+                      setVisibleColumns((prev) => ({ ...prev, [column]: value }))
+                    }
+                  >
+                    {column}
+                  </DropdownMenuCheckboxItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
 
-          <Button variant="outline" size="sm" onClick={() => fetchLogs()} title="Refresh" className="h-8 ml-auto">
-             <Search className="h-4 w-4" />
+          <Button variant="outline" size="sm" onClick={() => fetchLogs()} title="Refresh" className="h-8 w-8 p-0">
+             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
           </Button>
         </div>
       </div>
@@ -187,17 +243,17 @@ export function AuditTable() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>User</TableHead>
-              <TableHead>Action</TableHead>
-              <TableHead>Resource</TableHead>
-              <TableHead>Details</TableHead>
-              <TableHead className="text-right">Date</TableHead>
+              {visibleColumns.user && <TableHead>User</TableHead>}
+              {visibleColumns.action && <TableHead>Action</TableHead>}
+              {visibleColumns.resource && <TableHead>Resource</TableHead>}
+              {visibleColumns.details && <TableHead>Details</TableHead>}
+              {visibleColumns.date && <TableHead className="text-right">Date</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={5} className="h-24 text-center">
+                <TableCell colSpan={Object.values(visibleColumns).filter(Boolean).length} className="h-24 text-center">
                   <div className="flex justify-center items-center gap-2">
                     <Loader2 className="h-4 w-4 animate-spin" /> Loading...
                   </div>
@@ -205,13 +261,14 @@ export function AuditTable() {
               </TableRow>
             ) : logs.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="h-24 text-center">
+                <TableCell colSpan={Object.values(visibleColumns).filter(Boolean).length} className="h-24 text-center">
                   No audit logs found.
                 </TableCell>
               </TableRow>
             ) : (
               logs.map((log) => (
                 <TableRow key={log.id}>
+                  {visibleColumns.user && (
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <Avatar className="h-8 w-8">
@@ -226,11 +283,15 @@ export function AuditTable() {
                       </div>
                     </div>
                   </TableCell>
+                  )}
+                  {visibleColumns.action && (
                   <TableCell>
                     <Badge variant={getActionColor(log.action) as any}>
                       {log.action}
                     </Badge>
                   </TableCell>
+                  )}
+                  {visibleColumns.resource && (
                   <TableCell>
                     <div className="flex flex-col">
                       <span className="font-medium">{log.resource}</span>
@@ -241,6 +302,8 @@ export function AuditTable() {
                       )}
                     </div>
                   </TableCell>
+                  )}
+                  {visibleColumns.details && (
                   <TableCell>
                     {log.details ? (
                        <Dialog>
@@ -264,9 +327,12 @@ export function AuditTable() {
                       <span className="text-muted-foreground text-xs">-</span>
                     )}
                   </TableCell>
+                  )}
+                  {visibleColumns.date && (
                   <TableCell className="text-right">
                     <DateDisplay date={log.createdAt} />
                   </TableCell>
+                  )}
                 </TableRow>
               ))
             )}
