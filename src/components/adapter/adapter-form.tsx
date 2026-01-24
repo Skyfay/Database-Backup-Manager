@@ -19,6 +19,8 @@ import { Switch } from "@/components/ui/switch";
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
+import { Textarea } from "@/components/ui/textarea";
+
 import { AdapterDefinition } from "@/lib/adapters/definitions";
 import { AdapterConfig } from "./types";
 
@@ -471,6 +473,7 @@ export function AdapterForm({ type, adapters, onSuccess, initialData }: { type: 
             const isBoolean = unwrappedShape instanceof z.ZodBoolean || unwrappedShape._def?.typeName === "ZodBoolean";
             const isEnum = unwrappedShape instanceof z.ZodEnum || unwrappedShape._def?.typeName === "ZodEnum";
             const isPassword = key.toLowerCase().includes("password") || key.toLowerCase().includes("secret");
+            const isTextArea = key.toLowerCase().includes("privatekey") || key.toLowerCase().includes("certificate") || key.toLowerCase().includes("options");
             const description = shape.description;
             const isDatabaseField = key === 'database' && type === 'database';
 
@@ -516,6 +519,7 @@ export function AdapterForm({ type, adapters, onSuccess, initialData }: { type: 
                "sftp.port": "22",
                "sftp.username": "backup-user",
                "sftp.password": "secure-password",
+               "sftp.privateKey": "-----BEGIN RSA PRIVATE KEY-----\n\n\n-----END RSA PRIVATE KEY-----",
                "sftp.pathPrefix": "/home/backup/uploads",
             };
             const placeholder = PLACEHOLDERS[`${selectedAdapter.id}.${key}`] || PLACEHOLDERS[key];
@@ -630,12 +634,21 @@ export function AdapterForm({ type, adapters, onSuccess, initialData }: { type: 
                                            ))}
                                        </SelectContent>
                                    </Select>
+                               ) : isTextArea ? (
+                                   <Textarea
+                                       {...field}
+                                       placeholder={placeholder}
+                                       value={field.value || ""}
+                                       className="font-mono text-xs min-h-[100px]"
+                                       onChange={(e) => field.onChange(e.target.value)}
+                                   />
                                ) : (
                                    <Input
                                        type={isPassword ? "password" : "text"}
                                        {...field}
                                        placeholder={placeholder}
                                        value={field.value || ""}
+
                                        onChange={(e) => {
                                            const val = e.target.value;
                                            // Auto coercion for numbers if schema expects number
