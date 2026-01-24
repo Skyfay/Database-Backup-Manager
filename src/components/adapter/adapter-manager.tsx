@@ -17,6 +17,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 
 import { AdapterManagerProps, AdapterConfig } from "./types";
 import { AdapterForm } from "./adapter-form";
+import { HealthStatusBadge } from "@/components/ui/health-status-badge";
 
 export function AdapterManager({ type, title, description, canManage = true }: AdapterManagerProps) {
     const [configs, setConfigs] = useState<AdapterConfig[]>([]);
@@ -98,6 +99,26 @@ export function AdapterManager({ type, title, description, canManage = true }: A
     };
 
     const columns: ColumnDef<AdapterConfig>[] = [
+        {
+            id: "status",
+            header: "Status",
+            cell: ({ row }) => {
+                // Determine health status from config props (these are injected by updated prisma schema)
+                // We need to extend our frontend Type for AdapterConfig to include these fields first,
+                // but usually the fetch endpoint just returns what's in prisma.
+                // Assuming `lastStatus` is available.
+                const status = (row.original as any).lastStatus || "ONLINE"; // Default or unknown
+                const lastCheck = (row.original as any).lastHealthCheck;
+
+                return (
+                    <HealthStatusBadge
+                        status={status}
+                        adapterId={row.original.id}
+                        lastChecked={lastCheck}
+                    />
+                );
+            }
+        },
         {
             accessorKey: "name",
             header: "Name",

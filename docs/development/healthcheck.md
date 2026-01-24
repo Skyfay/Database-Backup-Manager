@@ -106,8 +106,8 @@ Beim Klick auf den Indikator öffnet sich ein Dialog/Popover:
 ### Frontend (UI/UX)
 - [ ] `HealthStatusBadge.tsx` Komponente erstellen (der rot/grün/orange Punkt).
 - [ ] `HealthHistoryGrid.tsx` Komponente erstellen (die Matrix-Visualisierung).
-- [ ] `src/app/dashboard/sources/columns.tsx` anpassen -> Spalte "Status" hinzufügen.
-- [ ] `src/app/dashboard/destinations/columns.tsx` anpassen -> Spalte "Status" hinzufügen.
+- [x] `src/app/dashboard/sources/columns.tsx` anpassen -> Spalte "Status" hinzufügen.
+- [x] `src/app/dashboard/destinations/columns.tsx` anpassen -> Spalte "Status" hinzufügen.
 - [ ] Integration in die Detail-Ansichten (optional).
 
 ### Dokumentation & Tests
