@@ -12,8 +12,9 @@ echo "⏳ Waiting for databases to be healthy..."
 docker compose -f docker-compose.test.yml ps
 
 echo "⚠️  Note: If this is the first run, databases might take a few seconds to initialize even after container start."
-echo "sleeping 30s to allow all 16 DBs to initialize..."
-sleep 30
+echo "⏳ Waiting 30s for DB initialization... (Press any key to skip wait)"
+read -t 30 -n 1 -s -r || true
+echo "" # New line after skip/timeout
 
 echo "🧪 Running Integration Tests..."
 npm run test:integration:run

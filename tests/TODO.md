@@ -20,6 +20,13 @@ This list contains critical unit tests that need to be implemented to ensure app
 
 ## Resilience
 
-- [ ] **Runner Cleanup on Failure** (`tests/unit/runner/pipeline-failure.test.ts`)
+- [x] **Runner Cleanup on Failure** (`tests/unit/runner/pipeline-failure.test.ts`)
     - **Goal:** Ensure temporary files (dumps) are deleted even if a later step in the backup process fails.
     - **Expectation:** `stepCleanup` must be called in case of error (e.g., upload failed) to prevent disk space leaks.
+
+## Integration Tests
+
+- [x] **Backup Flow** (`tests/integration/backup.test.ts`)
+    - **Goal:** Verify full backup cycle against real containers.
+- [x] **Restore Flow** (`tests/integration/restore.test.ts`)
+    - **Goal:** Verify full restore cycle (round-trip) against real containers.
