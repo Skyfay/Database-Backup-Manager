@@ -20,6 +20,7 @@ describe('Integration Tests: Database Connectivity', () => {
                 // Simple Retry Logic for Flaky Docker environments
                 let result;
                 for(let i=0; i<3; i++) {
+                    if (!adapter.test) throw new Error("Adapter does not implement test method");
                     result = await adapter.test(config as any);
                     if(result.success) break;
                     await new Promise(r => setTimeout(r, 2000)); // Wait 2s before retry
@@ -36,6 +37,7 @@ describe('Integration Tests: Database Connectivity', () => {
             // Test 2: Listing
             it('should list databases', async () => {
                 const adapter = registry.get(config.type) as DatabaseAdapter;
+                if (!adapter.getDatabases) throw new Error("Adapter does not implement getDatabases method");
 
                 let dbs;
                 try {

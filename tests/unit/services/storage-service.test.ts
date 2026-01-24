@@ -52,6 +52,7 @@ describe('StorageService', () => {
                 config: JSON.stringify({ basePath: '/tmp/backups' }), // mock crypto passes this through
                 createdAt: new Date(),
                 updatedAt: new Date(),
+                metadata: null,
             };
 
             // Prisma Mock
@@ -86,6 +87,7 @@ describe('StorageService', () => {
                 name: 'DB',
                 createdAt: new Date(),
                 updatedAt: new Date(),
+                metadata: null,
             });
 
             await expect(service.listFiles('db-conf'))
@@ -101,6 +103,7 @@ describe('StorageService', () => {
                 name: 'Unknown',
                 createdAt: new Date(),
                 updatedAt: new Date(),
+                metadata: null,
             });
 
             vi.mocked(registry.get).mockReturnValue(undefined);
@@ -139,6 +142,7 @@ describe('StorageService', () => {
                 name: 'Local',
                 createdAt: new Date(),
                 updatedAt: new Date(),
+                metadata: null,
             };
 
             // Prisma Mocks
@@ -173,6 +177,7 @@ describe('StorageService', () => {
                 name: 'Local',
                 createdAt: new Date(),
                 updatedAt: new Date(),
+                metadata: null,
             };
 
             prismaMock.adapterConfig.findUnique.mockResolvedValue(mockDbConfig);
@@ -199,6 +204,7 @@ describe('StorageService', () => {
                name: 'S3',
                createdAt: new Date(),
                updatedAt: new Date(),
+               metadata: null
            };
 
            prismaMock.adapterConfig.findUnique.mockResolvedValue(mockDbConfig);
