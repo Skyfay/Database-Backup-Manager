@@ -156,9 +156,10 @@ export function EditGroupDialog({ group, open, onOpenChange }: EditGroupDialogPr
                                                     </div>
                                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                                         {permissions.map((permission) => (
-                                                            <div
+                                                            <label
                                                                 key={permission.id}
-                                                                className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-3 shadow-sm hover:bg-accent/50 transition-colors"
+                                                                htmlFor={`edit-permission-${permission.id}`}
+                                                                className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-3 shadow-sm hover:bg-accent/50 transition-colors cursor-pointer"
                                                             >
                                                                 <FormControl>
                                                                     <Checkbox
@@ -176,14 +177,13 @@ export function EditGroupDialog({ group, open, onOpenChange }: EditGroupDialogPr
                                                                     />
                                                                 </FormControl>
                                                                 <div className="space-y-1 leading-none">
-                                                                    <label
-                                                                        htmlFor={`edit-permission-${permission.id}`}
-                                                                        className="text-sm font-normal cursor-pointer leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                                                    <span
+                                                                        className="text-sm font-normal leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                                                                     >
                                                                         {permission.label}
-                                                                    </label>
+                                                                    </span>
                                                                 </div>
-                                                            </div>
+                                                            </label>
                                                         ))}
                                                     </div>
                                                 </div>
