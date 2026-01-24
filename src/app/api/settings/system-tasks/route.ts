@@ -5,6 +5,8 @@ import { PERMISSIONS } from "@/lib/permissions";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { scheduler } from "@/lib/scheduler";
+import { auditService } from "@/services/audit-service";
+import { AUDIT_ACTIONS, AUDIT_RESOURCES } from "@/lib/core/audit-types";
 
 export async function GET(_req: NextRequest) {
     const session = await auth.api.getSession({
@@ -50,6 +52,16 @@ export async function POST(req: NextRequest) {
     // Refresh scheduler
     await scheduler.refresh();
 
+    if (session.user) {
+        await auditService.log(
+            session.user.id,
+            AUDIT_ACTIONS.UPDATE,
+            AUDIT_RESOURCES.SYSTEM,
+            { task: taskId, schedule },
+            taskId
+        );
+    }
+
     return NextResponse.json({ success: true });
 }
 
@@ -68,6 +80,16 @@ export async function PUT(req: NextRequest) {
 
     // Run async
     systemTaskService.runTask(taskId);
+
+    if (session.user) {
+        await auditService.log(
+            session.user.id,
+            AUDIT_ACTIONS.EXECUTE,
+            AUDIT_RESOURCES.SYSTEM,
+            { task: taskId },
+            taskId
+        );
+    }
 
     return NextResponse.json({ success: true, message: "Task started" });
 }

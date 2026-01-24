@@ -23,6 +23,7 @@ import { Loader2, Fingerprint, AlertCircle } from "lucide-react"
 import { formatTwoFactorCode } from "@/lib/utils"
 import { ShieldCheck, Box, Settings2, Globe } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { logLoginSuccess } from "@/app/actions/audit-log"
 
 const formSchema = z.object({
   email: z.string().email(),
@@ -102,7 +103,8 @@ export function LoginForm({ allowSignUp = true, ssoProviders = [], errorCode }: 
         try {
             const result = await signIn.passkey({
                 fetchOptions: {
-                    onSuccess: () => {
+                    onSuccess: async () => {
+                        await logLoginSuccess().catch(e => console.error("Logging failed", e));
                         toast.success("Login successful")
                         router.push("/dashboard")
                     }
@@ -134,7 +136,8 @@ export function LoginForm({ allowSignUp = true, ssoProviders = [], errorCode }: 
                await authClient.twoFactor.verifyBackupCode({
                   code: totpCode,
                   fetchOptions: {
-                      onSuccess: () => {
+                      onSuccess: async () => {
+                           await logLoginSuccess().catch(e => console.error("Logging failed", e));
                            router.push("/dashboard")
                            toast.success("Login successful")
                       },
@@ -148,7 +151,8 @@ export function LoginForm({ allowSignUp = true, ssoProviders = [], errorCode }: 
               await authClient.twoFactor.verifyTotp({
                   code: totpCode,
                   fetchOptions: {
-                      onSuccess: () => {
+                      onSuccess: async () => {
+                           await logLoginSuccess().catch(e => console.error("Logging failed", e));
                            router.push("/dashboard")
                            toast.success("Login successful")
                       },
@@ -175,18 +179,19 @@ export function LoginForm({ allowSignUp = true, ssoProviders = [], errorCode }: 
           password: values.password,
           callbackURL: "/dashboard",
           fetchOptions: {
-            onSuccess: (ctx) => {
+            onSuccess: async (ctx) => {
                console.log("Login Success Context:", ctx);
                if (ctx.data?.twoFactorRedirect) {
                  setTwoFactorStep(true)
                  setLoading(false)
                  return
                }
+               await logLoginSuccess().catch(e => console.error("Logging failed", e));
               router.push("/dashboard")
             },
             onError: (ctx) => {
               console.log("Login Error Context:", ctx);
-              if (ctx.error.code === "TWO_FACTOR_REQUIRED" || ctx.error.message.includes("2FA") || ctx.error.message.includes("Two factor")) {
+              if (ctx.error.code === "TWO_FACTOR_REQUIRED" || ctx.error.message?.includes("2FA") || ctx.error.message?.includes("Two factor")) {
                  setTwoFactorStep(true)
                  setLoading(false)
                  return

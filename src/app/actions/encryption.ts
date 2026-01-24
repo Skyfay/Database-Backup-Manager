@@ -6,6 +6,8 @@ import { getUserPermissions, checkPermission as _checkPermission } from "@/lib/a
 import { PERMISSIONS } from "@/lib/permissions";
 import * as encryptionService from "@/services/encryption-service";
 import { revalidatePath } from "next/cache";
+import { auditService } from "@/services/audit-service";
+import { AUDIT_ACTIONS, AUDIT_RESOURCES } from "@/lib/core/audit-types";
 
 /**
  * Returns all encryption profiles.
@@ -82,6 +84,15 @@ export async function createEncryptionProfile(name: string, description?: string
 
     try {
         const profile = await encryptionService.createEncryptionProfile(name, description);
+        if (session.user) {
+            await auditService.log(
+                session.user.id,
+                AUDIT_ACTIONS.CREATE,
+                AUDIT_RESOURCES.SYSTEM,
+                { type: "EncryptionProfile", name },
+                profile.id
+            );
+        }
         revalidatePath("/dashboard/vault");
         revalidatePath("/dashboard/settings");
         revalidatePath("/dashboard/jobs"); // Revalidate jobs usually where dropdowns are
@@ -109,6 +120,15 @@ export async function deleteEncryptionProfile(id: string) {
         // Warning: This action is destructive and might brick backups.
         // The service does the deletion. Caller should warn user.
         await encryptionService.deleteEncryptionProfile(id);
+        if (session.user) {
+            await auditService.log(
+                session.user.id,
+                AUDIT_ACTIONS.DELETE,
+                AUDIT_RESOURCES.SYSTEM,
+                { type: "EncryptionProfile" },
+                id
+            );
+        }
         revalidatePath("/dashboard/vault");
         revalidatePath("/dashboard/settings");
         revalidatePath("/dashboard/settings");
