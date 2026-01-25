@@ -59,6 +59,9 @@ async function restoreLocal(config: any, sourcePath: string, log: (msg: string) 
         const backupPath = `${dbPath}.bak-${Date.now()}`;
         log(`Backing up existing database to ${backupPath}`);
         fs.copyFileSync(dbPath, backupPath);
+
+        log(`Removing existing database file before restore...`);
+        fs.unlinkSync(dbPath);
     }
 
     log(`Executing: ${binaryPath} "${dbPath}" < ${sourcePath}`);
@@ -109,9 +112,9 @@ async function restoreSsh(config: any, sourcePath: string, log: (msg: string) =>
     await client.connect(config);
     log("SSH connection established.");
 
-    // Create remote backup
-    log("Creating remote backup of existing DB...");
-    const backupCmd = `test -f "${dbPath}" && cp "${dbPath}" "${dbPath}.bak-$(date +%s)" || echo "No existing DB"`;
+    // Create remote backup and delete original
+    log("Creating remote backup of existing DB and cleaning up...");
+    const backupCmd = `if [ -f "${dbPath}" ]; then cp "${dbPath}" "${dbPath}.bak-$(date +%s)"; rm "${dbPath}"; echo "Backed up and removed old DB"; else echo "No existing DB"; fi`;
     await client.exec(backupCmd);
 
     return new Promise(async (resolve, reject) => {

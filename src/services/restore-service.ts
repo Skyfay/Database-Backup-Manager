@@ -409,7 +409,12 @@ export class RestoreService {
 
             // Override database name if provided
             if (targetDatabaseName) {
-                dbConf.database = targetDatabaseName;
+                if (sourceConfig.adapterId === 'sqlite' && dbConf.path) {
+                    const dir = path.dirname(dbConf.path);
+                    dbConf.path = path.join(dir, targetDatabaseName);
+                } else {
+                    dbConf.database = targetDatabaseName;
+                }
             }
 
             // Pass database mapping if provided
