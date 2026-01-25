@@ -65,9 +65,9 @@ export class MySQLBaseDialect extends BaseDialect {
         // SSL Handling - Default behavior for generic MySQL
         if (config.disableSsl) {
             // Check if we are running in an environment that supports --ssl-mode (MySQL 5.7.11+)
-            // Since we can't easily know the CLIENT version here without checking,
-            // we assume a modern client is used in the container (MySQL 8 client).
-            args.push('--ssl-mode=DISABLED');
+            // Since we use Alpine Linux, the installed 'mysql-client' is actually MariaDB Client.
+            // MariaDB Client does not support --ssl-mode=DISABLED, it uses --skip-ssl.
+            args.push('--skip-ssl');
         }
     }
 }

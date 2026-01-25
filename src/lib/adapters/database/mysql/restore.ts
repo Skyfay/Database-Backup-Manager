@@ -202,7 +202,7 @@ export async function restore(config: any, sourcePath: string, onLog?: (msg: str
 
     } catch (error: any) {
             const msg = error.message || "";
-            logs.push(`Error: ${msg}`);
+            log(`Error: ${msg}`, 'error');
             return { success: false, logs, error: msg, startedAt, completedAt: new Date() };
     }
 }

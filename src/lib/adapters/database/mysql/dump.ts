@@ -70,7 +70,7 @@ export async function dump(config: any, destinationPath: string, onLog?: (msg: s
         };
 
     } catch (error: any) {
-        log(`Error: ${error.message}`);
+        log(`Error: ${error.message}`, 'error');
         return {
             success: false,
             logs,
