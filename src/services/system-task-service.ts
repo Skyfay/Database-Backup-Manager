@@ -3,8 +3,7 @@ import { registry } from "@/lib/core/registry";
 import { registerAdapters } from "@/lib/adapters";
 import { DatabaseAdapter } from "@/lib/core/interfaces";
 import { decryptConfig } from "@/lib/crypto";
-import { healthCheckService } from "./healthcheck-service";
-import { auditService } from "./audit-service";
+import { updateService } from "./update-service";
 
 // Ensure adapters are registered for worker context
 registerAdapters();
@@ -12,7 +11,8 @@ registerAdapters();
 export const SYSTEM_TASKS = {
     UPDATE_DB_VERSIONS: "system.update_db_versions",
     HEALTH_CHECK: "system.health_check",
-    CLEAN_OLD_LOGS: "system.clean_audit_logs"
+    CLEAN_OLD_LOGS: "system.clean_audit_logs",
+    CHECK_FOR_UPDATES: "system.check_for_updates"
 };
 
 export const DEFAULT_TASK_CONFIG = {
@@ -30,6 +30,11 @@ export const DEFAULT_TASK_CONFIG = {
         interval: "0 0 * * *", // Daily at midnight
         label: "Clean Old Logs",
         description: "Removes audit logs older than the configured retention period (default: 90 days) to prevent disk filling."
+    },
+    [SYSTEM_TASKS.CHECK_FOR_UPDATES]: {
+        interval: "0 0 * * *", // Daily at midnight
+        label: "Check for Updates",
+        description: "Checks if a new version of the application is available in the GitLab Container Registry."
     }
 };
 
@@ -64,6 +69,9 @@ export class SystemTaskService {
                 await this.runCleanOldLogs();
                 break;
             default:
+            case SYSTEM_TASKS.CHECK_FOR_UPDATES:
+                await this.runCheckForUpdates();
+                break;
                 console.warn(`[SystemTask] Unknown task: ${taskId}`);
         }
     }
@@ -80,6 +88,31 @@ export class SystemTaskService {
             console.log(`[SystemTask] Deleted ${deleted.count} old audit logs.`);
         } catch (error: any) {
             console.error(`[SystemTask] Failed to clean audit logs: ${error.message}`);
+        }
+    }
+
+    private async runCheckForUpdates() {
+        console.log(`[SystemTask] Checking for updates...`);
+        try {
+            // The update service handles the "checkForUpdates" setting check internally in recent changes,
+            // but we might want to skip logic if not needed. However, since this is a system task,
+            // the user might have scheduled it.
+            // The service call is lightweight (one API call if enabled).
+            // We mainly call it to refresh the cache if Next.js cache is used, or simply to log output.
+
+            // NOTE: Since the Sidebar checks on every render (with cache), this task is primarily
+            // useful if we later implement *notifications* for updates (e.g. email).
+            // For now, we simply execute it.
+            const result = await updateService.checkForUpdates();
+
+            if (result.updateAvailable) {
+                console.log(`[SystemTask] New version available: ${result.latestVersion} (Current: ${result.currentVersion})`);
+                // Future: Send notification?
+            } else {
+                console.log(`[SystemTask] Up to date (v${result.currentVersion}).`);
+            }
+        } catch (error: any) {
+             console.error(`[SystemTask] Update check failed: ${error.message}`);
         }
     }
 

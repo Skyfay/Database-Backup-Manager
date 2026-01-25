@@ -41,7 +41,7 @@ const sidebarItems = [
     { icon: Settings, label: "Settings", href: "/dashboard/settings", permission: PERMISSIONS.SETTINGS.READ },
 ]
 
-export function Sidebar({ permissions = [] }: { permissions?: string[] }) {
+export function Sidebar({ permissions = [], updateAvailable = false }: { permissions?: string[], updateAvailable?: boolean }) {
     const pathname = usePathname()
     const { data: session, isPending } = useSession()
     const router = useRouter()
@@ -114,10 +114,18 @@ export function Sidebar({ permissions = [] }: { permissions?: string[] }) {
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button variant="ghost" className="relative h-auto w-full justify-start gap-2 px-2 hover:bg-sidebar-accent">
-                                <Avatar className="h-8 w-8 rounded-lg">
-                                    <AvatarImage src={session.user.image || ""} alt={session.user.name} />
-                                    <AvatarFallback className="rounded-lg">{getInitials(session.user.name)}</AvatarFallback>
-                                </Avatar>
+                                <div className="relative">
+                                    <Avatar className="h-8 w-8 rounded-lg">
+                                        <AvatarImage src={session.user.image || ""} alt={session.user.name} />
+                                        <AvatarFallback className="rounded-lg">{getInitials(session.user.name)}</AvatarFallback>
+                                    </Avatar>
+                                    {updateAvailable && (
+                                        <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
+                                            <span className="relative inline-flex rounded-full h-3 w-3 bg-sky-500"></span>
+                                        </span>
+                                    )}
+                                </div>
                                 <div className="grid flex-1 text-left text-sm leading-tight">
                                     <span className="truncate font-semibold">{session.user.name}</span>
                                     <span className="truncate text-xs text-muted-foreground">{session.user.email}</span>
@@ -133,10 +141,15 @@ export function Sidebar({ permissions = [] }: { permissions?: string[] }) {
                         >
                             <DropdownMenuLabel className="p-0 font-normal">
                                 <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                                    <Avatar className="h-8 w-8 rounded-lg">
-                                        <AvatarImage src={session.user.image || ""} alt={session.user.name} />
-                                        <AvatarFallback className="rounded-lg">{getInitials(session.user.name)}</AvatarFallback>
-                                    </Avatar>
+                                    <div className="relative">
+                                        <Avatar className="h-8 w-8 rounded-lg">
+                                            <AvatarImage src={session.user.image || ""} alt={session.user.name} />
+                                            <AvatarFallback className="rounded-lg">{getInitials(session.user.name)}</AvatarFallback>
+                                        </Avatar>
+                                        {updateAvailable && (
+                                            <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-sky-500 border-2 border-background" />
+                                        )}
+                                    </div>
                                     <div className="grid flex-1 text-left text-sm leading-tight">
                                         <span className="truncate font-semibold">{session.user.name}</span>
                                         <span className="truncate text-xs text-muted-foreground">{session.user.email}</span>
@@ -145,6 +158,15 @@ export function Sidebar({ permissions = [] }: { permissions?: string[] }) {
                             </DropdownMenuLabel>
                             <DropdownMenuSeparator />
                              <DropdownMenuGroup>
+                                {updateAvailable && (
+                                    <DropdownMenuItem className="text-sky-600 focus:text-sky-600 font-medium" onClick={() => window.open('https://gitlab.com/Skyfay/database-backup-manager/-/releases', '_blank')}>
+                                        <div className="flex items-center w-full">
+                                            <Bell className="mr-2 h-4 w-4 fill-sky-200" />
+                                            <span>Update Available</span>
+                                            <span className="ml-auto flex h-2 w-2 rounded-full bg-sky-500" />
+                                        </div>
+                                    </DropdownMenuItem>
+                                )}
                                 <DropdownMenuItem onClick={() => router.push('/dashboard/profile')}>
                                     <User className="mr-2 h-4 w-4" />
                                     <span>Profile</span>

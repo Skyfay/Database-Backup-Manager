@@ -23,21 +23,24 @@ const formSchema = z.object({
     maxConcurrentJobs: z.coerce.number().min(1).max(10),
     disablePasskeyLogin: z.boolean().default(false),
     auditLogRetentionDays: z.coerce.number().min(1).max(365).default(90),
+    checkForUpdates: z.boolean().default(true),
 })
 
 interface SystemSettingsFormProps {
     initialMaxConcurrentJobs: number;
     initialDisablePasskeyLogin?: boolean;
     initialAuditLogRetentionDays?: number;
+    initialCheckForUpdates?: boolean;
 }
 
-export function SystemSettingsForm({ initialMaxConcurrentJobs, initialDisablePasskeyLogin, initialAuditLogRetentionDays = 90 }: SystemSettingsFormProps) {
+export function SystemSettingsForm({ initialMaxConcurrentJobs, initialDisablePasskeyLogin, initialAuditLogRetentionDays = 90, initialCheckForUpdates = true }: SystemSettingsFormProps) {
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema) as any,
         defaultValues: {
             maxConcurrentJobs: initialMaxConcurrentJobs,
             disablePasskeyLogin: initialDisablePasskeyLogin === true,
             auditLogRetentionDays: initialAuditLogRetentionDays,
+            checkForUpdates: initialCheckForUpdates === true,
         },
     })
 
@@ -136,6 +139,27 @@ export function SystemSettingsForm({ initialMaxConcurrentJobs, initialDisablePas
                                         </SelectContent>
                                     </Select>
                                     <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+
+                        <FormField
+                            control={form.control}
+                            name="checkForUpdates"
+                            render={({ field }) => (
+                                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                                    <div className="space-y-0.5">
+                                        <FormLabel className="text-base">Check for Updates</FormLabel>
+                                        <FormDescription>
+                                            Automatically check for new versions of the application.
+                                        </FormDescription>
+                                    </div>
+                                    <FormControl>
+                                        <Switch
+                                            checked={field.value}
+                                            onCheckedChange={(val) => handleAutoSave("checkForUpdates", val)}
+                                        />
+                                    </FormControl>
                                 </FormItem>
                             )}
                         />

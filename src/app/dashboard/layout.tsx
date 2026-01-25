@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth"
 import { headers } from "next/headers"
 import { redirect } from "next/navigation"
 import { getUserPermissions } from "@/lib/access-control"
+import { updateService } from "@/services/update-service"
 
 export default async function DashboardLayout({
     children,
@@ -25,9 +26,14 @@ export default async function DashboardLayout({
 
     const permissions = await getUserPermissions();
 
+    // Check for updates (non-blocking, or parallel if we wanted, but here simple await is fine as it's cached)
+    // Actually, to avoid slowing down dashboard load, we might want to wrap in Suspense or just let it block a bit.
+    // Next.js patches fetch, so subsequent requests are fast.
+    const updateInfo = await updateService.checkForUpdates();
+
     return (
         <div className="flex min-h-screen">
-            <Sidebar permissions={permissions} />
+            <Sidebar permissions={permissions} updateAvailable={updateInfo.updateAvailable} />
             <div className="flex-1 flex flex-col min-h-screen">
                 <Header />
                 <main className="flex-1 overflow-y-auto bg-muted/10 p-6">

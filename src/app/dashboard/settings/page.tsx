@@ -33,6 +33,9 @@ export default async function SettingsPage() {
     const retentionSetting = await prisma.systemSetting.findUnique({ where: { key: "audit.retentionDays" } });
     const auditLogRetentionDays = retentionSetting ? parseInt(retentionSetting.value) : 90;
 
+    const checkUpdatesSetting = await prisma.systemSetting.findUnique({ where: { key: "general.checkForUpdates" } });
+    const checkForUpdates = checkUpdatesSetting ? checkUpdatesSetting.value === 'true' : true;
+
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
@@ -51,8 +54,7 @@ export default async function SettingsPage() {
                     <SystemSettingsForm
                         initialMaxConcurrentJobs={maxConcurrentJobs}
                         initialDisablePasskeyLogin={disablePasskeyLogin}
-                        initialAuditLogRetentionDays={auditLogRetentionDays}
-                    />
+                        initialAuditLogRetentionDays={auditLogRetentionDays}                        initialCheckForUpdates={checkForUpdates}                    />
                 </TabsContent>
                 <TabsContent value="tasks" className="space-y-4">
                     <SystemTasksSettings />
