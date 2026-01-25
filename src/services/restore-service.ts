@@ -77,6 +77,12 @@ export class RestoreService {
 
                     if (metadataContent) {
                         const metadata = JSON.parse(metadataContent) as BackupMetadata;
+
+                        // STRICT TYPE CHECK: Prevent Cross-Vendor Restores (e.g. MySQL -> MariaDB)
+                        if (metadata.sourceType && metadata.sourceType !== targetConfig.adapterId) {
+                            throw new Error(`Incompatible database types: Cannot restore backup from '${metadata.sourceType}' to '${targetConfig.adapterId}'. Strict type matching is enforced to prevent corruption.`);
+                        }
+
                         if (metadata.engineVersion) {
                             const dbConf = decryptConfig(JSON.parse(targetConfig.config));
                             if (privilegedAuth) dbConf.privilegedAuth = privilegedAuth;
@@ -91,7 +97,7 @@ export class RestoreService {
                         }
                     }
                 } catch (e: any) {
-                    if (e.message && e.message.includes('not recommended')) {
+                    if (e.message && (e.message.includes('not recommended') || e.message.includes('Incompatible database types'))) {
                         throw e;
                     }
                     // Ignore metadata read errors (e.g. file missing) or other non-critical issues
