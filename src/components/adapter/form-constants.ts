@@ -27,6 +27,10 @@ export const PLACEHOLDERS: Record<string, string> = {
     "postgres.options": "--clean --if-exists",
     "mongodb.options": "--gzip --oplog",
 
+    // SQLite
+    "sqlite.port": "22",
+    "sqlite.privateKey": "-----BEGIN RSA PRIVATE KEY-----\n\n\n-----END RSA PRIVATE KEY-----",
+
     // S3 Placeholders
     "bucket": "my-backup-bucket",
     "pathPrefix": "backups/prod",
