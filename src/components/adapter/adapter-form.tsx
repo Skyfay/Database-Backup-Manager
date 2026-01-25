@@ -19,6 +19,7 @@ import { AdapterDefinition } from "@/lib/adapters/definitions";
 import { AdapterConfig } from "./types";
 import { useAdapterConnection } from "./use-adapter-connection";
 import { DatabaseFormContent, GenericFormContent, StorageFormContent } from "./form-sections";
+import { SchemaField } from "./schema-field";
 
 export function AdapterForm({ type, adapters, onSuccess, initialData }: { type: string, adapters: AdapterDefinition[], onSuccess: () => void, initialData?: AdapterConfig }) {
     const [selectedAdapterId, setSelectedAdapterId] = useState<string>(initialData?.adapterId || "");
@@ -155,68 +156,81 @@ export function AdapterForm({ type, adapters, onSuccess, initialData }: { type: 
                         )}
                     />
 
-                    <FormField
-                        control={form.control}
-                        name="adapterId"
-                        render={({ field }) => (
-                            <FormItem className="flex flex-col">
-                                <FormLabel>Type</FormLabel>
-                                <Popover>
-                                    <PopoverTrigger asChild>
-                                        <FormControl>
-                                            <Button
-                                                variant="outline"
-                                                role="combobox"
-                                                className={cn(
-                                                    "w-1/2 justify-between",
-                                                    !field.value && "text-muted-foreground"
-                                                )}
-                                                disabled={!!initialData}
-                                            >
-                                                {field.value
-                                                    ? adapters.find(
-                                                        (adapter) => adapter.id === field.value
-                                                    )?.name
-                                                    : "Select a type"}
-                                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                            </Button>
-                                        </FormControl>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-62.5 p-0" align="start">
-                                        <Command>
-                                            <CommandInput placeholder="Search type..." />
-                                            <CommandList>
-                                                <CommandEmpty>No type found.</CommandEmpty>
-                                                <CommandGroup>
-                                                    {adapters.map((adapter) => (
-                                                        <CommandItem
-                                                            value={adapter.name}
-                                                            key={adapter.id}
-                                                            onSelect={() => {
-                                                                form.setValue("adapterId", adapter.id)
-                                                                setSelectedAdapterId(adapter.id);
-                                                            }}
-                                                        >
-                                                            <Check
-                                                                className={cn(
-                                                                    "mr-2 h-4 w-4",
-                                                                    adapter.id === field.value
-                                                                        ? "opacity-100"
-                                                                        : "opacity-0"
-                                                                )}
-                                                            />
-                                                            {adapter.name}
-                                                        </CommandItem>
-                                                    ))}
-                                                </CommandGroup>
-                                            </CommandList>
-                                        </Command>
-                                    </PopoverContent>
-                                </Popover>
-                                <FormMessage />
-                            </FormItem>
+<div className="flex w-full gap-4 items-start">
+                        <FormField
+                            control={form.control}
+                            name="adapterId"
+                            render={({ field }) => (
+                                <FormItem className={cn("flex flex-col", selectedAdapterId === 'sqlite' ? "w-1/2" : "w-full")}>
+                                    <FormLabel>Type</FormLabel>
+                                    <Popover>
+                                        <PopoverTrigger asChild>
+                                            <FormControl>
+                                                <Button
+                                                    variant="outline"
+                                                    role="combobox"
+                                                    className={cn(
+                                                        "justify-between",
+                                                        selectedAdapterId === 'sqlite' ? "w-full" : "w-1/2",
+                                                        !field.value && "text-muted-foreground"
+                                                    )}
+                                                    disabled={!!initialData}
+                                                >
+                                                    {field.value
+                                                        ? adapters.find(
+                                                            (adapter) => adapter.id === field.value
+                                                        )?.name
+                                                        : "Select a type"}
+                                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                </Button>
+                                            </FormControl>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-62.5 p-0" align="start">
+                                            <Command>
+                                                <CommandInput placeholder="Search type..." />
+                                                <CommandList>
+                                                    <CommandEmpty>No type found.</CommandEmpty>
+                                                    <CommandGroup>
+                                                        {adapters.map((adapter) => (
+                                                            <CommandItem
+                                                                value={adapter.name}
+                                                                key={adapter.id}
+                                                                onSelect={() => {
+                                                                    form.setValue("adapterId", adapter.id)
+                                                                    setSelectedAdapterId(adapter.id);
+                                                                }}
+                                                            >
+                                                                <Check
+                                                                    className={cn(
+                                                                        "mr-2 h-4 w-4",
+                                                                        adapter.id === field.value
+                                                                            ? "opacity-100"
+                                                                            : "opacity-0"
+                                                                    )}
+                                                                />
+                                                                {adapter.name}
+                                                            </CommandItem>
+                                                        ))}
+                                                    </CommandGroup>
+                                                </CommandList>
+                                            </Command>
+                                        </PopoverContent>
+                                    </Popover>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        {selectedAdapterId === 'sqlite' && selectedAdapter && (
+                            <div className="w-1/2">
+                                <SchemaField
+                                    name="config.mode"
+                                    fieldKey="mode"
+                                    schemaShape={(selectedAdapter.configSchema as any).shape.mode}
+                                    adapterId="sqlite"
+                                />
+                            </div>
                         )}
-                    />
+                    </div>
                 </div>
 
                 {selectedAdapter && type === 'database' && (

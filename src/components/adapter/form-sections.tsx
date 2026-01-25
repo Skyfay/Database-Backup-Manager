@@ -36,49 +36,62 @@ export function DatabaseFormContent({
     const authType = watch("config.authType");
 
     if (adapter.id === "sqlite") {
+        if (!mode) return null;
+
         return (
-            <div className="space-y-4 pt-4">
+            <div className="space-y-4 pt-2">
                  {detectedVersion && (
-                    <div className="mb-4">
+                    <div className="flex justify-end mb-4">
                         <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/20">
                             <Check className="w-3 h-3 mr-1" />
                             Detected: {detectedVersion}
                         </Badge>
                     </div>
-                )}
+                 )}
 
-                <div className="border p-4 rounded-md bg-muted/30 mb-4">
-                    <h4 className="text-sm font-medium mb-3">Connection Mode</h4>
-                    <FieldList keys={['mode']} adapter={adapter} />
-                </div>
+                 {mode === 'local' ? (
+                     <div className="space-y-4 border p-4 rounded-md bg-muted/10">
+                         <div className="space-y-4">
+                            <FieldList keys={['path']} adapter={adapter} />
+                            {/* sqliteBinaryPath hidden for local mode as requested */}
+                         </div>
+                     </div>
+                 ) : (
+                    <Tabs defaultValue="connection" className="w-full pt-2">
+                        <TabsList className="grid w-full grid-cols-2">
+                            <TabsTrigger value="connection">SSH Connection</TabsTrigger>
+                            <TabsTrigger value="configuration">Configuration</TabsTrigger>
+                        </TabsList>
 
-                <div className="space-y-4">
-                    <FieldList keys={['path', 'sqliteBinaryPath']} adapter={adapter} />
-                </div>
-
-                {mode === 'ssh' && (
-                    <div className="border-t pt-4 mt-4 space-y-4">
-                         <h4 className="text-sm font-medium">SSH Connection</h4>
-                         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                            <div className="md:col-span-3">
-                                <FieldList keys={['host']} adapter={adapter} />
+                        <TabsContent value="connection" className="space-y-4 pt-4 border p-4 rounded-md bg-muted/10 mt-2">
+                             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                <div className="md:col-span-3">
+                                    <FieldList keys={['host']} adapter={adapter} />
+                                </div>
+                                <div className="md:col-span-1">
+                                    <FieldList keys={['port']} adapter={adapter} />
+                                </div>
                             </div>
-                            <div className="md:col-span-1">
-                                <FieldList keys={['port']} adapter={adapter} />
-                            </div>
-                        </div>
 
-                        <FieldList keys={['username', 'authType']} adapter={adapter} />
+                            <FieldList keys={['username', 'authType']} adapter={adapter} />
 
-                        {(!authType || authType === 'password') && (
-                            <FieldList keys={['password']} adapter={adapter} />
-                        )}
+                            {(!authType || authType === 'password') && (
+                                <FieldList keys={['password']} adapter={adapter} />
+                            )}
 
-                        {authType === 'privateKey' && (
-                             <FieldList keys={['privateKey', 'passphrase']} adapter={adapter} />
-                        )}
-                    </div>
-                )}
+                            {authType === 'privateKey' && (
+                                 <FieldList keys={['privateKey', 'passphrase']} adapter={adapter} />
+                            )}
+                        </TabsContent>
+
+                        <TabsContent value="configuration" className="space-y-4 pt-4 mt-2">
+                             <div className="space-y-4">
+                                <FieldList keys={['path']} adapter={adapter} />
+                                <FieldList keys={['sqliteBinaryPath']} adapter={adapter} />
+                             </div>
+                        </TabsContent>
+                    </Tabs>
+                 )}
             </div>
         );
     }

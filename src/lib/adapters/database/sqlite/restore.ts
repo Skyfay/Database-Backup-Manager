@@ -89,7 +89,19 @@ async function restoreLocal(config: any, sourcePath: string, log: (msg: string) 
         child.on("close", (code) => {
             if (code === 0) {
                 log("Restore completed successfully.");
-                resolve({ success: true });, onProgress?: (percent: number) => void): Promise<any> {
+                resolve({ success: true });
+            } else {
+                reject(new Error(`SQLite restore process failed with code ${code}`));
+            }
+        });
+
+        child.on("error", (err) => {
+            reject(err);
+        });
+    });
+}
+
+async function restoreSsh(config: any, sourcePath: string, log: (msg: string) => void, onProgress?: (percent: number) => void): Promise<any> {
     const client = new SshClient();
     const binaryPath = config.sqliteBinaryPath || "sqlite3";
     const dbPath = config.path;
@@ -125,18 +137,6 @@ async function restoreLocal(config: any, sourcePath: string, log: (msg: string) 
                  });
              }
 
-
-    return new Promise((resolve, reject) => {
-        const command = `${binaryPath} "${dbPath}"`;
-        log(`Executing remote command: ${command}`);
-
-        client.execStream(command, (err, stream) => {
-            if (err) {
-                client.end();
-                return reject(err);
-            }
-
-            const readStream = fs.createReadStream(sourcePath);
             readStream.pipe(stream.stdin);
 
             stream.stderr.on("data", (data: any) => {
@@ -155,3 +155,5 @@ async function restoreLocal(config: any, sourcePath: string, log: (msg: string) 
         });
     });
 }
+
+
