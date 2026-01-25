@@ -6,10 +6,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Play } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 interface SystemTask {
     id: string;
     schedule: string;
+    runOnStartup: boolean;
     label: string;
     description: string;
 }
@@ -61,6 +64,29 @@ export function SystemTasksSettings() {
         }
     };
 
+    const handleToggleStartup = async (taskId: string, current: boolean) => {
+        try {
+            // Optimistic update
+            const newTasks = tasks.map(t => t.id === taskId ? { ...t, runOnStartup: !current } : t);
+            setTasks(newTasks);
+
+            const res = await fetch("/api/settings/system-tasks", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ taskId, runOnStartup: !current }),
+            });
+
+            if (!res.ok) {
+                // Revert
+                fetchTasks();
+                toast.error("Failed to update setting");
+            }
+        } catch {
+             fetchTasks();
+            toast.error("Error saving setting");
+        }
+    };
+
     const handleRun = async (taskId: string) => {
         try {
             const res = await fetch("/api/settings/system-tasks", {
@@ -107,6 +133,16 @@ export function SystemTasksSettings() {
                                 {editing[task.id] && (
                                      <Button size="sm" onClick={() => handleSave(task.id)}>Save</Button>
                                 )}
+
+                                <div className="flex items-center space-x-2 border-l pl-4 mx-2">
+                                     <Switch
+                                        id={`startup-${task.id}`}
+                                        checked={task.runOnStartup}
+                                        onCheckedChange={() => handleToggleStartup(task.id, task.runOnStartup)}
+                                     />
+                                     <Label htmlFor={`startup-${task.id}`} className="text-xs">Run on start</Label>
+                                </div>
+
                                 <Button size="sm" variant="outline" onClick={() => handleRun(task.id)}>
                                     <Play className="h-4 w-4 mr-1" /> Run Now
                                 </Button>

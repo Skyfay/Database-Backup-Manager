@@ -18,6 +18,8 @@ export async function GET(_req: NextRequest) {
     const tasks = [];
     for (const [_key, taskId] of Object.entries(SYSTEM_TASKS)) {
         const schedule = await systemTaskService.getTaskConfig(taskId);
+        const runOnStartup = await systemTaskService.getTaskRunOnStartup(taskId);
+        // @ts-expect-error - Dictionary access
         const config = DEFAULT_TASK_CONFIG[taskId];
 
         if (!config) continue;
@@ -25,6 +27,7 @@ export async function GET(_req: NextRequest) {
         tasks.push({
             id: taskId,
             schedule,
+            runOnStartup,
             label: config.label,
             description: config.description
         });
@@ -41,13 +44,19 @@ export async function POST(req: NextRequest) {
     await checkPermission(PERMISSIONS.SETTINGS.WRITE);
 
     const body = await req.json();
-    const { taskId, schedule } = body;
+    const { taskId, schedule, runOnStartup } = body;
 
-    if (!taskId || !schedule) {
-        return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+    if (!taskId) {
+         return NextResponse.json({ error: "Missing taskId" }, { status: 400 });
     }
 
-    await systemTaskService.setTaskConfig(taskId, schedule);
+    if (schedule !== undefined) {
+        await systemTaskService.setTaskConfig(taskId, schedule);
+    }
+
+    if (runOnStartup !== undefined) {
+        await systemTaskService.setTaskRunOnStartup(taskId, runOnStartup);
+    }
 
     // Refresh scheduler
     await scheduler.refresh();
@@ -57,7 +66,7 @@ export async function POST(req: NextRequest) {
             session.user.id,
             AUDIT_ACTIONS.UPDATE,
             AUDIT_RESOURCES.SYSTEM,
-            { task: taskId, schedule },
+            { task: taskId, schedule, runOnStartup },
             taskId
         );
     }

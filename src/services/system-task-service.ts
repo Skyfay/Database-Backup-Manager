@@ -46,6 +46,22 @@ export class SystemTaskService {
         return setting?.value || DEFAULT_TASK_CONFIG[taskId as keyof typeof DEFAULT_TASK_CONFIG]?.interval;
     }
 
+    async getTaskRunOnStartup(taskId: string): Promise<boolean> {
+        const key = `task.${taskId}.runOnStartup`;
+        const setting = await prisma.systemSetting.findUnique({ where: { key } });
+        return setting?.value === 'true';
+    }
+
+    async setTaskRunOnStartup(taskId: string, enabled: boolean) {
+        const key = `task.${taskId}.runOnStartup`;
+        const value = String(enabled);
+        await prisma.systemSetting.upsert({
+            where: { key },
+            update: { value },
+            create: { key, value, description: `Run on startup for ${taskId}` }
+        });
+    }
+
     async setTaskConfig(taskId: string, schedule: string) {
         const key = `task.${taskId}.schedule`;
         await prisma.systemSetting.upsert({

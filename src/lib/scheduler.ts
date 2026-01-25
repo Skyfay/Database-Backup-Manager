@@ -48,14 +48,24 @@ export class BackupScheduler {
             // 2. System Tasks
             for (const taskId of Object.values(SYSTEM_TASKS)) {
                 try {
-                const schedule = await systemTaskService.getTaskConfig(taskId);
-                if (schedule && cron.validate(schedule)) {
-                     console.log(`[Scheduler] Scheduling system task '${taskId}' with '${schedule}'`);
-                     const task = cron.schedule(schedule, () => {
-                         systemTaskService.runTask(taskId).catch(e => console.error(`[Scheduler] System Task ${taskId} failed:`, e));
-                     });
-                     this.tasks.set(taskId, task);
-                }
+                    const schedule = await systemTaskService.getTaskConfig(taskId);
+                    if (schedule && cron.validate(schedule)) {
+                        console.log(`[Scheduler] Scheduling system task '${taskId}' with '${schedule}'`);
+                        const task = cron.schedule(schedule, () => {
+                            systemTaskService.runTask(taskId).catch(e => console.error(`[Scheduler] System Task ${taskId} failed:`, e));
+                        });
+                        this.tasks.set(taskId, task);
+                    }
+
+                    // Check for Run on Startup
+                    const runOnStartup = await systemTaskService.getTaskRunOnStartup(taskId);
+                    if (runOnStartup) {
+                        console.log(`[Scheduler] Scheduling startup run for system task '${taskId}' in 10s`);
+                        setTimeout(() => {
+                            console.log(`[Scheduler] Running startup task '${taskId}'`);
+                            systemTaskService.runTask(taskId).catch(e => console.error(`[Scheduler] Startup Task ${taskId} failed:`, e));
+                        }, 10000);
+                    }
                 } catch(e) { console.error(`[Scheduler] Failed to schedule task ${taskId}`, e); }
             }
         } catch (error) {
