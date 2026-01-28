@@ -41,7 +41,12 @@ export const KeycloakAdapter: OIDCAdapter = {
     const discoveryUrl = `${baseUrl}/realms/${config.realm}/.well-known/openid-configuration`;
 
     try {
-      const response = await fetch(discoveryUrl);
+      const response = await fetch(discoveryUrl, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (compatible; DatabaseBackupManager/1.0; +https://gitlab.com/Skyfay/database-backup-manager)",
+          "Accept": "application/json"
+        }
+      });
       if (!response.ok) {
         throw new Error(`Failed to fetch OIDC config from ${discoveryUrl}. Status: ${response.status}`);
       }
