@@ -8,6 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Trash2, ShieldCheck, Box, Settings2, Globe, CheckCircle2, UserPlus, UserX, Copy } from "lucide-react";
 import { deleteSsoProvider, toggleSsoProvider } from "@/app/actions/oidc";
 import { toast } from "sonner";
+import { EditSsoProviderDialog } from "./edit-sso-provider-dialog";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -154,7 +155,9 @@ function ProviderCard({ provider }: { provider: SsoProvider }) {
                     </div>
                  </div>
             </CardContent>
-            <CardFooter className="bg-muted/20 p-3 flex justify-end">
+            <CardFooter className="bg-muted/20 p-3 flex justify-between gap-2">
+                 <EditSsoProviderDialog provider={provider} />
+
                 <AlertDialog>
                     <AlertDialogTrigger asChild>
                          <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive hover:bg-destructive/10">

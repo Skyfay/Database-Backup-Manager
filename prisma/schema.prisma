@@ -208,6 +208,7 @@ model SsoProvider {
 
   // Custom App Logic
   adapterId      String   // e.g. "authentik", "pocket-id"
+  adapterConfig  String?  // JSON string storing the raw inputs used to generate the config (e.g. { "url": "...", "realm": "..." })
   name           String   // Display Name e.g. "Corporate Login"
   enabled        Boolean  @default(true)
   allowProvisioning Boolean @default(true) // Whether to create new users automatically

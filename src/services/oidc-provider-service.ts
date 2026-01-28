@@ -7,7 +7,8 @@ export interface CreateSsoProviderInput {
     providerId: string;
     enabled?: boolean; // Default true
     allowProvisioning?: boolean;
-    domain?: string; // Email domain for SSO matching (e.g., "example.com")
+    domain?: string | null; // Email domain for SSO matching (e.g., "example.com")
+    adapterConfig?: string; // JSON string of the raw adapter configuration
 
     // Credentials
     clientId: string;
@@ -62,17 +63,6 @@ export class OidcProviderService {
     }
 
     static async createProvider(data: CreateSsoProviderInput) {
-        // Extract domain from issuer URL if not provided
-        let domain = data.domain;
-        if (!domain && data.issuer) {
-            try {
-                const issuerUrl = new URL(data.issuer);
-                domain = issuerUrl.hostname;
-            } catch {
-                // If URL parsing fails, leave domain undefined
-            }
-        }
-
         // Use discoveryEndpoint from adapter if provided, otherwise fallback to standard path
         // Different OIDC providers have different discovery paths (e.g., Authentik uses /application/o/{slug}/...)
         const discoveryEndpoint = data.discoveryEndpoint ?? (
@@ -105,7 +95,8 @@ export class OidcProviderService {
                 providerId: data.providerId,
                 enabled: data.enabled ?? true,
                 allowProvisioning: data.allowProvisioning ?? true,
-                domain, // Required by better-auth SSO plugin
+                domain: data.domain, // Required by better-auth SSO plugin
+                adapterConfig: data.adapterConfig,
 
                 clientId: data.clientId,
                 clientSecret: data.clientSecret,
@@ -122,52 +113,64 @@ export class OidcProviderService {
     }
 
     static async updateProvider(id: string, data: Partial<CreateSsoProviderInput>) {
-        // Fetch current provider to merge config if needed, or primarily we just overwrite with new data if provided.
-        // For partial updates, it's safer to reconstruct.
-        // However, assuming the UI sends full data or we handle it in action layer.
-        // Let's implement a simple merge for oidcConfig if it's OIDC.
-
         let oidcConfigUpdate: string | undefined = undefined;
 
-        if (data.clientId || data.clientSecret || data.authorizationEndpoint) {
-             // If critical OIDC params are updated, we should reconstruct oidcConfig.
-             // Ideally we'd need the full object, but let's assume `data` contains necessary updates
-             // or we fetch existing first.
-             // For simplicity, we'll try to use data properties if available.
+        // If we have critical OIDC params or type OIDC, let's reconstruct config
+        const isOidcUpdate = data.clientId || data.issuer || data.authorizationEndpoint;
 
-             // A better approach: We rely on the Action to pass consistent data.
-             // Constructing a partial config is tricky.
-             // Let's rely on the individual fields being present in `data` OR existing in DB if not passed?
-             // Actually, `updateProvider` is likely called by an Action that validates everything.
-             // Let's construct it from `data` assuming `data` has the changes.
+        // We need existing data if partial update
+        const existing = await prisma.ssoProvider.findUnique({ where: { id } });
+        if (!existing) throw new Error("Provider not found");
 
-             // REALITY CHECK: If we only update 'enabled', we don't want to destroy oidcConfig.
-             // So only update oidcConfig if we are updating OIDC fields.
+        if (isOidcUpdate || data.type === "oidc") {
 
-             const isOidcUpdate = data.clientId || data.issuer || data.authorizationEndpoint;
+                // Merge new data with existing data for config construction
+                const merged = {
+                    issuer: data.issuer ?? existing.issuer,
+                    clientId: data.clientId ?? existing.clientId,
+                    clientSecret: data.clientSecret ?? existing.clientSecret,
+                    authorizationEndpoint: data.authorizationEndpoint ?? existing.authorizationEndpoint,
+                    tokenEndpoint: data.tokenEndpoint ?? existing.tokenEndpoint,
+                    userInfoEndpoint: data.userInfoEndpoint ?? existing.userInfoEndpoint,
+                    jwksEndpoint: data.jwksEndpoint ?? existing.jwksEndpoint,
+                    discoveryEndpoint: data.discoveryEndpoint ?? undefined
+                };
 
-             if (isOidcUpdate || data.type === "oidc") {
-                  // We need to fetch existing to merge properly if partial
-                  const existing = await prisma.ssoProvider.findUnique({ where: { id } });
-                  if (existing) {
-                      const newConfig = {
-                          issuer: data.issuer ?? existing.issuer,
-                          clientId: data.clientId ?? existing.clientId,
-                          clientSecret: data.clientSecret ?? existing.clientSecret,
-                          authorizationEndpoint: data.authorizationEndpoint ?? existing.authorizationEndpoint,
-                          tokenEndpoint: data.tokenEndpoint ?? existing.tokenEndpoint,
-                          userInfoEndpoint: data.userInfoEndpoint ?? existing.userInfoEndpoint,
-                          jwksEndpoint: data.jwksEndpoint ?? existing.jwksEndpoint,
-                      };
-                      oidcConfigUpdate = JSON.stringify(newConfig);
-                  }
-             }
+                // If data.discoveryEndpoint is provided (from Action), use it.
+                // If NOT provided, try to fallback to standard if issuer is present.
+                let discEndpoint = data.discoveryEndpoint;
+                if (!discEndpoint && merged.issuer) {
+                    // Try to reconstruct standard path if not provided
+                    discEndpoint = `${merged.issuer.replace(/\/$/, '')}/.well-known/openid-configuration`;
+                }
+
+                oidcConfigUpdate = JSON.stringify({
+                    ...merged,
+                    scope: data.scope || "openid profile email",
+                    discoveryEndpoint: discEndpoint,
+                    skipDiscovery: true,
+                });
         }
 
         return prisma.ssoProvider.update({
             where: { id },
             data: {
-                ...data,
+                name: data.name,
+                providerId: data.providerId,
+                domain: data.domain,
+                enabled: data.enabled,
+                allowProvisioning: data.allowProvisioning,
+                adapterConfig: data.adapterConfig,
+
+                clientId: data.clientId,
+                clientSecret: data.clientSecret,
+
+                issuer: data.issuer,
+                authorizationEndpoint: data.authorizationEndpoint,
+                tokenEndpoint: data.tokenEndpoint,
+                userInfoEndpoint: data.userInfoEndpoint,
+                jwksEndpoint: data.jwksEndpoint,
+
                 ...(oidcConfigUpdate ? { oidcConfig: oidcConfigUpdate } : {})
             }
         });

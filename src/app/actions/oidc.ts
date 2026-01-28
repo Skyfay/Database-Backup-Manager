@@ -20,6 +20,10 @@ const createProviderSchema = z.object({
   adapterConfig: z.record(z.string(), z.any()),
 });
 
+const updateProviderSchema = createProviderSchema.extend({
+    id: z.string().min(1)
+});
+
 
 // --- Actions ---
 
@@ -100,6 +104,7 @@ export async function createSsoProvider(input: z.infer<typeof createProviderSche
             clientId,
             clientSecret,
             allowProvisioning: allowProvisioning ?? true,
+            adapterConfig: JSON.stringify(adapterConfig),
 
             // Map endpoints from adapter (includes discoveryEndpoint for non-standard providers)
             issuer: endpoints.issuer,
@@ -110,13 +115,94 @@ export async function createSsoProvider(input: z.infer<typeof createProviderSche
             discoveryEndpoint: endpoints.discoveryEndpoint
         });
 
-        revalidatePath("/admin/settings"); // Or wherever the list is
+        revalidatePath("/dashboard/users");
         return { success: true };
     } catch (error: any) {
         console.error("Failed to create SSO provider:", error);
         return { success: false, error: error.message };
     }
 }
+
+export async function updateSsoProvider(input: z.infer<typeof updateProviderSchema>) {
+    await checkPermission(PERMISSIONS.SETTINGS.WRITE);
+
+    const validation = updateProviderSchema.safeParse(input);
+    if (!validation.success) {
+        return { success: false, error: validation.error.format() };
+    }
+
+    const { id, name, adapterId, providerId, domain, clientId, clientSecret, adapterConfig, allowProvisioning } = validation.data;
+
+    // 1. Get Adapter
+    const adapter = getOIDCAdapter(adapterId);
+    if (!adapter) {
+        return { success: false, error: "Invalid Adapter ID" };
+    }
+
+    // 2. Validate Adapter Config
+    try {
+        adapter.inputSchema.parse(adapterConfig);
+    } catch (e) {
+         if (e instanceof z.ZodError) {
+             return { success: false, error: "Invalid Adapter Configuration", details: e.format() };
+         }
+         return { success: false, error: "Invalid Adapter Configuration" };
+    }
+
+    // 3. Generate Endpoints
+    let endpoints;
+    try {
+        endpoints = await adapter.getEndpoints(adapterConfig);
+
+        if (endpoints.discoveryEndpoint?.startsWith("https://")) {
+            const insecureEndpoints = [
+                { name: "Authorization", url: endpoints.authorizationEndpoint },
+                { name: "Token", url: endpoints.tokenEndpoint }
+            ].filter(e => e.url.startsWith("http://"));
+
+            if (insecureEndpoints.length > 0) {
+                 const details = insecureEndpoints.map(e => `${e.name} (${e.url})`).join(", ");
+                 return {
+                    success: false,
+                    error: "Security Mismatch Detected",
+                    details: {
+                        _errors: [`The OIDC provider is accessed via HTTPS, but returned insecure HTTP endpoints: ${details}. This indicates a reverse proxy misconfiguration (missing headers like X-Forwarded-Proto) on the provider side. Please fix the provider configuration.`]
+                    }
+                };
+            }
+        }
+
+    } catch (e: any) {
+        return { success: false, error: `Endpoint discovery failed: ${e.message}` };
+    }
+
+    // 4. Update in DB
+    try {
+        await OidcProviderService.updateProvider(id, {
+            name,
+            providerId,
+            domain: domain === "" ? null : domain,
+            clientId,
+            clientSecret,
+            allowProvisioning,
+            adapterConfig: JSON.stringify(adapterConfig),
+
+            issuer: endpoints.issuer,
+            authorizationEndpoint: endpoints.authorizationEndpoint,
+            tokenEndpoint: endpoints.tokenEndpoint,
+            userInfoEndpoint: endpoints.userInfoEndpoint,
+            jwksEndpoint: endpoints.jwksEndpoint,
+            discoveryEndpoint: endpoints.discoveryEndpoint
+        });
+
+        revalidatePath("/dashboard/users");
+        return { success: true };
+    } catch (error: any) {
+        console.error("Failed to update SSO provider:", error);
+        return { success: false, error: error.message };
+    }
+}
+
 
 export async function deleteSsoProvider(id: string) {
     await checkPermission(PERMISSIONS.SETTINGS.WRITE);
