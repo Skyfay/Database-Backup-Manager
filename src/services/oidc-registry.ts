@@ -2,12 +2,14 @@ import { OIDCAdapter } from "@/lib/core/oidc-adapter";
 import { AuthentikAdapter } from "@/lib/adapters/oidc/authentik";
 import { GenericAdapter } from "@/lib/adapters/oidc/generic";
 import { PocketIDAdapter } from "@/lib/adapters/oidc/pocket-id";
+import { KeycloakAdapter } from "@/lib/adapters/oidc/keycloak";
 
 /**
  * Registry of all available OIDC Adapters (Presets).
  */
 export const OIDC_ADAPTERS: OIDCAdapter[] = [
     AuthentikAdapter,
+    KeycloakAdapter,
     PocketIDAdapter,
     GenericAdapter
 ];

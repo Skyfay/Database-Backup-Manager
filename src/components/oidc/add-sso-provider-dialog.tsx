@@ -18,7 +18,7 @@ import { DynamicOidcForm } from "./dynamic-oidc-form";
 import { toast } from "sonner";
 import { createSsoProvider } from "@/app/actions/oidc";
 import { OIDCAdapter } from "@/lib/core/oidc-adapter";
-import { PlusCircle, ShieldCheck, Box, Settings2, Globe } from "lucide-react";
+import { PlusCircle, ShieldCheck, Box, Settings2, Globe, Key } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Switch } from "@/components/ui/switch";
 
@@ -104,6 +104,7 @@ export function AddSsoProviderDialog() {
         switch (id) {
             case "authentik": return ShieldCheck;
             case "pocket-id": return Box;
+            case "keycloak": return Key;
             case "generic": return Settings2;
             default: return Globe;
         }
