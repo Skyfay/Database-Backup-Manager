@@ -155,7 +155,7 @@ function ProviderCard({ provider }: { provider: SsoProvider }) {
                     </div>
                  </div>
             </CardContent>
-            <CardFooter className="bg-muted/20 p-3 flex justify-between gap-2">
+            <CardFooter className="bg-muted/20 p-3 flex justify-end gap-2">
                  <EditSsoProviderDialog provider={provider} />
 
                 <AlertDialog>
