@@ -5,6 +5,28 @@ import { twoFactor } from "better-auth/plugins";
 import { passkey } from "@better-auth/passkey";
 import { sso } from "@better-auth/sso";
 
+const originalFetch = global.fetch;
+global.fetch = async (input, init) => {
+    const url = typeof input === "string" ? input : input instanceof URL ? input.toString() : input instanceof Request ? input.url : "";
+
+    // Only patch external requests (http/https) to avoid messing with internal calls
+    // And specifically target potential OIDC endpoints if possible, or just apply conservatively
+    if (url.startsWith("http")) {
+        const headers = new Headers(init?.headers || {});
+        if (!headers.has("User-Agent")) {
+            // Mimic a real browser to bypass Cloudflare/WAF checks on OIDC endpoints
+            headers.set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36");
+
+            init = {
+                ...init,
+                headers
+            };
+        }
+    }
+
+    return originalFetch(input, init);
+};
+
 /**
  * Dynamically fetch trusted origins from SSO providers in the database.
  * This allows users to configure SSO providers via UI without hardcoding origins.

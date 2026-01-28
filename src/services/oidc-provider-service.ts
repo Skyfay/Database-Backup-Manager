@@ -89,6 +89,7 @@ export class OidcProviderService {
             tokenEndpoint: data.tokenEndpoint,
             userInfoEndpoint: data.userInfoEndpoint,
             jwksEndpoint: data.jwksEndpoint,
+            scope: data.scope || "openid profile email", // Ensure openid scope is present
             // discoveryEndpoint is required by better-auth even with skipDiscovery
             // It's called in the callback handler regardless of skipDiscovery setting
             discoveryEndpoint,
