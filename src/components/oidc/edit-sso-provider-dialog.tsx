@@ -44,6 +44,17 @@ export function EditSsoProviderDialog({ provider }: EditSsoProviderDialogProps) 
     const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
+        if (open) {
+            setName(provider.name);
+            setProviderId(provider.providerId);
+            setDomain(provider.domain || "");
+            setClientId(provider.clientId || "");
+            setClientSecret(provider.clientSecret || "");
+            setAllowProvisioning(provider.allowProvisioning);
+        }
+    }, [open, provider]);
+
+    useEffect(() => {
         const adp = getOIDCAdapter(provider.adapterId);
         setAdapter(adp);
 
@@ -113,7 +124,7 @@ export function EditSsoProviderDialog({ provider }: EditSsoProviderDialogProps) 
                 name,
                 providerId,
                 adapterId: provider.adapterId, // Adapter cannot be changed
-                domain: domain || undefined,
+                domain, // Send empty string explicitly if cleared
                 clientId,
                 clientSecret,
                 adapterConfig,
