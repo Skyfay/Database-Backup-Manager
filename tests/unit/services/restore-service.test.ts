@@ -3,9 +3,21 @@ import { prismaMock } from '@/lib/testing/prisma-mock';
 import { RestoreService } from '@/services/restore-service';
 import { registry } from '@/lib/core/registry';
 import { StorageAdapter, DatabaseAdapter } from '@/lib/core/interfaces';
+import * as encryptionService from '@/services/encryption-service';
+import * as cryptoStream from '@/lib/crypto-stream';
 import fs from 'fs';
+import { Readable, PassThrough } from 'stream';
 
 // Mock Dependencies
+vi.mock('@/services/encryption-service', () => ({
+    getProfileMasterKey: vi.fn(),
+    getEncryptionProfiles: vi.fn(),
+}));
+
+vi.mock('@/lib/crypto-stream', () => ({
+    createDecryptionStream: vi.fn(),
+}));
+
 vi.mock('@/lib/crypto', () => ({
     decryptConfig: (input: any) => input,
 }));
@@ -283,5 +295,105 @@ describe('RestoreService', () => {
 
            expect(result.success).toBe(true);
        });
+    });
+
+    it('should use Smart Recovery when original profile is missing', async () => {
+        // 1. Setup Encrypted Metadata
+        const metaContent = JSON.stringify({
+            encryption: { enabled: true, profileId: 'lost-id', iv: '00', authTag: '00' },
+            compression: 'NONE'
+        });
+
+        // 2. Mocks
+        // Metadata read
+        const mockStorageAdapter = {
+            download: vi.fn().mockImplementation((config, remote, local) => {
+                // If asking for meta, write it
+                if (remote.endsWith('.meta.json')) {
+                    fs.writeFileSync(local, metaContent);
+                    return Promise.resolve(true);
+                }
+                // If backup file, just touch it
+                fs.writeFileSync(local, 'encrypted-content');
+                return Promise.resolve(true);
+            }),
+            read: vi.fn().mockResolvedValue(metaContent),
+        } as unknown as StorageAdapter;
+
+        // DB Adapter
+        const mockDbAdapter = {
+            restore: vi.fn().mockResolvedValue({ success: true }),
+            prepareRestore: vi.fn().mockResolvedValue(true),
+            test: vi.fn().mockResolvedValue({ success: true, version: '1.0' }),
+        } as unknown as DatabaseAdapter;
+
+        // Registry
+        vi.mocked(registry.get).mockReturnValue(mockStorageAdapter);
+        // Force DB adapter return for source calls
+        vi.mocked(registry.get).mockImplementation((id) => {
+            if (id === 'postgres') return mockDbAdapter;
+            return mockStorageAdapter;
+        });
+
+        // DB Configs
+        prismaMock.adapterConfig.findUnique
+            .mockResolvedValueOnce(mockSourceConfig as any)
+            .mockResolvedValueOnce(mockStorageConfig as any)
+            .mockResolvedValueOnce(mockStorageConfig as any)
+            .mockResolvedValueOnce(mockSourceConfig as any);
+        prismaMock.execution.create.mockResolvedValue({ id: 'smart-rec-exec' } as any);
+
+        // --- SMART RECOVERY MOCKS ---
+
+        // 1. Encryption Service: Fail first, then succeed
+        const fallbackProfile = { id: 'fallback-id', name: 'Fallback', secretKey: 'enc' };
+
+        vi.mocked(encryptionService.getProfileMasterKey)
+            .mockRejectedValueOnce(new Error('Profile not found')) // Original ID fails
+            .mockResolvedValueOnce(Buffer.alloc(32, 'a'));         // Fallback Key
+
+        vi.mocked(encryptionService.getEncryptionProfiles)
+            .mockResolvedValue([fallbackProfile as any]);
+
+        // 2. Crypto Stream: Mock Decryption to pass heuristic
+        // We need `createDecryptionStream` to return a stream that emits "valid" data (text/sql like)
+        vi.mocked(cryptoStream.createDecryptionStream).mockImplementation(() => {
+            const stream = new PassThrough();
+            setTimeout(() => {
+                stream.emit('data', Buffer.from('CREATE TABLE valid_sql (id int); -- This looks like SQL'));
+                stream.end();
+            }, 5);
+            return stream as any;
+        });
+
+        // 3. File Read Stream (used by Smart Recovery to check header)
+        // We simply return a stream with some data
+        vi.spyOn(fs, 'createReadStream').mockReturnValue(Readable.from(['encrypted-data']) as any);
+
+        // Act
+        await service.restore({
+            storageConfigId: 'storage-1',
+            file: 'backup.sql.enc',
+            targetSourceId: 'source-1'
+        });
+
+        // Wait for background process (flush promises)
+        await flushPromises();
+
+        // Assert
+        // 1. Verify it tried to fetch the lost profile
+        expect(encryptionService.getProfileMasterKey).toHaveBeenCalledWith('lost-id');
+
+        // 2. Verify it fetched all profiles for fallback
+        expect(encryptionService.getEncryptionProfiles).toHaveBeenCalled();
+
+        // 3. Verify it verified the fallback key
+        expect(encryptionService.getProfileMasterKey).toHaveBeenCalledWith('fallback-id');
+
+        // 4. Verify log contains success message
+        // Since we mock prismaMock.execution.update globally, we might need to check if it was called with specific logs
+        const updateCalls = prismaMock.execution.update.mock.calls;
+        const lastCall = updateCalls[updateCalls.length - 1];
+        expect(lastCall).toBeTruthy();
     });
 });

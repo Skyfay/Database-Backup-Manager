@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { createEncryptionProfile, getDecryptedMasterKey, getProfileMasterKey } from '@/services/encryption-service';
+import { createEncryptionProfile, importEncryptionProfile, getDecryptedMasterKey, getProfileMasterKey } from '@/services/encryption-service';
 import prisma from '@/lib/prisma';
 import * as cryptoLib from '@/lib/crypto';
 import crypto from 'crypto';
@@ -62,6 +62,34 @@ describe('Encryption Service', () => {
             expect(prisma.encryptionProfile.create).not.toHaveBeenCalledWith(expect.objectContaining({
                 data: expect.objectContaining({ secretKey: fixedKeyHex })
             }));
+        });
+    });
+
+    describe('importEncryptionProfile', () => {
+        it('should validate hex string length', async () => {
+            await expect(importEncryptionProfile('Test', 'shorts')).rejects.toThrow('Invalid key format');
+            await expect(importEncryptionProfile('Test', 'zz'.repeat(32))).rejects.toThrow('Invalid key format'); // valid length, invalid chars
+        });
+
+        it('should encrypt the imported key before saving', async () => {
+            const validKeyHex = '00'.repeat(32); // 64 chars
+            const mockEncrypted = 'encrypted-imported-value';
+            (cryptoLib.encrypt as any).mockReturnValue(mockEncrypted);
+            (prisma.encryptionProfile.create as any).mockResolvedValue({ id: '2', name: 'Imported', secretKey: mockEncrypted });
+
+            await importEncryptionProfile('Imported Key', validKeyHex, 'Desc');
+
+            // 1. Verify encrypt was called with the provided hex
+            expect(cryptoLib.encrypt).toHaveBeenCalledWith(validKeyHex);
+
+            // 2. Verify DB create
+            expect(prisma.encryptionProfile.create).toHaveBeenCalledWith({
+                data: {
+                    name: 'Imported Key',
+                    description: 'Desc',
+                    secretKey: mockEncrypted
+                }
+            });
         });
     });
 

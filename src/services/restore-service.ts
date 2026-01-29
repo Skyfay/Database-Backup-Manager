@@ -311,7 +311,7 @@ export class RestoreService {
 
                 try {
                     masterKey = await getProfileMasterKey(encryptionMeta.profileId);
-                } catch (keyError) {
+                } catch (_keyError) {
                     log(`Profile ${encryptionMeta.profileId} not found. Attempting Smart Recovery...`, 'warning');
 
 
@@ -371,7 +371,7 @@ export class RestoreService {
                                     if (isValid) resolve(true); // Should have resolved in 'data' usually
                                 });
 
-                            } catch (e) {
+                            } catch (_e) {
                                 resolve(false);
                             }
                         });
@@ -386,7 +386,7 @@ export class RestoreService {
                                 matchProfileName = profile.name;
                                 break;
                             }
-                        } catch (e) { /* ignore */ }
+                        } catch (_e) { /* ignore */ }
                     }
 
                     if (foundKey) {
