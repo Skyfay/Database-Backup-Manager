@@ -93,8 +93,6 @@ model User {
 
   groupId String?
   group   Group?  @relation(fields: [groupId], references: [id])
-
-  @@map("user")
 }
 
 model SystemSetting {
@@ -134,8 +132,6 @@ model Passkey {
   createdAt    DateTime?
   aaguid       String?
   user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("passkey")
 }
 
 model Session {
@@ -148,8 +144,6 @@ model Session {
   userAgent String?
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("session")
 }
 
 model Account {
@@ -167,8 +161,6 @@ model Account {
   createdAt             DateTime
   updatedAt             DateTime
   user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("account")
 }
 
 model Verification {
@@ -178,11 +170,7 @@ model Verification {
   expiresAt  DateTime
   createdAt  DateTime?
   updatedAt  DateTime?
-
-  @@map("verification")
 }
-
-
 
 model SsoProvider {
   id             String   @id @default(cuid())
@@ -217,12 +205,8 @@ model SsoProvider {
 
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
-
-  @@map("sso_provider")
 }
 
-// Status-Enum values: ONLINE, DEGRADED, OFFLINE
-// SQLite doesn't support enums, so we use String
 
 // Log-Eintrag für jeden Prüfzyklus (wird regelmäßig bereinigt)
 model HealthCheckLog {
