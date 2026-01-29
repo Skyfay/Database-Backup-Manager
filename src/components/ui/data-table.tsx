@@ -135,7 +135,7 @@ export function DataTable<TData, TValue>({
     const table = useReactTable({
         data,
         columns,
-        pageCount: pageCount ?? -1,
+        pageCount: pageCount ?? (manualPagination ? -1 : undefined),
         state: {
             sorting,
             columnFilters,
