@@ -21,7 +21,7 @@ export class ConfigService {
     const settings = await prisma.systemSetting.findMany();
     const adapters = await prisma.adapterConfig.findMany();
     const jobs = await prisma.job.findMany();
-    const users = await prisma.user.findMany();
+    const users = await prisma.user.findMany({ include: { accounts: true } });
     const groups = await prisma.group.findMany();
     const ssoProviders = await prisma.ssoProvider.findMany();
     const encryptionProfiles = await prisma.encryptionProfile.findMany();
@@ -77,6 +77,21 @@ export class ConfigService {
       };
     });
 
+    // Process Users (Strip secrets from accounts if needed)
+    const processedUsers = users.map(user => {
+         if (!includeSecrets) {
+             const safeAccounts = user.accounts.map(acc => ({
+                 ...acc,
+                 password: null,
+                 accessToken: null,
+                 refreshToken: null,
+                 idToken: null
+             }));
+             return { ...user, accounts: safeAccounts };
+         }
+         return user;
+    });
+
     // Process Encryption Profiles
     const processedProfiles = await Promise.all(encryptionProfiles.map(async (p) => {
         if (includeSecrets) {
@@ -112,7 +127,7 @@ export class ConfigService {
       settings,
       adapters: processedAdapters,
       jobs,
-      users,
+      users: processedUsers,
       groups,
       ssoProviders: processedSsoProviders,
       encryptionProfiles: processedProfiles,
@@ -244,11 +259,25 @@ export class ConfigService {
 
       // 6. Restore Users
         for (const user of data.users) {
+            // Detach accounts to handle separately
+            // @ts-expect-error accounts might allow any
+            const { accounts, ...userFields } = user;
+
             await tx.user.upsert({
-            where: { id: user.id },
-            create: user,
-            update: user,
+                where: { id: user.id },
+                create: userFields,
+                update: userFields,
             });
+
+            if (accounts && Array.isArray(accounts)) {
+                 for (const account of accounts) {
+                     await tx.account.upsert({
+                         where: { id: account.id },
+                         create: account,
+                         update: account
+                     });
+                 }
+            }
         }
       }
 
