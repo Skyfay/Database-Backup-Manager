@@ -42,10 +42,10 @@
 - [X] **Containerization**
     - [X] Dockerfile optimization
     - [X] docker-compose setup
-- [ ] **Meta-Backup**
-    - [ ] Export/Import App Configuration- [ ] **Version Management**
-    - [ ] Display current version in Settings/Footer
-    - [ ] Check for updates (GitLab/GitHub API) & UI Notification
+- [X] **Meta-Backup**
+    - [X] Export/Import App Configuration- [ ] **Version Management**
+    - [X] Display current version in Settings/Footer
+    - [X] Check for updates (GitLab/GitHub API) & UI Notification
 ## 🔌 Adapters Implementation
 ### Database Sources
 - [x] **MySQL / MariaDB Adapter** (`mysqldump`)
@@ -128,6 +128,7 @@
 - [ ] **Dashboard Home**
     - [X] Real statistics (Success rate, Total size)
     - [X] Recent activity feed
+    - [ ] Some Backup graphs
 - [ ] **Quick Setup Wizard**
     - [ ] Combined flow (Source -> Destination -> Job)
 
@@ -165,6 +166,7 @@
     - [x] **User Assignment**: Assign users to specific groups.
     - [x] **Access Control**: Implement permission guards (Server Actions & Components).
     - [x] Administrator manage other user (eg. reset 2FA)
+    - [ ] Let the user reset his own password.
     - [ ] **UX & Refinement**:
         - [X] Show 2FA Status (Active/Inactive) in User Table
         - [ ] Invite Flow (Email link) or Force Password Change on first login (with SMTP combined)
