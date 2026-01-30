@@ -10,6 +10,7 @@ import { createReadStream, promises as fs } from "fs";
 import path from "path";
 import os from "os";
 import { Readable } from "stream";
+import { getProfileMasterKey, getEncryptionProfiles } from "@/services/encryption-service";
 
 export class ConfigService {
   /**
@@ -365,15 +366,76 @@ export class ConfigService {
               }
 
               if (decryptionProfileId) {
-                  const profile = await prisma.encryptionProfile.findUnique({ where: { id: decryptionProfileId } });
-                  if (!profile) throw new Error("Encryption profile not found");
-
                   let key: Buffer;
                   try {
+                      // Try finding the profile normally first
+                      const profile = await prisma.encryptionProfile.findUnique({ where: { id: decryptionProfileId } });
+                      if (!profile) throw new Error("Encryption profile not found");
                       const decryptedKeyHex = decrypt(profile.secretKey);
                       key = Buffer.from(decryptedKeyHex, 'hex');
-                  } catch {
-                      throw new Error("Failed to decrypt encryption profile key. Is the System Vault unlocked?");
+                  } catch (_err) {
+                      log(`Profile ${decryptionProfileId} not found/accessible. Attempting Smart Recovery...`, "warn");
+
+                      // --- SMART RECOVERY LOGIC ---
+                      const allProfiles = await getEncryptionProfiles();
+                      let foundKey: Buffer | null = null;
+                      let matchProfileName = "";
+
+                      const isCompressed = filePath.includes(".gz") || (meta && String(meta.compression).toUpperCase() === 'GZIP');
+
+                      // Helper: Test if candidate key decrypts successfully
+                      const checkKeyCandidate = async (candidateKey: Buffer): Promise<boolean> => {
+                          return new Promise((resolve) => {
+                                if (!meta || !meta.iv || !meta.authTag) { resolve(false); return; }
+                                const iv = Buffer.from(meta.iv, 'hex');
+                                const authTag = Buffer.from(meta.authTag, 'hex');
+
+                                try {
+                                    const decipher = createDecryptionStream(candidateKey, iv, authTag);
+                                    const input = createReadStream(downloadPath, { start: 0, end: 1024 }); // Head check
+
+                                    let isValid = true;
+
+                                    if (isCompressed) {
+                                        const gunzip = createGunzip();
+                                        decipher.on('error', () => { isValid = false; resolve(false); });
+                                        gunzip.on('error', () => { isValid = false; resolve(false); });
+                                        gunzip.on('data', () => { resolve(true); input.destroy(); }); // Success
+                                        input.pipe(decipher).pipe(gunzip);
+                                    } else {
+                                        decipher.on('error', () => { isValid = false; resolve(false); });
+                                        decipher.on('data', (chunk: Buffer) => {
+                                            const str = chunk.toString('utf8').trim();
+                                            // JSON check
+                                            if (str.startsWith('{') || str.startsWith('[')) { resolve(true); }
+                                            else { resolve(false); }
+                                            input.destroy();
+                                        });
+                                        input.pipe(decipher);
+                                    }
+
+                                    input.on('end', () => { if (isValid) resolve(true); });
+                                } catch { resolve(false); }
+                          });
+                      };
+
+                      for (const profile of allProfiles) {
+                          try {
+                              const candidateKey = await getProfileMasterKey(profile.id);
+                              if (await checkKeyCandidate(candidateKey)) {
+                                  foundKey = candidateKey;
+                                  matchProfileName = profile.name;
+                                  break;
+                              }
+                          } catch {}
+                      }
+
+                      if (foundKey) {
+                          log(`Smart Recovery: Unlocked using profile '${matchProfileName}'`, "success");
+                          key = foundKey;
+                      } else {
+                          throw new Error("Encryption profile missing and no other key worked.");
+                      }
                   }
 
                   // If we have meta, use it. If not, we can't reliably decrypt GCM without IV/AuthTag
