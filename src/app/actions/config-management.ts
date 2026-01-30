@@ -3,7 +3,7 @@
 import { checkPermission } from "@/lib/access-control";
 import { PERMISSIONS } from "@/lib/permissions";
 import { ConfigService } from "@/services/config-service";
-import { AppConfigurationBackup } from "@/lib/types/config-backup";
+import { AppConfigurationBackup, RestoreOptions } from "@/lib/types/config-backup";
 import { runConfigBackup } from "@/lib/runner/config-runner";
 
 const configService = new ConfigService();
@@ -57,4 +57,27 @@ export async function importConfigAction(data: AppConfigurationBackup) {
         error: error instanceof Error ? error.message : "Failed to import configuration"
     };
   }
+}
+
+/**
+ * Restores a configuration backup from storage.
+ */
+export async function restoreFromStorageAction(
+    storageConfigId: string,
+    file: string,
+    decryptionProfileId?: string,
+    options?: RestoreOptions
+) {
+    await checkPermission(PERMISSIONS.SETTINGS.WRITE);
+
+    try {
+        const executionId = await configService.restoreFromStorage(storageConfigId, file, decryptionProfileId, options);
+        return { success: true, executionId };
+    } catch (error) {
+        console.error("Restore from storage error:", error);
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : "Failed to initiate restore"
+        };
+    }
 }

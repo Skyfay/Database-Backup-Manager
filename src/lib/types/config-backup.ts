@@ -27,3 +27,12 @@ export interface AppConfigurationBackup {
   // Or, we export them re-encrypted with a temporary key if we were doing a full migration wizard.
   // Safe bet: Export metadata only. User must manually re-enter or restore keys if needed.
 }
+
+export interface RestoreOptions {
+    settings: boolean;
+    adapters: boolean;
+    jobs: boolean;
+    users: boolean; // Includes Users and Groups
+    sso: boolean;
+    profiles: boolean;
+}

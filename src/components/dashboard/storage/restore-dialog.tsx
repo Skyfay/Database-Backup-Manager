@@ -25,6 +25,8 @@ import { useRouter } from "next/navigation";
 import { formatBytes } from "@/lib/utils";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { DateDisplay } from "@/components/utils/date-display";
+import { restoreFromStorageAction } from "@/app/actions/config-management";
+import { RestoreOptions } from "@/lib/types/config-backup";
 
 interface AdapterConfig {
     id: string;
@@ -68,11 +70,46 @@ export function RestoreDialog({ file, open, onOpenChange, destinationId, sources
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const router = useRouter();
 
+    const isSystemConfig = file?.sourceType === 'SYSTEM';
+
+    const [restoreOptions, setRestoreOptions] = useState<RestoreOptions>({
+        settings: true,
+        adapters: true,
+        jobs: true,
+        users: true,
+        sso: true,
+        profiles: true
+    });
+
+    const handleConfigRestore = async () => {
+        if (!file) return;
+        setRestoring(true);
+        try {
+            const res = await restoreFromStorageAction(destinationId, file.path, undefined, restoreOptions);
+            if (res.success && res.executionId) {
+                toast.success("System restore started in background");
+                onSuccess();
+                onOpenChange(false);
+                router.push(`/dashboard/history?executionId=${res.executionId}&autoOpen=true`);
+            } else {
+                toast.error(res.error || "Failed to start restore");
+            }
+        } catch (e) {
+            console.error("Restore failed", e);
+            toast.error("Restore failed unexpectedly");
+        } finally {
+            setRestoring(false);
+        }
+    };
+
     const resetState = useCallback(() => {
         setTargetSource("");
         setTargetDbName("");
         setAnalyzedDbs([]);
         setDbConfig([]);
+        setRestoreOptions({
+            settings: true, adapters: true, jobs: true, users: true, sso: true, profiles: true
+        });
         setRestoreLogs(null);
         setShowPrivileged(false);
         setPrivPass("");
@@ -233,6 +270,83 @@ export function RestoreDialog({ file, open, onOpenChange, destinationId, sources
                 </div>
 
                 {!restoreLogs ? (
+                    isSystemConfig ? (
+                        <div className="space-y-6 py-2">
+                             <Alert variant="destructive" className="my-4">
+                                 <AlertTriangle className="h-4 w-4" />
+                                 <AlertTitle>Warning: System Overwrite</AlertTitle>
+                                 <AlertDescription>
+                                     This action will overwrite your current System Settings, Adapters, Jobs, and Users with the data from the backup.
+                                     Existing data will be lost. This cannot be undone.
+                                 </AlertDescription>
+                             </Alert>
+                             <div className="space-y-3">
+                                <Label className="text-sm font-medium">Select components to restore:</Label>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 border rounded-md bg-muted/20">
+                                    <div className="flex items-center space-x-2">
+                                        <Checkbox
+                                            id="opt-settings"
+                                            checked={restoreOptions.settings}
+                                            onCheckedChange={(c) => setRestoreOptions(p => ({...p, settings: !!c}))}
+                                        />
+                                        <label htmlFor="opt-settings" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                                            System Settings
+                                        </label>
+                                    </div>
+                                    <div className="flex items-center space-x-2">
+                                        <Checkbox
+                                            id="opt-adapters"
+                                            checked={restoreOptions.adapters}
+                                            onCheckedChange={(c) => setRestoreOptions(p => ({...p, adapters: !!c}))}
+                                        />
+                                        <label htmlFor="opt-adapters" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                                            Adapter Configs
+                                        </label>
+                                    </div>
+                                    <div className="flex items-center space-x-2">
+                                        <Checkbox
+                                            id="opt-jobs"
+                                            checked={restoreOptions.jobs}
+                                            onCheckedChange={(c) => setRestoreOptions(p => ({...p, jobs: !!c}))}
+                                        />
+                                        <label htmlFor="opt-jobs" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                                            Jobs & Schedules
+                                        </label>
+                                    </div>
+                                    <div className="flex items-center space-x-2">
+                                        <Checkbox
+                                            id="opt-users"
+                                            checked={restoreOptions.users}
+                                            onCheckedChange={(c) => setRestoreOptions(p => ({...p, users: !!c}))}
+                                        />
+                                        <label htmlFor="opt-users" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                                            Users & Groups
+                                        </label>
+                                    </div>
+                                    <div className="flex items-center space-x-2">
+                                        <Checkbox
+                                            id="opt-sso"
+                                            checked={restoreOptions.sso}
+                                            onCheckedChange={(c) => setRestoreOptions(p => ({...p, sso: !!c}))}
+                                        />
+                                        <label htmlFor="opt-sso" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                                            SSO Providers
+                                        </label>
+                                    </div>
+                                    <div className="flex items-center space-x-2">
+                                        <Checkbox
+                                            id="opt-profiles"
+                                            checked={restoreOptions.profiles}
+                                            onCheckedChange={(c) => setRestoreOptions(p => ({...p, profiles: !!c}))}
+                                        />
+                                        <label htmlFor="opt-profiles" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                                            Encryption Profiles
+                                        </label>
+                                    </div>
+                                </div>
+                             </div>
+                        </div>
+                    ) : (
                     <div className="space-y-6 py-2">
                         {/* Target Selection */}
                         <div className="space-y-3">
@@ -372,6 +486,7 @@ export function RestoreDialog({ file, open, onOpenChange, destinationId, sources
                             </AlertDescription>
                         </Alert>
                     </div>
+                    )
                 ) : (
                     <div className="space-y-4 py-4">
                         <div className="bg-destructive/10 p-4 rounded-md border border-destructive/20 space-y-2">
@@ -419,11 +534,22 @@ export function RestoreDialog({ file, open, onOpenChange, destinationId, sources
                 <DialogFooter>
                      {!restoreLogs && (
                          <>
-                            <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-                            <Button onClick={() => handleRestore(false)} disabled={restoring || !targetSource || (analyzedDbs.length > 0 && !dbConfig.some(d => d.selected))}>
-                                {restoring && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                {restoring ? 'Starting...' : 'Start Restore'}
-                            </Button>
+                            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={restoring}>Cancel</Button>
+                            {isSystemConfig ? (
+                                <Button
+                                    variant="destructive"
+                                    onClick={handleConfigRestore}
+                                    disabled={restoring}
+                                >
+                                    {restoring && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                    {restoring ? 'Restoring...' : 'Start System Restore'}
+                                </Button>
+                            ) : (
+                                <Button onClick={() => handleRestore(false)} disabled={restoring || !targetSource || (analyzedDbs.length > 0 && !dbConfig.some(d => d.selected))}>
+                                    {restoring && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                    {restoring ? 'Starting...' : 'Start Restore'}
+                                </Button>
+                            )}
                          </>
                      )}
                      {restoreLogs && !showPrivileged && (
