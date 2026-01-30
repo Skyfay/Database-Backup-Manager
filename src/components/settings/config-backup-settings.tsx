@@ -14,15 +14,27 @@ import {
 } from "@/components/ui/form"
 import { toast } from "sonner"
 import { updateConfigBackupSettings } from "@/app/actions/config-backup-settings"
-import { exportConfigAction, importConfigAction, triggerManualConfigBackupAction } from "@/app/actions/config-management"
+import { triggerManualConfigBackupAction, uploadAndRestoreConfigAction } from "@/app/actions/config-management"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
-import { Save, Download, Upload, ShieldCheck, Database, FileCog, Play } from "lucide-react"
+import { Save, Upload, ShieldCheck, Database, FileCog, Play, LockKeyhole } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import Link from "next/link"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import { useState } from "react"
+
 
 const formSchema = z.object({
     enabled: z.boolean(),
@@ -75,61 +87,23 @@ export function ConfigBackupSettings({ initialSettings, storageAdapters, encrypt
     const includeSecrets = form.watch("includeSecrets");
     const profileId = form.watch("profileId");
 
-    const handleExport = async (e: React.MouseEvent) => {
-        e.preventDefault();
-        const withSecrets = form.getValues("includeSecrets");
+    const [isRestoreOpen, setIsRestoreOpen] = useState(false);
 
-        toast.promise(async () => {
-             const result = await exportConfigAction(withSecrets);
-             if (!result.success || !result.data) throw new Error(result.error);
-             return result.data;
-        }, {
-            loading: 'Exporting configuration...',
-            success: (data) => {
-                const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement("a");
-                a.href = url;
-                a.download = `backup-manager-config-${new Date().toISOString()}.json`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-                return "Configuration exported successfully";
-            },
-            error: (err) => `Export failed: ${err instanceof Error ? err.message : String(err)}`
+    const handleOfflineRestore = async (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        const formData = new FormData(event.currentTarget);
+
+        setIsRestoreOpen(false);
+
+        toast.promise(uploadAndRestoreConfigAction(formData), {
+             loading: 'Uploading and Restoring...',
+             success: (res) => {
+                 if (!res.success) throw new Error(res.error);
+                 return "Configuration Restored & Applied Successfully";
+             },
+             error: (err) => `Restore Failed: ${err.message}`
         });
-    };
-
-    const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-
-        toast.promise(async () => {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = async (ev) => {
-                    try {
-                        const data = JSON.parse(ev.target?.result as string);
-                        const result = await importConfigAction(data);
-                        if (result.success) resolve("Configuration imported");
-                        else reject(new Error(result.error));
-                    } catch {
-                        reject(new Error("Invalid JSON file"));
-                    }
-                };
-                reader.onerror = () => reject(new Error("Failed to read file"));
-                reader.readAsText(file);
-            });
-        }, {
-            loading: 'Importing configuration...',
-            success: 'Configuration imported successfully',
-            error: (err) => `Import failed: ${err.message}`
-        });
-
-        // Reset input
-        e.target.value = "";
-    };
+    }
 
     const handleRunNow = async () => {
         toast.promise(triggerManualConfigBackupAction(), {
@@ -315,42 +289,80 @@ export function ConfigBackupSettings({ initialSettings, storageAdapters, encrypt
                  <CardHeader>
                     <div className="flex items-center gap-2">
                         <Database className="h-5 w-5 text-muted-foreground" />
-                        <CardTitle>Manual Actions</CardTitle>
+                        <CardTitle>Manual Operations</CardTitle>
                     </div>
-                    <CardDescription>Export current configuration or run the automated backup pipeline manually.</CardDescription>
+                    <CardDescription>
+                        Trigger automated backups manually or use the Offline Restore for disaster recovery.
+                    </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <div className="flex flex-col gap-4">
-                        <div className="flex flex-col md:flex-row gap-4">
-                            <Button variant="outline" size="sm" onClick={handleExport} className="w-full md:w-auto">
-                                <Download className="w-4 h-4 mr-2" />
-                                Download JSON Export
-                            </Button>
+                    <div className="flex flex-col gap-6">
 
-                            <div className="relative w-full md:w-auto">
-                                <Button variant="outline" size="sm" onClick={() => document.getElementById("import-config-file")?.click()} className="w-full">
-                                    <Upload className="w-4 h-4 mr-2" />
-                                    Import from JSON...
-                                </Button>
-                                <input
-                                    id="import-config-file"
-                                    type="file"
-                                    accept=".json"
-                                    className="hidden"
-                                    onChange={handleImport}
-                                />
-                            </div>
+                        <div className="flex flex-col gap-2">
+                            <h4 className="text-sm font-medium">Trigger Automated Backup</h4>
+                            <p className="text-sm text-muted-foreground mb-2">
+                                Executes the full backup pipeline immediately to the configured storage.
+                            </p>
+                            <Button variant="secondary" size="sm" onClick={handleRunNow} className="w-full md:w-auto self-start">
+                                <Play className="w-4 h-4 mr-2" />
+                                Run Pipeline Now
+                            </Button>
                         </div>
 
-                         <div className="border-t pt-4 mt-2">
-                            <h4 className="text-sm font-medium mb-2">Automated Pipeline Test</h4>
+                         <div className="border-t pt-4">
+                            <h4 className="text-sm font-medium mb-2">Disaster Recovery (Offline Restore)</h4>
                             <p className="text-sm text-muted-foreground mb-4">
-                                Triggers the full backup process (Fetch &rarr; Gzip &rarr; Encrypt &rarr; Upload) using the settings above.
+                                If you are starting fresh, you can upload a config backup file manually from your local device.
                             </p>
-                            <Button variant="secondary" size="sm" onClick={handleRunNow}>
-                                <Play className="w-4 h-4 mr-2" />
-                                Run Automated Backup Now
-                            </Button>
+
+                            <Dialog open={isRestoreOpen} onOpenChange={setIsRestoreOpen}>
+                                <DialogTrigger asChild>
+                                    <Button variant="outline" size="sm" className="w-full md:w-auto">
+                                        <Upload className="w-4 h-4 mr-2" />
+                                        Upload & Restore...
+                                    </Button>
+                                </DialogTrigger>
+                                <DialogContent>
+                                    <DialogHeader>
+                                        <DialogTitle>Offline Configuration Restore</DialogTitle>
+                                        <DialogDescription>
+                                            Upload a configuration backup file to restore system settings.
+                                            This action will <strong>overwrite</strong> current configurations.
+                                        </DialogDescription>
+                                    </DialogHeader>
+
+                                    <form onSubmit={handleOfflineRestore} className="space-y-4">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="backupFile">Backup File</Label>
+                                            <Input id="backupFile" name="backupFile" type="file" required accept=".json,.gz,.enc,.br" />
+                                            <p className="text-xs text-muted-foreground">The main backup file (e.g. <code>config_backup_...json.gz.enc</code>)</p>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <Label htmlFor="metaFile">Metadata File (Required for Encrypted Backups)</Label>
+                                            <Input id="metaFile" name="metaFile" type="file" accept=".json" />
+                                            <p className="text-xs text-muted-foreground">The sidecar metadata file (e.g. <code>...meta.json</code>). Contains encryption IV and AuthTag.</p>
+                                        </div>
+
+                                        <Alert variant="default" className="bg-muted">
+                                            <LockKeyhole className="h-4 w-4" />
+                                            <AlertTitle>Encryption Profile Required (if encrypted)</AlertTitle>
+                                            <AlertDescription>
+                                                The system will attempt to unlock the file using the Encryption Profile ID specified in the metadata.
+                                                <br/>
+                                                Ensure the relevant Encryption Profile exists in this system before restoring.
+                                            </AlertDescription>
+                                        </Alert>
+
+                                        <DialogFooter>
+                                            <Button type="button" variant="outline" onClick={() => setIsRestoreOpen(false)}>Cancel</Button>
+                                            <Button type="submit" variant="destructive">
+                                                Restore & Overwrite
+                                            </Button>
+                                        </DialogFooter>
+                                    </form>
+                                </DialogContent>
+                            </Dialog>
                         </div>
                     </div>
                 </CardContent>

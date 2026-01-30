@@ -9,8 +9,9 @@ import { createGunzip } from "zlib";
 import { createReadStream, promises as fs } from "fs";
 import path from "path";
 import os from "os";
-import { Readable } from "stream";
+import { Readable, Transform } from "stream";
 import { getProfileMasterKey, getEncryptionProfiles } from "@/services/encryption-service";
+import { pipeline } from "stream/promises";
 
 export class ConfigService {
   /**
@@ -130,6 +131,94 @@ export class ConfigService {
       ssoProviders: processedSsoProviders,
       encryptionProfiles: processedProfiles,
     };
+  }
+
+  /**
+   * Parses a raw backup file (potentially encrypted/compressed) into the JSON object.
+   * Helper for Offline Config Restore.
+   */
+  async parseBackupFile(filePath: string, metaFilePath?: string): Promise<AppConfigurationBackup> {
+      let iv: Buffer | undefined;
+      let authTag: Buffer | undefined;
+      let profileId: string | undefined;
+      let isCompressed = false;
+      let isEncrypted = false;
+
+      // 1. Try to read metadata if provided
+      if (metaFilePath && await fs
+          .stat(metaFilePath)
+          .then(() => true)
+          .catch(() => false)) {
+          try {
+              const metaContent = await fs.readFile(metaFilePath, 'utf-8');
+              const meta = JSON.parse(metaContent);
+              if (meta.iv) iv = Buffer.from(meta.iv, 'hex');
+              if (meta.authTag) authTag = Buffer.from(meta.authTag, 'hex');
+              profileId = meta.encryptionProfileId;
+              if (meta.compression === 'GZIP') isCompressed = true;
+              if (meta.encryption && meta.encryption !== 'NONE') isEncrypted = true;
+          } catch (e) {
+              console.warn("Failed to parse metadata file", e);
+          }
+      } else {
+          // Fallback: Guess by extension
+          if (filePath.endsWith('.gz') || filePath.endsWith('.br')) isCompressed = await this.detectCompression(filePath);
+      }
+
+      // Auto-detect extension based fallback if meta failed/missing
+       if (!isCompressed && filePath.endsWith('.gz')) isCompressed = true;
+       if (!isEncrypted && filePath.endsWith('.enc')) isEncrypted = true;
+
+      const streams: (Readable | Transform)[] = [createReadStream(filePath)];
+
+      if (isEncrypted) {
+          if (!iv || !authTag || !profileId) {
+             throw new Error("Encrypted backup detected but metadata (IV/AuthTag/Profile) is missing. Please upload the .meta.json file as well.");
+          }
+
+           // Get Key
+           const key = await getProfileMasterKey(profileId).catch(() => null);
+
+           // Smart Recovery: If key not found (e.g. ID mismatch after new install), try finding ANY profile that works?
+           // AES-GCM requires the key to init. If we pick wrong key, setAuthTag matches fine, until final() throws.
+           // Implementing a loop here is tricky with streams (can't rewind easily).
+           // Strategy: If lookup fails, fail. User works around by editing meta or ensuring profile matches.
+
+           if (!key) {
+               // Fallback: Try to find a profile with the same NAME?
+               // ... (Skipping complex heuristics for now to keep it deterministic)
+               throw new Error(`Encryption Profile ${profileId} not found. Please ensure the relevant Encryption Profile is restored first.`);
+           }
+
+           streams.push(createDecryptionStream(key, iv, authTag));
+      }
+
+      if (isCompressed) {
+          streams.push(createGunzip());
+      }
+
+      // Collect stream to buffer
+      let jsonString = '';
+      const collector = new Transform({
+          transform(chunk, encoding, callback) {
+              jsonString += chunk.toString();
+              callback();
+          }
+      });
+      streams.push(collector);
+
+      try {
+        // @ts-expect-error Pipeline argument spread issues
+        await pipeline(...streams);
+        return JSON.parse(jsonString) as AppConfigurationBackup;
+      } catch (e: any) {
+          throw new Error(`Failed to process backup file: ${e.message}`);
+      }
+  }
+
+  // Helper (Placeholder for real detection if needed, mostly extension is enough)
+  private async detectCompression(file: string): Promise<boolean> {
+      return file.endsWith('.gz');
   }
 
   /**

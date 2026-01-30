@@ -3,26 +3,13 @@
 import { checkPermission } from "@/lib/access-control";
 import { PERMISSIONS } from "@/lib/permissions";
 import { ConfigService } from "@/services/config-service";
-import { AppConfigurationBackup, RestoreOptions } from "@/lib/types/config-backup";
+import { RestoreOptions } from "@/lib/types/config-backup";
 import { runConfigBackup } from "@/lib/runner/config-runner";
+import { promises as fs } from "fs";
+import path from "path";
+import os from "os";
 
 const configService = new ConfigService();
-
-/**
- * Exports the system configuration.
- * @param includeSecrets Whether to include decrypted secrets.
- */
-export async function exportConfigAction(includeSecrets: boolean) {
-  await checkPermission(PERMISSIONS.SETTINGS.READ); // Reading settings to export
-
-  try {
-    const data = await configService.export(includeSecrets);
-    return { success: true, data };
-  } catch (error) {
-    console.error("Export config error:", error);
-    return { success: false, error: "Failed to export configuration" };
-  }
-}
 
 /**
  * Trigger the Automated Config Backup Logic Manually
@@ -41,23 +28,58 @@ export async function triggerManualConfigBackupAction() {
 }
 
 /**
- * Imports a system configuration.
- * @param data The configuration backup object.
+ * Uploads and restores a configuration backup file (Offline Restore).
+ * Supports JSON, GZIP, and Encrypted (.enc) backups (requires .meta.json sidecar).
  */
-export async function importConfigAction(data: AppConfigurationBackup) {
-  await checkPermission(PERMISSIONS.SETTINGS.WRITE); // Writing settings to import
+export async function uploadAndRestoreConfigAction(formData: FormData) {
+    await checkPermission(PERMISSIONS.SETTINGS.WRITE);
 
-  try {
-    await configService.import(data, "OVERWRITE");
-    return { success: true };
-  } catch (error) {
-    console.error("Import config error:", error);
-    return {
-        success: false,
-        error: error instanceof Error ? error.message : "Failed to import configuration"
-    };
-  }
+    const backupFile = formData.get("backupFile") as File;
+    const metaFile = formData.get("metaFile") as File | null;
+    const strategy = "OVERWRITE"; // Currently the only supported strategy
+
+    if (!backupFile) {
+        return { success: false, error: "No backup file provided" };
+    }
+
+    const tempDir = os.tmpdir();
+    const tempBackupPath = path.join(tempDir, `upload_restore_${Date.now()}_${backupFile.name}`);
+    let tempMetaPath: string | undefined;
+
+    try {
+        // 1. Save Backup File
+        const backupBuffer = Buffer.from(await backupFile.arrayBuffer());
+        await fs.writeFile(tempBackupPath, backupBuffer);
+
+        // 2. Save Meta File (if provided)
+        if (metaFile) {
+            tempMetaPath = path.join(tempDir, `upload_restore_${Date.now()}_${metaFile.name}`);
+            const metaBuffer = Buffer.from(await metaFile.arrayBuffer());
+            await fs.writeFile(tempMetaPath, metaBuffer);
+        }
+
+        // 3. Parse & Process
+        // This helper handles decryption and decompression if needed
+        const configData = await configService.parseBackupFile(tempBackupPath, tempMetaPath);
+
+        // 4. Import
+        await configService.import(configData, strategy);
+
+        return { success: true };
+    } catch (e: any) {
+        console.error("Offline Restore Failed:", e);
+        return { success: false, error: e.message || "Failed to restore configuration" };
+    } finally {
+        // Cleanup
+        try {
+            if (await fs.stat(tempBackupPath).catch(() => false)) await fs.unlink(tempBackupPath);
+            if (tempMetaPath && await fs.stat(tempMetaPath).catch(() => false)) await fs.unlink(tempMetaPath);
+        } catch (cleanupErr) {
+            console.warn("Temp cleanup failed", cleanupErr);
+        }
+    }
 }
+
 
 /**
  * Restores a configuration backup from storage.
