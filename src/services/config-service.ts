@@ -1,6 +1,6 @@
 import prisma from "@/lib/prisma";
 import { AppConfigurationBackup, RestoreOptions } from "@/lib/types/config-backup";
-import { decryptConfig, encryptConfig, stripSecrets, decrypt } from "@/lib/crypto";
+import { decryptConfig, encryptConfig, stripSecrets, decrypt, encrypt } from "@/lib/crypto";
 import packageJson from "../../package.json";
 import { registry } from "@/lib/core/registry";
 import { StorageAdapter } from "@/lib/core/interfaces";
@@ -76,13 +76,30 @@ export class ConfigService {
       };
     });
 
-    // Process Encryption Profiles (NEVER export raw secretKey in this flow)
-    // We only export metadata. The user must use their Recovery Kit or re-enter keys.
-    const processedProfiles = encryptionProfiles.map((p) => {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { secretKey, ...rest } = p;
-      return rest;
-    });
+    // Process Encryption Profiles
+    const processedProfiles = await Promise.all(encryptionProfiles.map(async (p) => {
+        if (includeSecrets) {
+             // If secrets are requested, we assume the output transport is secure (e.g. Encrypted Backup).
+             // We decrypt the system-encrypted key and export it as plaintext in the JSON.
+             // This allows for full restore (including keys) on a new system.
+             try {
+                const plainKey = decrypt(p.secretKey);
+                // Return it so it ends up in the JSON
+                return { ...p, secretKey: plainKey };
+             } catch {
+                 console.error("Failed to decrypt profile key for export", p.id);
+                 // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                 const { secretKey, ...rest } = p;
+                 // @ts-expect-error Types mismatch due to dynamic key exclusion
+                 return rest;
+             }
+        } else {
+             // eslint-disable-next-line @typescript-eslint/no-unused-vars
+             const { secretKey, ...rest } = p;
+             // @ts-expect-error Types mismatch due to dynamic key exclusion
+             return rest;
+        }
+    }));
 
     return {
       metadata: {
@@ -171,9 +188,21 @@ export class ConfigService {
                     }
                 });
             } else {
-                console.warn(`Skipping Encryption Profile ${profile.name} (${profile.id}) - Secret Key missing in export`);
-                // We cannot verify integrity without secret key anyway.
-                // Optionally we could create a placeholder profile?
+                // @ts-expect-error Types might miss secretKey depending on Omit usage
+                if (profile.secretKey) {
+                    // Start fresh with provided key
+                    // Re-encrypt with CURRENT system key
+                    // @ts-expect-error Types might miss secretKey
+                    const encryptedKey = encrypt(profile.secretKey);
+                    await tx.encryptionProfile.create({
+                        data: {
+                            ...profile,
+                            secretKey: encryptedKey
+                        }
+                    });
+                } else {
+                    console.warn(`Skipping Encryption Profile ${profile.name} (${profile.id}) - Secret Key missing in export`);
+                }
             }
         }
       }
