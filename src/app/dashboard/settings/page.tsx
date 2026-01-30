@@ -46,21 +46,6 @@ export default async function SettingsPage() {
     const configRetention = await prisma.systemSetting.findUnique({ where: { key: "config.backup.retention" } });
 
     // Load Options for Config Backup
-    const storageAdapters = await prisma.adapterConfig.findMany({
-        where: { type: { in: ["s3", "local", "sftp"] } }, // Or better logic to identify storage?
-        // Wait, adapter types are dynamic strings. Usually I filtered by registry logic or blindly by what I think are storage.
-        // Actually, schema has 'type' which matches adapter IDs like 's3-generic', 'filesystem', 'sftp' etc.
-        // In AdapterService I usually have `getStorageAdapters()`.
-        // Direct DB Query: I should define which types are "storage".
-        // Or I fetch all and client side filter? No.
-        // Let's use standard types I know of: 'filesystem', 's3', 's3-aws', 's3-r2', 's3-hetzner', 'sftp'.
-        // Better: look at `src/lib/adapters/index.ts`.
-        // For now, I'll filter in code? No, I can fetch all.
-        // Or I can add `where: { type: { contains: "s3" } }` etc.
-        // Correct approach: `registry.getByType("storage")` helps in backend, specifically here we query DB.
-        // DB `AdapterConfig` has `type` field.
-        select: { id: true, name: true, type: true }
-    });
 
     // Simple heuristic for now since I can't import registry easily in RSC without side effects sometimes.
     // Actually, `src/lib/adapters/index.ts` is safe.

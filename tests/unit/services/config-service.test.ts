@@ -76,10 +76,6 @@ describe('ConfigService', () => {
     // Too complex to integration test crypto here easily without setting up valid encrypted strings.
     // Let's just trust the logic flow: export calls decryptConfig then stripSecrets.
 
-    const mockAdapters = [
-      { id: '1', config: JSON.stringify({ host: 'localhost', password: 'PLAIN_PASSWORD' }) },
-    ];
-
     // We mock decryptConfig to just return the object as is (simulating it was decrypted)
     // Actually we can't easily mock partial crypto.
 

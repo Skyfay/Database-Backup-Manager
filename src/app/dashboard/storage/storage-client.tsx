@@ -28,6 +28,8 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { DataTable } from "@/components/ui/data-table";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { getColumns, FileInfo } from "./columns";
 import { lockBackup } from "@/app/actions/storage/lock";
 import { RestoreDialog } from "@/components/dashboard/storage/restore-dialog";
@@ -145,14 +147,14 @@ export function StorageClient({ canDownload, canRestore, canDelete }: StorageCli
             if (result.success) {
                 toast.success(result.locked ? "Backup locked (Safe from retention)" : "Backup unlocked");
                 // Refresh list to update the lock icon
-                fetchFiles(selectedDestination);
+                fetchFiles(selectedDestination, showSystemConfigs);
             } else {
                 toast.error(result.error || "Failed to toggle lock");
             }
         } catch (_e) {
             toast.error("An error occurred while toggling lock");
         }
-    }, [selectedDestination]);
+    }, [selectedDestination, showSystemConfigs]);
 
     const confirmDelete = async () => {
         if (!fileToDelete) return;
@@ -167,7 +169,7 @@ export function StorageClient({ canDownload, canRestore, canDelete }: StorageCli
             if (res.ok) {
                 toast.success("File deleted successfully");
                 setFileToDelete(null);
-                fetchFiles(selectedDestination); // Refresh list
+                fetchFiles(selectedDestination, showSystemConfigs); // Refresh list
             } else {
                 const data = await res.json();
                 toast.error("Failed to delete file: " + (data.error || "Unknown"));
@@ -206,9 +208,6 @@ export function StorageClient({ canDownload, canRestore, canDelete }: StorageCli
             }
         ];
     }, [files]);
-
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 
     return (
         <div className="space-y-6">
@@ -287,7 +286,7 @@ import { Label } from "@/components/ui/label";
                                 columns={columns}
                                 data={files}
                                 filterableColumns={filterableColumns}
-                                onRefresh={() => selectedDestination && fetchFiles(selectedDestination)}
+                                onRefresh={() => selectedDestination && fetchFiles(selectedDestination, showSystemConfigs)}
                              />
                         )}
                     </CardContent>

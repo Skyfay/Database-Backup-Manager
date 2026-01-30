@@ -1,4 +1,4 @@
-import { AdapterConfig, Job, SystemSetting, User, Group, SsoProvider, EncryptionProfile, Permission } from "@prisma/client";
+import { AdapterConfig, Job, SystemSetting, User, Group, SsoProvider, EncryptionProfile } from "@prisma/client";
 
 export interface AppConfigurationBackup {
   metadata: {

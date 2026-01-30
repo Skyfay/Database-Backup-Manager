@@ -45,8 +45,8 @@ export async function runConfigBackup() {
         throw new Error(`Storage adapter ${storageId.value} not found`);
     }
 
-    const StorageClass = registry.get(storageConfig.adapterId);
-    if (!StorageClass) {
+    const storageAdapter = registry.get(storageConfig.adapterId) as StorageAdapter;
+    if (!storageAdapter) {
         throw new Error(`Adapter class ${storageConfig.adapterId} not registered`);
     }
 
@@ -56,7 +56,6 @@ export async function runConfigBackup() {
         decryptedConfig = decryptConfig(JSON.parse(storageConfig.config));
     } catch (e) { console.error("Config parse error", e); }
 
-    const storageAdapter = new StorageClass(decryptedConfig) as StorageAdapter;
 
     // 3. Resolve Encryption Key (if profile selected)
     let encryptionKey: Buffer | null = null;
@@ -99,7 +98,7 @@ export async function runConfigBackup() {
     let finalExtension = ".json";
 
     // Base Stream
-    let inputStream: Readable = Readable.from(jsonString);
+    const inputStream: Readable = Readable.from(jsonString);
     const streams: (Readable | Transform | NodeJS.WritableStream)[] = [inputStream];
 
     // Gzip
@@ -124,7 +123,7 @@ export async function runConfigBackup() {
     console.log(`[ConfigRunner] Streaming config export to ${tempFilePath}...`);
 
     // Execute Pipeline
-    // @ts-ignore
+    // @ts-expect-error Pipeline types are tricky
     await pipelineAsync(...streams);
 
     // Get auth tag if encrypted
@@ -137,13 +136,9 @@ export async function runConfigBackup() {
 
     // 7. Upload
     console.log(`[ConfigRunner] Uploading to ${storageConfig.name}...`);
-    const fileReadStream = fs.createReadStream(tempFilePath);
-    const uploadedPath = await storageAdapter.upload({
-        filename: path.basename(tempFilePath),
-        stream: fileReadStream,
-        size: fileStats.size,
-        mimeType: "application/json"
-    });
+    const remoteFilename = `config_backup_${timestamp}${finalExtension}`;
+
+    await storageAdapter.upload(decryptedConfig, tempFilePath, remoteFilename);
 
     // 8. Upload Metadata Sidecar (.meta.json)
     const metadata = {
@@ -159,16 +154,11 @@ export async function runConfigBackup() {
         createdAt: new Date().toISOString()
     };
 
-    const metaFilename = path.basename(tempFilePath) + ".meta.json";
+    const metaFilename = remoteFilename + ".meta.json";
     const metaTempPath = path.join(tempDir, metaFilename);
     await fs.promises.writeFile(metaTempPath, JSON.stringify(metadata, null, 2));
 
-    await storageAdapter.upload({
-        filename: metaFilename,
-        stream: fs.createReadStream(metaTempPath),
-        size: (await fs.promises.stat(metaTempPath)).size,
-        mimeType: "application/json"
-    });
+    await storageAdapter.upload(decryptedConfig, metaTempPath, metaFilename);
 
     console.log("[ConfigRunner] Backup complete.");
 
@@ -180,14 +170,14 @@ export async function runConfigBackup() {
 
     // 10. Retention (Simple cleanup of THIS type of files)
     if (retentionCount > 0) {
-        await applyConfigRetention(storageAdapter, retentionCount);
+        await applyConfigRetention(storageAdapter, decryptedConfig, retentionCount);
     }
 }
 
-async function applyConfigRetention(adapter: StorageAdapter, keepParams: number) {
+async function applyConfigRetention(adapter: StorageAdapter, config: any, keepParams: number) {
     try {
         console.log("[ConfigRunner] Checking retention policy for config backups...");
-        const files = await adapter.listFiles("config_backup_"); // Prefix filter usually supported or we filter later
+        const files = await adapter.list(config, ""); // Prefix filter usually supported or we filter later
 
         // Filter for our files specifically
         const configFiles = files.filter(f => f.name.includes("config_backup_") && !f.name.endsWith(".meta.json"));
@@ -201,13 +191,11 @@ async function applyConfigRetention(adapter: StorageAdapter, keepParams: number)
 
              for (const file of toDelete) {
                  try {
-                     await adapter.deleteFile(file.name);
+                     await adapter.delete(config, file.name);
                  } catch(e) { console.error(`Failed to delete ${file.name}`, e); }
 
                  // Try delete meta
-                 try { await adapter.deleteFile(file.name + ".meta.json"); } catch {}
-
-                 // Try delete .meta.json if named differently in some old versions? No, standard convention.
+                 try { await adapter.delete(config, file.name + ".meta.json"); } catch {}
              }
         }
     } catch (e) {

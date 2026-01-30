@@ -2,7 +2,6 @@ import prisma from "@/lib/prisma";
 import { AppConfigurationBackup } from "@/lib/types/config-backup";
 import { decryptConfig, encryptConfig, stripSecrets } from "@/lib/crypto";
 import packageJson from "../../package.json";
-import { Prisma } from "@prisma/client";
 
 export class ConfigService {
   /**
@@ -56,7 +55,7 @@ export class ConfigService {
             // Manually strip known secrets from OIDC config
             if (oidcConfig.clientSecret) oidcConfig.clientSecret = "";
             oidcConfigStr = JSON.stringify(oidcConfig);
-          } catch (e) {
+          } catch {
              // Ignore parse error
           }
         }
@@ -72,6 +71,7 @@ export class ConfigService {
     // Process Encryption Profiles (NEVER export raw secretKey in this flow)
     // We only export metadata. The user must use their Recovery Kit or re-enter keys.
     const processedProfiles = encryptionProfiles.map((p) => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { secretKey, ...rest } = p;
       return rest;
     });
@@ -96,9 +96,9 @@ export class ConfigService {
   /**
    * Restores configuration.
    * @param data The backup object
-   * @param strategy 'OVERWRITE' (Currently only strategy supported)
+   * @param _strategy 'OVERWRITE' (Currently only strategy supported)
    */
-  async import(data: AppConfigurationBackup, strategy: 'OVERWRITE'): Promise<void> {
+  async import(data: AppConfigurationBackup, _strategy: 'OVERWRITE'): Promise<void> {
     if (!data.metadata || !data.metadata.version) {
       throw new Error("Invalid configuration backup: Missing metadata");
     }

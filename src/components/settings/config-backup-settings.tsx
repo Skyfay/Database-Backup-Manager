@@ -52,14 +52,18 @@ export function ConfigBackupSettings({ initialSettings, storageAdapters, encrypt
             enabled: initialSettings.enabled,
             schedule: initialSettings.schedule,
             storageId: initialSettings.storageId,
-            profileId: initialSettings.profileId || "",
+            profileId: initialSettings.profileId || "NO_ENCRYPTION",
             includeSecrets: initialSettings.includeSecrets,
             retention: initialSettings.retention,
         },
     })
 
     const onSubmit = async (values: z.infer<typeof formSchema>) => {
-        const result = await updateConfigBackupSettings(values);
+        const submission = { 
+            ...values, 
+            profileId: values.profileId === "NO_ENCRYPTION" ? "" : values.profileId 
+        };
+        const result = await updateConfigBackupSettings(submission);
         if (result.success) {
             toast.success("Configuration backup settings updated");
         } else {
@@ -92,7 +96,7 @@ export function ConfigBackupSettings({ initialSettings, storageAdapters, encrypt
                 URL.revokeObjectURL(url);
                 return "Configuration exported successfully";
             },
-            error: (err) => `Export failed: ${err.message}`
+            error: (err) => `Export failed: ${err instanceof Error ? err.message : String(err)}`
         });
     };
 
@@ -109,7 +113,7 @@ export function ConfigBackupSettings({ initialSettings, storageAdapters, encrypt
                         const result = await importConfigAction(data);
                         if (result.success) resolve("Configuration imported");
                         else reject(new Error(result.error));
-                    } catch (err) {
+                    } catch {
                         reject(new Error("Invalid JSON file"));
                     }
                 };
@@ -198,7 +202,7 @@ export function ConfigBackupSettings({ initialSettings, storageAdapters, encrypt
                                             <Input placeholder="0 3 * * *" {...field} />
                                         </FormControl>
                                         <FormDescription>
-                                            Example: "0 3 * * *" (Every day at 3 AM UTC)
+                                            Example: &quot;0 3 * * *&quot; (Every day at 3 AM UTC)
                                         </FormDescription>
                                         <FormMessage />
                                     </FormItem>
@@ -229,7 +233,7 @@ export function ConfigBackupSettings({ initialSettings, storageAdapters, encrypt
                                                 ) : (
                                                     <SelectItem value="none" disabled>No profiles created</SelectItem>
                                                 )}
-                                                <SelectItem value="">No Encryption (Not Recommended)</SelectItem>
+                                                <SelectItem value="NO_ENCRYPTION">No Encryption (Not Recommended)</SelectItem>
 
                                             </SelectContent>
                                         </Select>
@@ -282,12 +286,12 @@ export function ConfigBackupSettings({ initialSettings, storageAdapters, encrypt
                             )}
                         />
 
-                         {includeSecrets && !profileId && (
+                         {includeSecrets && (!profileId || profileId === "NO_ENCRYPTION") && (
                             <Alert variant="destructive">
                                 <ShieldCheck className="h-4 w-4" />
                                 <AlertTitle>Security Warning</AlertTitle>
                                 <AlertDescription>
-                                    You have enabled "Include Secrets" but have not selected an Encryption Profile.
+                                    You have enabled &quot;Include Secrets&quot; but have not selected an Encryption Profile.
                                     You cannot save this configuration until you select a Vault profile to encrypt the sensitive data.
                                 </AlertDescription>
                             </Alert>
@@ -295,7 +299,7 @@ export function ConfigBackupSettings({ initialSettings, storageAdapters, encrypt
 
                     </CardContent>
                     <CardFooter>
-                        <Button type="submit" disabled={includeSecrets && !profileId}>
+                        <Button type="submit" disabled={includeSecrets && (!profileId || profileId === "NO_ENCRYPTION")}>
                             <Save className="w-4 h-4 mr-2" />
                             Save Configuration
                         </Button>

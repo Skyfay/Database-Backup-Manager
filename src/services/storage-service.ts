@@ -78,7 +78,7 @@ export class StorageService {
      * @param subPath Optional subpath to list.
      * @param typeFilter Optional filter for source type (e.g. "SYSTEM")
      */
-    async listFiles(adapterConfigId: string, subPath: string = "", typeFilter?: string): Promise<FileInfo[]> {
+    async listFiles(adapterConfigId: string, subPath: string = "", _typeFilter?: string): Promise<FileInfo[]> {
         const adapterConfig = await prisma.adapterConfig.findUnique({
             where: { id: adapterConfigId }
         });

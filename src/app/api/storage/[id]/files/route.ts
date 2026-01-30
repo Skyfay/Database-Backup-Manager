@@ -26,7 +26,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
         const typeFilter = url.searchParams.get("typeFilter") || undefined;
 
         // Delegate logic to Service
-        const enrichedFiles = await storageService.listFilesWithMetadata(params.id, "", typeFilter);
+        const enrichedFiles = await storageService.listFilesWithMetadata(params.id, typeFilter);
 
         return NextResponse.json(enrichedFiles);
 
