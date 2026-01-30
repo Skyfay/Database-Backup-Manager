@@ -62,7 +62,21 @@ export const DEFAULT_TASK_CONFIG = {
 export class SystemTaskService {
 
     async getTaskConfig(taskId: string) {
+        // Special mapping: For CONFIG_BACKUP, we use the user-facing setting key if it exists
+        // This ensures the Config Backup Settings UI remains the source of truth,
+        // OR we migrate the logic to use task.* keys entirely.
+        // Given the request to sync, we should probably make getTaskConfig look at the legacy key for this specific task
+        // OR we update the Config Backup Settings UI to save to `task.system.config_backup.schedule`
+
         const key = `task.${taskId}.schedule`;
+        if (taskId === SYSTEM_TASKS.CONFIG_BACKUP) {
+             // Check custom key first, fallback to task key?
+             // Actually, simplest is to use 'config.backup.schedule' as the key for this task
+             const legacyKey = "config.backup.schedule";
+             const legacySetting = await prisma.systemSetting.findUnique({ where: { key: legacyKey } });
+             if (legacySetting) return legacySetting.value;
+        }
+
         const setting = await prisma.systemSetting.findUnique({ where: { key } });
         return setting?.value || DEFAULT_TASK_CONFIG[taskId as keyof typeof DEFAULT_TASK_CONFIG]?.interval;
     }

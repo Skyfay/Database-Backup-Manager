@@ -8,7 +8,7 @@ import { PERMISSIONS } from "@/lib/permissions";
 
 const configBackupSchema = z.object({
     enabled: z.boolean(),
-    schedule: z.string().min(1, "Schedule is required"),
+    // schedule: z.string().min(1, "Schedule is required"), // Removed
     storageId: z.string().min(1, "Destination is required"),
     profileId: z.string().optional().or(z.literal("")), // Can be empty if secrets not included? But UI recommends it.
     includeSecrets: z.boolean(),
@@ -34,11 +34,13 @@ export async function updateConfigBackupSettings(data: z.infer<typeof configBack
                 update: { value: String(result.data.enabled) },
                 create: { key: "config.backup.enabled", value: String(result.data.enabled) },
             }),
+            /* Schedule is now managed in System Tasks
             prisma.systemSetting.upsert({
                 where: { key: "config.backup.schedule" },
                 update: { value: result.data.schedule },
                 create: { key: "config.backup.schedule", value: result.data.schedule },
             }),
+            */
             prisma.systemSetting.upsert({
                 where: { key: "config.backup.storageId" },
                 update: { value: result.data.storageId },

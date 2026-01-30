@@ -4,6 +4,7 @@ import { checkPermission } from "@/lib/access-control";
 import { PERMISSIONS } from "@/lib/permissions";
 import { ConfigService } from "@/services/config-service";
 import { AppConfigurationBackup } from "@/lib/types/config-backup";
+import { runConfigBackup } from "@/lib/runner/config-runner";
 
 const configService = new ConfigService();
 
@@ -21,6 +22,22 @@ export async function exportConfigAction(includeSecrets: boolean) {
     console.error("Export config error:", error);
     return { success: false, error: "Failed to export configuration" };
   }
+}
+
+/**
+ * Trigger the Automated Config Backup Logic Manually
+ */
+export async function triggerManualConfigBackupAction() {
+    await checkPermission(PERMISSIONS.SETTINGS.WRITE);
+    try {
+        // Trigger the runner async (fire & forget from UI perspective, but we await completion to inform user)
+        // Actually, runConfigBackup is async.
+        await runConfigBackup();
+        return { success: true };
+    } catch (e: any) {
+        console.error("Manual Config Backup Failed", e);
+        return { success: false, error: e.message };
+    }
 }
 
 /**

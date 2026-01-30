@@ -14,18 +14,19 @@ import {
 } from "@/components/ui/form"
 import { toast } from "sonner"
 import { updateConfigBackupSettings } from "@/app/actions/config-backup-settings"
-import { exportConfigAction, importConfigAction } from "@/app/actions/config-management"
+import { exportConfigAction, importConfigAction, triggerManualConfigBackupAction } from "@/app/actions/config-management"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
-import { Save, Download, Upload, ShieldCheck, Database, FileCog } from "lucide-react"
+import { Save, Download, Upload, ShieldCheck, Database, FileCog, Play } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import Link from "next/link"
 
 const formSchema = z.object({
     enabled: z.boolean(),
-    schedule: z.string().min(1, "Schedule is required"),
+    // schedule: z.string().min(1, "Schedule is required"), // REMOVED
     storageId: z.string().min(1, "Destination is required"),
     profileId: z.string().optional(),
     includeSecrets: z.boolean(),
@@ -50,7 +51,7 @@ export function ConfigBackupSettings({ initialSettings, storageAdapters, encrypt
         resolver: zodResolver(formSchema) as any,
         defaultValues: {
             enabled: initialSettings.enabled,
-            schedule: initialSettings.schedule,
+            // schedule: initialSettings.schedule,
             storageId: initialSettings.storageId,
             profileId: initialSettings.profileId || "NO_ENCRYPTION",
             includeSecrets: initialSettings.includeSecrets,
@@ -130,6 +131,17 @@ export function ConfigBackupSettings({ initialSettings, storageAdapters, encrypt
         e.target.value = "";
     };
 
+    const handleRunNow = async () => {
+        toast.promise(triggerManualConfigBackupAction(), {
+            loading: "Running automated configuration backup...",
+            success: (data) => {
+                if(!data.success) throw new Error(data.error);
+                return "Backup executed successfully on the server."
+            },
+            error: (err) => `Execution Failed: ${err.message}`
+        })
+    };
+
     return (
         <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -192,22 +204,14 @@ export function ConfigBackupSettings({ initialSettings, storageAdapters, encrypt
                                 )}
                             />
 
-                            <FormField
-                                control={form.control}
-                                name="schedule"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Schedule (Cron)</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="0 3 * * *" {...field} />
-                                        </FormControl>
-                                        <FormDescription>
-                                            Example: &quot;0 3 * * *&quot; (Every day at 3 AM UTC)
-                                        </FormDescription>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
+                            <div className="space-y-2">
+                                <FormLabel>Schedule</FormLabel>
+                                <div className="text-sm text-muted-foreground p-3 border rounded-md bg-muted/50">
+                                    Managed in <Link href="/dashboard/settings?tab=tasks" className="text-primary underline hover:text-primary/80">System Tasks</Link>.
+                                    <br/>
+                                    Task: <code>system.config_backup</code>
+                                </div>
+                            </div>
                         </div>
 
                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -313,26 +317,40 @@ export function ConfigBackupSettings({ initialSettings, storageAdapters, encrypt
                         <Database className="h-5 w-5 text-muted-foreground" />
                         <CardTitle>Manual Actions</CardTitle>
                     </div>
-                    <CardDescription>Export current configuration to a JSON file or import a configuration backup.</CardDescription>
+                    <CardDescription>Export current configuration or run the automated backup pipeline manually.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <div className="flex gap-4">
-                        <Button variant="outline" size="sm" onClick={handleExport}>
-                            <Download className="w-4 h-4 mr-2" />
-                            Export Configuration Now
-                        </Button>
-                         <div className="relative">
-                            <Button variant="outline" size="sm" onClick={() => document.getElementById("import-config-file")?.click()}>
-                                <Upload className="w-4 h-4 mr-2" />
-                                Import Configuration...
+                    <div className="flex flex-col gap-4">
+                        <div className="flex flex-col md:flex-row gap-4">
+                            <Button variant="outline" size="sm" onClick={handleExport} className="w-full md:w-auto">
+                                <Download className="w-4 h-4 mr-2" />
+                                Download JSON Export
                             </Button>
-                            <input
-                                id="import-config-file"
-                                type="file"
-                                accept=".json"
-                                className="hidden"
-                                onChange={handleImport}
-                            />
+
+                            <div className="relative w-full md:w-auto">
+                                <Button variant="outline" size="sm" onClick={() => document.getElementById("import-config-file")?.click()} className="w-full">
+                                    <Upload className="w-4 h-4 mr-2" />
+                                    Import from JSON...
+                                </Button>
+                                <input
+                                    id="import-config-file"
+                                    type="file"
+                                    accept=".json"
+                                    className="hidden"
+                                    onChange={handleImport}
+                                />
+                            </div>
+                        </div>
+
+                         <div className="border-t pt-4 mt-2">
+                            <h4 className="text-sm font-medium mb-2">Automated Pipeline Test</h4>
+                            <p className="text-sm text-muted-foreground mb-4">
+                                Triggers the full backup process (Fetch &rarr; Gzip &rarr; Encrypt &rarr; Upload) using the settings above.
+                            </p>
+                            <Button variant="secondary" size="sm" onClick={handleRunNow}>
+                                <Play className="w-4 h-4 mr-2" />
+                                Run Automated Backup Now
+                            </Button>
                         </div>
                     </div>
                 </CardContent>
