@@ -27,10 +27,10 @@ The export (`AppConfigurationBackup`) covers the following areas:
 | **System Settings** | Global settings (`settings`) | e.g. Concurrency limits, UI settings. |
 | **Adapter Configs** | Connection data for databases & storage (`adapters`) | Passwords are only exported if `includeSecrets` is active. |
 | **Jobs** | Backup jobs (`jobs`) | All schedules, retention policies, and associations. |
-| **Users** | Local user accounts (`users`) | Excluding passwords (usually hashed/managed separately). |
+| **Users** | Local user accounts (`users`) | Includes password hashes if `includeSecrets` is active. |
 | **Groups & Permissions** | Access control (`groups`) | RBAC configurations and group assignments. |
 | **SSO Providers** | OIDC configurations (`ssoProviders`) | Client secrets are handled safely. |
-| **Encryption Profiles** | Encryption profiles (`encryptionProfiles`) | **IMPORTANT:** Metadata only (Name, ID, Algo). **The Private Key is NOT exported.** The user must manually enter or import the key during restoration. |
+| **Encryption Profiles** | Encryption profiles (`encryptionProfiles`) | If `includeSecrets` is active, the profile keys are exported (encrypted by the backup key). Otherwise, only metadata is exported. |
 
 **Not included are:**
 *   The actual backup files (SQL Dumps).
