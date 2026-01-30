@@ -1,7 +1,7 @@
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
+import { useForm, useWatch } from "react-hook-form"
 import * as z from "zod"
 import {
     Form,
@@ -95,8 +95,8 @@ export function ConfigBackupSettings({ initialSettings, storageAdapters, encrypt
         });
     };
 
-    const includeSecrets = form.watch("includeSecrets");
-    const profileId = form.watch("profileId");
+    const includeSecrets = useWatch({ control: form.control, name: "includeSecrets" });
+    const profileId = useWatch({ control: form.control, name: "profileId" });
 
     const [isRestoreOpen, setIsRestoreOpen] = useState(false);
 

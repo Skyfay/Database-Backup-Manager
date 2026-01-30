@@ -152,11 +152,23 @@ export class ConfigService {
           try {
               const metaContent = await fs.readFile(metaFilePath, 'utf-8');
               const meta = JSON.parse(metaContent);
-              if (meta.iv) iv = Buffer.from(meta.iv, 'hex');
-              if (meta.authTag) authTag = Buffer.from(meta.authTag, 'hex');
-              profileId = meta.encryptionProfileId;
+
+              // 1. Detect Encryption Metadata (Standard vs Flat)
+              if (meta.encryption && typeof meta.encryption === 'object' && meta.encryption.enabled) {
+                  // Standard Nested Format
+                  if (meta.encryption.iv) iv = Buffer.from(meta.encryption.iv, 'hex');
+                  if (meta.encryption.authTag) authTag = Buffer.from(meta.encryption.authTag, 'hex');
+                  if (meta.encryption.profileId) profileId = meta.encryption.profileId;
+                  isEncrypted = true;
+              } else {
+                  // Legacy Flat Format
+                  if (meta.iv) iv = Buffer.from(meta.iv, 'hex');
+                  if (meta.authTag) authTag = Buffer.from(meta.authTag, 'hex');
+                  profileId = meta.encryptionProfileId;
+                  if (meta.encryption && meta.encryption !== 'NONE') isEncrypted = true;
+              }
+
               if (meta.compression === 'GZIP') isCompressed = true;
-              if (meta.encryption && meta.encryption !== 'NONE') isEncrypted = true;
           } catch (e) {
               console.warn("Failed to parse metadata file", e);
           }
