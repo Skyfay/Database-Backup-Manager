@@ -6,8 +6,7 @@ import { registry } from "@/lib/core/registry";
 import { StorageAdapter } from "@/lib/core/interfaces";
 import { createDecryptionStream } from "@/lib/crypto-stream";
 import { createGunzip } from "zlib";
-import { pipeline } from "stream/promises";
-import { createReadStream, createWriteStream, promises as fs } from "fs";
+import { createReadStream, promises as fs } from "fs";
 import path from "path";
 import os from "os";
 import { Readable } from "stream";
@@ -321,8 +320,6 @@ export class ConfigService {
           }
 
           let currentStream: Readable = createReadStream(downloadPath);
-          const streams: any[] = [currentStream];
-          let processingPath = downloadPath; // We might pipe to another temp file or memory
 
           // Decryption
           if (filePath.endsWith(".enc") || (meta && meta.iv && meta.authTag)) {
@@ -330,11 +327,11 @@ export class ConfigService {
 
               if (!decryptionProfileId) {
                   // Try to find profile ID from meta
-                  if (meta && meta.profileId) {
-                       decryptionProfileId = meta.profileId;
-                       log(`Using compatible Encryption Profile ID from metadata: ${decryptionProfileId}`);
+                  if (meta && meta.encryptionProfileId) {
+                       decryptionProfileId = meta.encryptionProfileId;
+                       log(`Using Encryption Profile ID from metadata: ${decryptionProfileId}`);
                   } else {
-                       throw new Error("File is encrypted but no Encryption Profile provided and metadata is missing profileId.");
+                       throw new Error("File is encrypted but no Encryption Profile provided and metadata is missing encryptionProfileId.");
                   }
               }
 
@@ -388,7 +385,7 @@ export class ConfigService {
           let backupData: AppConfigurationBackup;
           try {
               backupData = JSON.parse(content);
-          } catch (e) {
+          } catch {
               throw new Error("Failed to parse configuration JSON. File might be currupt or decryption failed.");
           }
 

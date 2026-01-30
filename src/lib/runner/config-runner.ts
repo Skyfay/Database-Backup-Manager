@@ -136,7 +136,14 @@ export async function runConfigBackup() {
 
     // 7. Upload
     console.log(`[ConfigRunner] Uploading to ${storageConfig.name}...`);
-    const remoteFilename = `config_backup_${timestamp}${finalExtension}`;
+    // Store in a dedicated folder 'system/config' or similar to keep root clean
+    // But user asked for folder based on Job name. This is a system task, not a job.
+    // Let's use 'config-backups/' as a standard folder.
+    const remoteFolder = "config-backups";
+    // Usually adapter.upload takes (config, localPath, remotePath).
+    // Some adapters (S3) treat remotePath as Key including folder.
+    // Others (Local) might expect folder structure to exist or be part of filename.
+    const remoteFilename = `${remoteFolder}/config_backup_${timestamp}${finalExtension}`;
 
     await storageAdapter.upload(decryptedConfig, tempFilePath, remoteFilename);
 
@@ -154,11 +161,13 @@ export async function runConfigBackup() {
         createdAt: new Date().toISOString()
     };
 
-    const metaFilename = remoteFilename + ".meta.json";
-    const metaTempPath = path.join(tempDir, metaFilename);
+    const metaFilenameLocal = path.basename(tempFilePath) + ".meta.json";
+    const metaTempPath = path.join(tempDir, metaFilenameLocal);
+    const remoteMetaFilename = remoteFilename + ".meta.json";
+
     await fs.promises.writeFile(metaTempPath, JSON.stringify(metadata, null, 2));
 
-    await storageAdapter.upload(decryptedConfig, metaTempPath, metaFilename);
+    await storageAdapter.upload(decryptedConfig, metaTempPath, remoteMetaFilename);
 
     console.log("[ConfigRunner] Backup complete.");
 
@@ -177,7 +186,8 @@ export async function runConfigBackup() {
 async function applyConfigRetention(adapter: StorageAdapter, config: any, keepParams: number) {
     try {
         console.log("[ConfigRunner] Checking retention policy for config backups...");
-        const files = await adapter.list(config, ""); // Prefix filter usually supported or we filter later
+        // List in the subfolder
+        const files = await adapter.list(config, "config-backups");
 
         // Filter for our files specifically
         const configFiles = files.filter(f => f.name.includes("config_backup_") && !f.name.endsWith(".meta.json"));
