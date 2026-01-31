@@ -3,8 +3,10 @@ import { LogLevel, LogType } from "@/lib/core/logs";
 import { executeQuery } from "./connection";
 import { getDialect } from "./dialects";
 import fs from "fs/promises";
-import { createReadStream, createWriteStream } from "fs";
+import { createReadStream, createWriteStream, existsSync } from "fs";
 import path from "path";
+import { extract } from "tar-stream";
+import { pipeline } from "stream/promises";
 
 /**
  * Prepare restore by validating target databases
@@ -61,8 +63,9 @@ export async function restore(
     try {
         const dialect = getDialect(config.detectedVersion);
         const serverBackupPath = config.backupPath || "/var/opt/mssql/backup";
-        // localBackupPath is where the host can access the backup files (e.g., Docker volume mount)
-        const localBackupPath = config.localBackupPath || serverBackupPath;
+        // localBackupPath is where the host can access the backup files (Docker volume mount)
+        // Default to /tmp which is the standard mount in our docker-compose
+        const localBackupPath = config.localBackupPath || "/tmp";
 
         // Determine target database(s) from config
         const dbMapping = config.databaseMapping as
@@ -87,64 +90,99 @@ export async function restore(
             throw new Error("No target database specified for restore");
         }
 
-        // Copy backup file to server-accessible location
-        const fileName = path.basename(sourcePath);
-        const serverBakPath = path.posix.join(serverBackupPath, fileName);
-        const localBakPath = path.join(localBackupPath, fileName);
+        // Check if the source is a TAR archive (multi-DB backup)
+        const isTarArchive = await checkIfTarArchive(sourcePath);
 
-        log(`Copying backup file to server...`);
-        await copyFile(sourcePath, localBakPath);
-        log(`Backup file staged at: ${serverBakPath} (local: ${localBakPath})`);
+        // List of .bak files to restore (and their local paths for cleanup)
+        const bakFiles: { serverPath: string; localPath: string; dbName: string }[] = [];
 
-        // Get file list from backup to determine logical names
-        const fileListQuery = `RESTORE FILELISTONLY FROM DISK = '${serverBakPath}'`;
-        const fileListResult = await executeQuery(config, fileListQuery);
+        if (isTarArchive) {
+            log(`Detected TAR archive - extracting backup files...`);
+            const extractedFiles = await extractTarArchive(sourcePath, localBackupPath, log);
 
-        const logicalFiles = fileListResult.recordset.map((row: any) => ({
-            logicalName: row.LogicalName,
-            type: row.Type, // D = Data, L = Log
-            physicalName: row.PhysicalName,
-        }));
+            for (const extracted of extractedFiles) {
+                const serverPath = path.posix.join(serverBackupPath, path.basename(extracted));
+                bakFiles.push({
+                    serverPath,
+                    localPath: extracted,
+                    dbName: path.basename(extracted).replace(/_\d{4}-\d{2}-\d{2}.*\.bak$/, "")
+                });
+            }
+            log(`Extracted ${bakFiles.length} backup file(s)`);
+        } else {
+            // Single .bak file - copy to server location
+            const fileName = path.basename(sourcePath);
+            const serverBakPath = path.posix.join(serverBackupPath, fileName);
+            const localBakPath = path.join(localBackupPath, fileName);
 
-        log(`Backup contains ${logicalFiles.length} file(s)`);
+            log(`Copying backup file to server...`);
+            await copyFile(sourcePath, localBakPath);
+            log(`Backup file staged at: ${serverBakPath} (local: ${localBakPath})`);
 
-        // Restore each target database
-        for (const { original, target } of targetDatabases) {
-            log(`Restoring database: ${original} -> ${target}`);
+            const dbName = Array.isArray(config.database) ? config.database[0] : (config.database || "database");
+            bakFiles.push({ serverPath: serverBakPath, localPath: localBakPath, dbName });
+        }
+
+        // Restore each backup file
+        for (const bakFile of bakFiles) {
+            // Find matching target database
+            const targetDb = targetDatabases.find(t => t.original === bakFile.dbName)
+                || targetDatabases[0]; // Fallback to first target if no match
+
+            log(`Restoring from: ${bakFile.serverPath}`);
+
+            // Get file list from backup to determine logical names
+            const fileListQuery = `RESTORE FILELISTONLY FROM DISK = '${bakFile.serverPath}'`;
+            const fileListResult = await executeQuery(config, fileListQuery);
+
+            const logicalFiles = fileListResult.recordset.map((row: any) => ({
+                logicalName: row.LogicalName,
+                type: row.Type, // D = Data, L = Log
+                physicalName: row.PhysicalName,
+            }));
+
+            log(`Backup contains ${logicalFiles.length} file(s)`);
+
+            log(`Restoring database: ${targetDb.original} -> ${targetDb.target}`);
 
             // Build MOVE clauses for file relocation
             const moveOptions: { logicalName: string; physicalPath: string }[] = [];
 
             for (const file of logicalFiles) {
-                // If we're renaming the database, we need to relocate files
                 const ext = file.type === "D" ? ".mdf" : ".ldf";
-                const newPhysicalPath = `/var/opt/mssql/data/${target}${ext}`;
+                const newPhysicalPath = `/var/opt/mssql/data/${targetDb.target}${ext}`;
                 moveOptions.push({
                     logicalName: file.logicalName,
                     physicalPath: newPhysicalPath,
                 });
             }
 
-            const restoreQuery = dialect.getRestoreQuery(target, serverBakPath, {
+            const restoreQuery = dialect.getRestoreQuery(targetDb.target, bakFile.serverPath, {
                 replace: true,
                 recovery: true,
                 stats: 10,
-                moveFiles: original !== target ? moveOptions : undefined,
+                moveFiles: targetDb.original !== targetDb.target ? moveOptions : undefined,
             });
 
             log(`Executing restore`, "info", "command", restoreQuery);
 
             try {
                 await executeQuery(config, restoreQuery);
-                log(`Restore completed for: ${target}`);
+                log(`Restore completed for: ${targetDb.target}`);
             } catch (error: any) {
-                log(`Restore failed for ${target}: ${error.message}`, "error");
+                log(`Restore failed for ${targetDb.target}: ${error.message}`, "error");
                 throw error;
             }
+
+            // Remove this target from the list so we don't restore to it again
+            const idx = targetDatabases.indexOf(targetDb);
+            if (idx > -1) targetDatabases.splice(idx, 1);
         }
 
-        // Clean up staged backup file using the local path
-        await fs.unlink(localBakPath).catch(() => {});
+        // Clean up staged backup files
+        for (const bakFile of bakFiles) {
+            await fs.unlink(bakFile.localPath).catch(() => {});
+        }
 
         log(`Restore finished successfully`);
 
@@ -180,5 +218,83 @@ async function copyFile(source: string, destination: string): Promise<void> {
         writeStream.on("finish", resolve);
 
         readStream.pipe(writeStream);
+    });
+}
+
+/**
+ * Check if a file is a TAR archive by reading magic bytes
+ */
+async function checkIfTarArchive(filePath: string): Promise<boolean> {
+    try {
+        const fd = await fs.open(filePath, "r");
+        const buffer = Buffer.alloc(512);
+        await fd.read(buffer, 0, 512, 0);
+        await fd.close();
+
+        // TAR files have "ustar" at offset 257 (POSIX tar)
+        // or check for valid tar header
+        const ustarMagic = buffer.slice(257, 262).toString();
+        if (ustarMagic === "ustar") {
+            return true;
+        }
+
+        // Also check if filename in header ends with .bak
+        const headerName = buffer.slice(0, 100).toString().replace(/\0/g, "").trim();
+        if (headerName.endsWith(".bak")) {
+            return true;
+        }
+
+        return false;
+    } catch {
+        return false;
+    }
+}
+
+/**
+ * Extract .bak files from a TAR archive
+ */
+async function extractTarArchive(
+    tarPath: string,
+    outputDir: string,
+    log: (msg: string, level?: LogLevel, type?: LogType, details?: string) => void
+): Promise<string[]> {
+    const extractedFiles: string[] = [];
+
+    return new Promise((resolve, reject) => {
+        const extractor = extract();
+
+        extractor.on("entry", async (header, stream, next) => {
+            if (header.name.endsWith(".bak")) {
+                const outputPath = path.join(outputDir, header.name);
+                log(`Extracting: ${header.name}`);
+
+                const writeStream = createWriteStream(outputPath);
+
+                stream.pipe(writeStream);
+
+                writeStream.on("finish", () => {
+                    extractedFiles.push(outputPath);
+                    next();
+                });
+
+                writeStream.on("error", (err) => {
+                    reject(err);
+                });
+            } else {
+                // Skip non-.bak files
+                stream.resume();
+                next();
+            }
+        });
+
+        extractor.on("finish", () => {
+            resolve(extractedFiles);
+        });
+
+        extractor.on("error", (err) => {
+            reject(err);
+        });
+
+        createReadStream(tarPath).pipe(extractor);
     });
 }

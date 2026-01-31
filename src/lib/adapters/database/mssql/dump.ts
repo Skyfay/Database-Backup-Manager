@@ -3,8 +3,10 @@ import { LogLevel, LogType } from "@/lib/core/logs";
 import { executeQuery, supportsCompression } from "./connection";
 import { getDialect } from "./dialects";
 import fs from "fs/promises";
-import { createReadStream, createWriteStream } from "fs";
+import { createReadStream, createWriteStream, existsSync } from "fs";
 import path from "path";
+import { pack } from "tar-stream";
+import { pipeline } from "stream/promises";
 
 /**
  * Dump MSSQL database(s) using native T-SQL BACKUP DATABASE
@@ -48,8 +50,11 @@ export async function dump(
 
         const dialect = getDialect(config.detectedVersion);
         const serverBackupPath = config.backupPath || "/var/opt/mssql/backup";
-        // localBackupPath is where the host can access the backup files (e.g., Docker volume mount)
-        const localBackupPath = config.localBackupPath || serverBackupPath;
+        // localBackupPath is where the host can access the backup files (Docker volume mount)
+        // Default to /tmp which is the standard mount in our docker-compose
+        const localBackupPath = config.localBackupPath || "/tmp";
+
+        log(`Using backup paths - Server: ${serverBackupPath}, Local: ${localBackupPath}`);
 
         // Check if compression is supported by this SQL Server edition
         const useCompression = await supportsCompression(config);
@@ -95,6 +100,12 @@ export async function dump(
             // Single database - copy directly
             const localSourcePath = tempFiles[0].local;
             const serverSourcePath = tempFiles[0].server;
+
+            // Verify source file exists
+            if (!existsSync(localSourcePath)) {
+                throw new Error(`Backup file not found at ${localSourcePath}. Check that localBackupPath is configured correctly and matches the Docker volume mount.`);
+            }
+
             try {
                 await copyFile(localSourcePath, destinationPath);
                 log(`Backup file copied to: ${destinationPath}`);
@@ -114,20 +125,66 @@ export async function dump(
                 };
             }
         } else {
-            // Multiple databases - for now, use the first one
-            // TODO: Implement tar/archive combining multiple .bak files
-            const localSourcePath = tempFiles[0].local;
+            // Multiple databases - pack all .bak files into a tar archive
+            // MSSQL cannot create multi-DB backups in a single file like MySQL
+            log(`Packing ${tempFiles.length} backup files into archive...`);
+
+            // Verify all source files exist first
+            for (const f of tempFiles) {
+                if (!existsSync(f.local)) {
+                    throw new Error(`Backup file not found at ${f.local}. Check that localBackupPath is configured correctly and matches the Docker volume mount.`);
+                }
+            }
+
             try {
-                await copyFile(localSourcePath, destinationPath);
-                log(`Backup file copied to: ${destinationPath}`);
+                // Create tar archive containing all .bak files
+                const tarPack = pack();
+                const outputStream = createWriteStream(destinationPath);
+
+                // Pipe tar to output file
+                const pipelinePromise = pipeline(tarPack, outputStream);
+
+                // Add each backup file to the archive
+                for (const f of tempFiles) {
+                    const fileName = path.basename(f.local);
+                    const fileStats = await fs.stat(f.local);
+
+                    // Create entry header
+                    const entry = tarPack.entry({
+                        name: fileName,
+                        size: fileStats.size,
+                    });
+
+                    // Stream file contents to tar entry
+                    const fileStream = createReadStream(f.local);
+                    await new Promise<void>((resolve, reject) => {
+                        fileStream.on("error", reject);
+                        fileStream.on("end", () => {
+                            entry.end();
+                            resolve();
+                        });
+                        fileStream.pipe(entry);
+                    });
+
+                    log(`Added to archive: ${fileName}`);
+                }
+
+                // Finalize the archive
+                tarPack.finalize();
+                await pipelinePromise;
+
+                log(`Archive created: ${destinationPath}`);
 
                 // Clean up all backup files from the mounted volume
                 for (const f of tempFiles) {
                     await fs.unlink(f.local).catch(() => {});
                 }
-            } catch (copyError: any) {
-                const serverPaths = tempFiles.map(f => f.server).join(", ");
-                log(`Warning: Multi-DB backup files at server: ${serverPaths}`, "warning");
+            } catch (archiveError: any) {
+                // Clean up partial files
+                for (const f of tempFiles) {
+                    await fs.unlink(f.local).catch(() => {});
+                }
+                throw new Error(`Failed to create archive: ${archiveError.message}`);
             }
         }
 

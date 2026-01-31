@@ -64,6 +64,7 @@
     "ssh2-sftp-client": "^12.0.1",
     "tailwind-merge": "^3.4.0",
     "tailwindcss-animate": "^1.0.7",
+    "tar-stream": "^3.1.7",
     "zod": "^4.3.5"
   },
   "devDependencies": {
@@ -79,6 +80,7 @@
     "@types/react-dom": "^19",
     "@types/ssh2": "^1.15.5",
     "@types/ssh2-sftp-client": "^9.0.6",
+    "@types/tar-stream": "^3.1.4",
     "@vitejs/plugin-react": "^5.1.2",
     "eslint": "^9",
     "eslint-config-next": "16.1.1",

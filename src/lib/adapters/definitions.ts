@@ -72,7 +72,8 @@ export const MSSQLSchema = z.object({
     database: z.union([z.string(), z.array(z.string())]).default(""),
     encrypt: z.boolean().default(true).describe("Encrypt connection (required for Azure SQL)"),
     trustServerCertificate: z.boolean().default(false).describe("Trust self-signed certificates (for development)"),
-    backupPath: z.string().default("/var/opt/mssql/backup").describe("Server-side path for .bak files"),
+    backupPath: z.string().default("/var/opt/mssql/backup").describe("Server-side path for .bak files (inside container)"),
+    localBackupPath: z.string().default("/tmp").describe("Host-side path where Docker volume is mounted (must match your docker-compose volume)"),
     options: z.string().optional().describe("Additional backup options"),
 });
 
