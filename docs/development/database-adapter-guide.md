@@ -79,7 +79,12 @@ return { version: "7.0.28" };  // MongoDB
 
 ### Implementation Pattern
 ```typescript
-export async function test(config: any) {
+export async function test(config: any): Promise<{
+    success: boolean;
+    message: string;
+    version?: string;
+    edition?: string; // Optional: For databases with multiple editions (e.g., MSSQL)
+}> {
     // 1. Ping Test
     await execFileAsync('db_cli', ['ping', ...]);
 
@@ -99,19 +104,37 @@ export async function test(config: any) {
     return {
         success: true,
         message: "Connection successful",
-        version // MUST be numeric only!
+        version, // MUST be numeric only!
+        edition  // Optional: "Express", "Standard", "Enterprise", "Azure SQL Edge"
     };
 }
 ```
+
+### Edition Detection (Optional)
+For databases with multiple editions that affect compatibility (e.g., MSSQL), you can return an `edition` field:
+
+```typescript
+// MSSQL Example: Azure SQL Edge vs SQL Server have same version but aren't compatible
+return {
+    success: true,
+    message: "Connection successful (SQL Server 2019 Express)",
+    version: "15.0.4455",
+    edition: "Express"  // or "Azure SQL Edge", "Standard", "Enterprise"
+};
+```
+
+The `edition` field is:
+- Stored in `BackupMetadata.engineEdition`
+- Used during restore to prevent cross-edition restores (e.g., Azure SQL Edge ↔ SQL Server)
 
 ### Version Storage Architecture
 **Two separate storage locations:**
 
 1. **`metadata` field (Persistent, Database)**
    - Written by: System Task (hourly) + Test Connection Button (manual)
-   - Used for: Monitoring, Audit Logs, Backup Metadata (`engineVersion`)
+   - Used for: Monitoring, Audit Logs, Backup Metadata (`engineVersion`, `engineEdition`)
    - Location: `AdapterConfig.metadata` (JSON string)
-   - Example: `{ "engineVersion": "16.1", "lastCheck": "2026-01-22T...", "status": "Online" }`
+   - Example: `{ "engineVersion": "16.1", "engineEdition": "Express", "lastCheck": "2026-01-22T...", "status": "Online" }`
 
 2. **React State (Temporary, UI Only)**
    - Written by: Test Connection Button during editing
@@ -201,6 +224,72 @@ async dump(
 - **Standard Output**: Most tools (like `pg_dump`, `mongodump` --archive) write to stdout. Pipe this directly to a file write stream.
 - **Error Handling**: Listen to `stderr` and pass it to `onLog`. If the process exit code is non-zero, throw an error or return `{ success: false }`.
 - **Empty File Check**: After the process finishes, check `fs.stat(destinationPath).size`. If it's 0 bytes, the dump likely failed silently (e.g., authentication error).
+
+### Server-Side Backups (MSSQL Pattern)
+Some databases (like MSSQL) create backups **on the server filesystem**, not on the client. This requires special handling:
+
+```typescript
+// Config schema must include both paths:
+backupPath: z.string().default("/var/opt/mssql/backup")
+    .describe("Server-side path for backup files (inside container)"),
+localBackupPath: z.string().default("/tmp")
+    .describe("Host-side path where Docker volume is mounted"),
+```
+
+**Implementation Pattern:**
+```typescript
+async dump(config, destinationPath, onLog) {
+    const serverBackupPath = config.backupPath || "/var/opt/mssql/backup";
+    const localBackupPath = config.localBackupPath || "/tmp";
+
+    // 1. Execute backup command on the server (creates file at serverBackupPath)
+    await executeQuery(config, `BACKUP DATABASE [${db}] TO DISK = '${serverPath}'`);
+
+    // 2. Copy from localBackupPath (Docker volume mount) to destinationPath
+    await copyFile(
+        path.join(localBackupPath, fileName),  // Source: mounted volume
+        destinationPath                         // Destination: temp file for pipeline
+    );
+
+    // 3. Cleanup server-side file
+    await fs.unlink(path.join(localBackupPath, fileName));
+}
+```
+
+**Docker Volume Setup:**
+```yaml
+# docker-compose.yml
+volumes:
+  - /tmp:/var/opt/mssql/backup  # Host /tmp = Container /var/opt/mssql/backup
+```
+
+### Multi-Database Backups with Archive
+If your database cannot create a single backup file for multiple databases (like MSSQL), use a TAR archive:
+
+```typescript
+import { pack } from "tar-stream";
+
+// Create individual backups, then pack into tar
+const tarPack = pack();
+for (const db of databases) {
+    // Add each .bak file to the archive
+    const entry = tarPack.entry({ name: `${db}.bak`, size: fileSize });
+    createReadStream(bakPath).pipe(entry);
+}
+tarPack.finalize();
+```
+
+**Restore must detect and extract TAR:**
+```typescript
+import { extract } from "tar-stream";
+
+async function checkIfTarArchive(filePath: string): Promise<boolean> {
+    // Check for "ustar" magic at offset 257
+    const buffer = Buffer.alloc(512);
+    await fs.read(fd, buffer, 0, 512, 0);
+    return buffer.slice(257, 262).toString() === "ustar";
+}
+```
 
 ## 6. `analyzeDump` (Optional)
 To support the "Selective Restore" UI, your adapter can implement `analyzeDump`.

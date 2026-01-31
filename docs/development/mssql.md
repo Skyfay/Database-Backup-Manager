@@ -1,273 +1,390 @@
-# MSSQL Adapter Implementation Plan
+# MSSQL Adapter Implementation
 
-## 📋 Übersicht
+Technical documentation for the Microsoft SQL Server adapter in Database Backup Manager.
 
-Dieser Plan beschreibt die vollständige Implementierung eines Microsoft SQL Server (MSSQL) Adapters für den Database Backup Manager.
+## Overview
 
-**Ziel**: Unterstützung von MSSQL Server 2017, 2019, 2022 (und Azure SQL Edge für ARM-Entwicklung).
+| Feature | Implementation |
+|---------|----------------|
+| **Supported Versions** | SQL Server 2017, 2019, 2022, Azure SQL Edge |
+| **Backup Method** | Native T-SQL `BACKUP DATABASE` |
+| **Restore Method** | Native T-SQL `RESTORE DATABASE` |
+| **Multi-DB Support** | Yes (via TAR archive) |
+| **Compression** | Native (Enterprise/Standard only) |
+| **Node.js Package** | `mssql` v12.x (no CLI tools required) |
 
----
+## Architecture
 
-## 🔍 Analyse
+### Why T-SQL Instead of CLI Tools?
 
-### 1. Verfügbare CLI-Tools
+Unlike MySQL (`mysqldump`) or PostgreSQL (`pg_dump`), Microsoft does not provide a cross-platform dump utility. The available tools are:
 
-| Tool | Zweck | Verfügbarkeit |
-|------|-------|---------------|
-| `sqlcmd` | SQL-Befehle ausführen, Verbindungstest | mssql-tools18 (Linux/macOS) |
-| `bcp` | Bulk-Import/Export (nicht für Schema) | mssql-tools18 |
+| Tool | Purpose | Limitation |
+|------|---------|------------|
+| `sqlcmd` | Execute SQL commands | No dump capability |
+| `bcp` | Bulk data export | No schema, no transactions |
+| SMO Scripts | Full backup | Requires .NET/PowerShell |
 
-**Problem**: Microsoft bietet **kein natives `mssqldump`-Tool** wie MySQL oder PostgreSQL!
+**Our Solution**: Use the `mssql` npm package to execute native T-SQL `BACKUP DATABASE` commands directly. This provides:
+- Full transactional consistency
+- Schema + data in single file
+- Compression support (where available)
+- No external CLI dependencies
 
-### 2. Backup-Strategien für MSSQL
-
-#### Option A: Native T-SQL BACKUP (Empfohlen für Self-Hosted)
-```sql
-BACKUP DATABASE [mydb] TO DISK = '/var/opt/mssql/backup/mydb.bak' WITH FORMAT, INIT;
-```
-- ✅ Vollständiges Backup inkl. Schema + Daten
-- ✅ Inkrementelle/Differentielle Backups möglich
-- ❌ Backup-Datei liegt auf dem **Server**, nicht lokal
-- ❌ Erfordert Filesystem-Zugriff oder SMB-Share
-
-#### Option B: `sqlcmd` + Schema-Scripting + BCP (Cross-Platform)
-1. Schema exportieren via `sqlcmd` + `sp_helptext` / SMO-Scripts
-2. Daten exportieren via `bcp` (Bulk Copy Program)
-- ✅ Funktioniert remote
-- ❌ Komplex, keine Single-File-Lösung
-- ❌ Keine Transaktionskonsistenz garantiert
-
-#### Option C: SQL Server Management Objects (SMO) via Node.js
-- ❌ Erfordert .NET / PowerShell
-- ❌ Nicht cross-platform kompatibel
-
-#### **Gewählte Strategie: Option A (Native T-SQL BACKUP)**
-- Für Self-Hosted MSSQL Server die robusteste Lösung
-- Backup-Datei muss vom Server abgeholt werden (z.B. via SMB, SFTP, oder lokaler Mount)
-- Alternativ: Azure Blob Storage als Backup-Ziel (für Azure SQL)
-
-### 3. Restore-Strategie
-
-```sql
-RESTORE DATABASE [mydb] FROM DISK = '/var/opt/mssql/backup/mydb.bak' WITH REPLACE;
-```
-- Datei muss auf dem Server liegen
-- Für Remote-Restore: Datei erst hochladen, dann RESTORE ausführen
-
-### 4. Docker-Images für Testing
-
-| Version | Image | Architektur | Port (Test) |
-|---------|-------|-------------|-------------|
-| 2017 | `mcr.microsoft.com/mssql/server:2017-latest` | amd64 only | 14337 |
-| 2019 | `mcr.microsoft.com/mssql/server:2019-latest` | amd64 only | 14339 |
-| 2022 | `mcr.microsoft.com/mssql/server:2022-latest` | amd64 only | 14342 |
-| Edge | `mcr.microsoft.com/azure-sql-edge:latest` | amd64 + arm64 | 14350 |
-
-> **Hinweis für M1/M2 Macs**: Nur Azure SQL Edge läuft nativ auf ARM. Andere Images benötigen Rosetta/QEMU.
-
-### 5. Abhängigkeiten
-
-```bash
-# Node.js Package für MSSQL-Verbindungen
-pnpm add mssql
-
-# CLI-Tools (für Container/Host)
-# Debian/Ubuntu:
-curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
-curl https://packages.microsoft.com/config/ubuntu/22.04/prod.list | sudo tee /etc/apt/sources.list.d/msprod.list
-sudo apt-get update
-sudo apt-get install mssql-tools18 unixodbc-dev
-
-# macOS:
-brew tap microsoft/mssql-release https://github.com/Microsoft/homebrew-mssql-release
-brew install mssql-tools18
-```
-
----
-
-## 📁 Dateistruktur
+### File Structure
 
 ```
 src/lib/adapters/database/mssql/
-├── index.ts                    # Adapter-Registrierung (DatabaseAdapter export)
-├── connection.ts               # test(), getDatabases()
-├── dump.ts                     # Backup via T-SQL BACKUP DATABASE
-├── restore.ts                  # Restore via T-SQL RESTORE DATABASE
-├── schema.ts                   # Zod-Schema für Konfiguration
+├── index.ts          # DatabaseAdapter export
+├── connection.ts     # test(), getDatabases(), supportsCompression()
+├── dump.ts           # BACKUP DATABASE implementation
+├── restore.ts        # RESTORE DATABASE implementation
+├── analyze.ts        # Stub (returns empty array)
 └── dialects/
-    ├── index.ts                # Dialect Factory
-    ├── mssql-base.ts           # Base Dialect (2019+)
-    └── mssql-2017.ts           # Legacy-spezifische Flags (falls nötig)
+    ├── index.ts      # Dialect factory (getDialect)
+    ├── mssql-base.ts # SQL Server 2019+ dialect
+    └── mssql-2017.ts # SQL Server 2017 dialect
 ```
 
----
+## Configuration Schema
 
-## ✅ Phasen-Roadmap
+```typescript
+// src/lib/adapters/definitions.ts
+export const MSSQLSchema = z.object({
+    host: z.string().default("localhost"),
+    port: z.coerce.number().default(1433),
+    user: z.string().min(1, "User is required"),
+    password: z.string().optional(),
+    database: z.union([z.string(), z.array(z.string())]).default(""),
+    encrypt: z.boolean().default(true)
+        .describe("Encrypt connection (required for Azure SQL)"),
+    trustServerCertificate: z.boolean().default(false)
+        .describe("Trust self-signed certificates (for development)"),
+    backupPath: z.string().default("/var/opt/mssql/backup")
+        .describe("Server-side path for .bak files (inside container)"),
+    localBackupPath: z.string().default("/tmp")
+        .describe("Host-side path where Docker volume is mounted"),
+    options: z.string().optional()
+        .describe("Additional backup options"),
+});
+```
 
-### Phase 1: Foundation (Basis-Infrastruktur) ✅ DONE
-- [x] **1.1** Zod-Schema erstellen (`definitions.ts` - MSSQLSchema)
-  - host, port (1433), user, password
-  - database (single/multi)
-  - encrypt (boolean, default: true für Azure)
-  - trustServerCertificate (boolean, für Self-Signed)
-  - backupPath (Server-seitiger Pfad für .bak Dateien)
-- [x] **1.2** Adapter-Definition in `definitions.ts` hinzufügen
-- [x] **1.3** Adapter in `src/lib/adapters/index.ts` registrieren
-- [x] **1.4** Basis-Dateien erstellen:
-  - `index.ts` - Adapter-Export
-  - `connection.ts` - test(), getDatabases()
-  - `dump.ts` - Backup-Logik
-  - `restore.ts` - Restore-Logik
-  - `analyze.ts` - Dump-Analyse (Stub)
-  - `dialects/index.ts` - Dialect Factory
-  - `dialects/mssql-base.ts` - SQL Server 2019+
-  - `dialects/mssql-2017.ts` - SQL Server 2017
-- [x] **1.5** Dependencies installieren (`mssql`, `@types/mssql`)
+### Key Configuration Fields
 
-### Phase 2: Connection & Version Detection
-- [x] **2.1** `connection.ts` implementieren
-  - `test()`: Verbindung via `mssql` npm-Package testen
-  - Version auslesen: `SELECT @@VERSION`
-  - Version normalisieren: `"Microsoft SQL Server 2022 (RTM)..."` → `"16.0.1000"` (Major.Minor.Build)
-- [x] **2.2** `getDatabases()` implementieren
-  - Query: `SELECT name FROM sys.databases WHERE database_id > 4` (System-DBs ausschließen)
-- [ ] **2.3** Unit Tests für Connection
+| Field | Purpose | Default |
+|-------|---------|---------|
+| `backupPath` | Where MSSQL writes `.bak` files (server-side) | `/var/opt/mssql/backup` |
+| `localBackupPath` | Host path to access backups (Docker volume) | `/tmp` |
+| `encrypt` | TLS encryption for connection | `true` |
+| `trustServerCertificate` | Accept self-signed certs | `false` |
 
-### Phase 3: Dialects
-- [x] **3.1** `mssql-base.ts` (Base Dialect)
-  - `getBackupQuery(config, databases)`: T-SQL BACKUP-Statement generieren
-  - `getRestoreQuery(config, backupPath, targetDb)`: T-SQL RESTORE-Statement
-  - `getConnectionArgs(config)`: Für `sqlcmd` CLI (falls benötigt)
-- [x] **3.2** `mssql-2017.ts` (Legacy Support, falls Unterschiede existieren)
-- [x] **3.3** `index.ts` Dialect Factory
-- [ ] **3.4** Unit Tests für Dialects
+## Backup Implementation
 
-### Phase 4: Backup (dump.ts)
-- [x] **4.1** Backup-Logik implementieren
-  - Verbindung zu MSSQL aufbauen (mssql npm)
-  - T-SQL `BACKUP DATABASE` ausführen
-  - Progress-Tracking via `STATS = 10` Option (alle 10% ein Log)
-- [x] **4.2** Multi-Database Support
-  - Loop über alle ausgewählten DBs
-  - Separate .bak Dateien oder kombiniertes Archiv
-- [x] **4.3** Streaming/Download der .bak Datei
-  - **Option A**: SMB/CIFS Share mounten
-  - **Option B**: SQL Server `OPENROWSET(BULK...)` + BCP
-  - **Option C**: Backup-Pfad = gemountetes Volume (Docker)
-- [x] **4.4** Error Handling & Empty-Check
-- [ ] **4.5** Integration mit Compression/Encryption Pipeline
+### The Server-Side Backup Problem
 
-### Phase 5: Restore (restore.ts)
-- [x] **5.1** Restore-Logik implementieren
-  - .bak Datei auf Server hochladen (via gemountetes Volume)
-  - T-SQL `RESTORE DATABASE` ausführen
-- [x] **5.2** Database Mapping (Rename bei Restore)
-  - `WITH MOVE` Syntax für Dateiumbenennung
-- [x] **5.3** Progress-Tracking
-- [x] **5.4** prepareRestore() für Pre-Flight Checks
-  - Ziel-DB existiert? Überschreiben erlaubt?
-  - Versionskompatibilität prüfen
+MSSQL's `BACKUP DATABASE` writes files **on the server filesystem**, not to the client:
 
-### Phase 6: Docker Test-Infrastruktur ✅ DONE
-- [x] **6.1** `docker-compose.test.yml` erweitern
-  - MSSQL 2019 (Port 14339)
-  - MSSQL 2022 (Port 14342)
-  - Azure SQL Edge (Port 14350, ARM64 kompatibel)
-  - Shared Volume: `./backups/mssql:/var/opt/mssql/backup`
-- [x] **6.2** Test-Konfiguration in `tests/integration/test-configs.ts`
-- [x] **6.3** Seeding-Script nutzt bereits `testDatabases` (keine Änderung nötig)
+```
+┌─────────────────────┐     ┌─────────────────────────────────┐
+│   Your Application  │     │      MSSQL Container            │
+│                     │     │                                 │
+│  1. Execute SQL ────┼────►│  BACKUP DATABASE [db]           │
+│                     │     │  TO DISK = '/var/.../backup'    │
+│                     │     │           │                     │
+│                     │     │           ▼                     │
+│                     │     │  /var/opt/mssql/backup/db.bak   │
+│                     │     │           │                     │
+│                     │     └───────────┼─────────────────────┘
+│                     │                 │ Docker Volume Mount
+│  2. Copy file ◄─────┼─────────────────┘
+│     from /tmp       │     /tmp/db.bak (host)
+└─────────────────────┘
+```
 
-### Phase 7: Integration Tests ✅ DONE
-- [x] **7.1** Connectivity Tests
-  - Automatisch über `testDatabases` in `connectivity.test.ts`
-  - Version Detection in `test()` implementiert
-- [x] **7.2** Backup Tests
-  - Automatisch über `testDatabases` in `backup.test.ts`
-- [x] **7.3** Restore Tests
-  - Automatisch über `testDatabases` in `restore.test.ts`
+### Solution: Docker Volume Mount
 
-### Phase 8: Unit Tests ✅ DONE
-- [x] **8.1** `tests/unit/adapters/dialects/mssql.test.ts` (21 Tests)
-  - Dialect-Auswahl testen
-  - SQL-Generierung verifizieren
-  - Version-Parsing testen
-  - Backup/Restore Query Generation
-- [x] **8.2** Connection-Modul in Integration Tests abgedeckt
-- [x] **8.3** Schema-Validierung via Zod in definitions.ts
+```yaml
+# docker-compose.yml
+services:
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    volumes:
+      - /tmp:/var/opt/mssql/backup  # Key: Mount host path to backup path
+```
 
-### Phase 9: Dockerfile & Dependencies ✅ DONE
-- [x] **9.1** Dockerfile - Keine CLI-Tools nötig!
-  - MSSQL nutzt `mssql` npm-Package für T-SQL Queries
-  - Keine `sqlcmd` oder `bcp` erforderlich im Container
-- [x] **9.2** `package.json` Dependencies
-  ```json
-  "mssql": "^12.2.0"
-  ```
-- [x] **9.3** Build verifiziert (TypeScript kompiliert ohne Fehler)
+### Backup Flow (dump.ts)
 
-### Phase 10: UI & Documentation ✅ DONE
-- [x] **10.1** UI automatisch (Adapter-Form wird aus Schema generiert)
-- [x] **10.2** `README.md` aktualisiert (Supported Databases)
-- [x] **10.3** `docs/development/supported-database-versions.md` erweitert
-- [x] **10.4** Implementierung abgeschlossen 🎉
+```typescript
+async function dump(config, destinationPath, onLog) {
+    // 1. Check compression support (Express/Web editions don't support it)
+    const useCompression = await supportsCompression(config);
 
----
+    // 2. Generate backup path on server
+    const serverBakPath = path.posix.join(serverBackupPath, `${db}_${timestamp}.bak`);
+    const localBakPath = path.join(localBackupPath, `${db}_${timestamp}.bak`);
 
-## ✅ IMPLEMENTIERUNG ABGESCHLOSSEN
+    // 3. Execute T-SQL BACKUP
+    const query = `BACKUP DATABASE [${db}] TO DISK = N'${serverBakPath}'
+                   WITH FORMAT, INIT, STATS = 10${useCompression ? ', COMPRESSION' : ''}`;
+    await executeQuery(config, query);
 
-**Status**: Alle Phasen erfolgreich abgeschlossen am 2026-01-31
+    // 4. Copy from local mount to destination
+    await copyFile(localBakPath, destinationPath);
 
----
+    // 5. Cleanup
+    await fs.unlink(localBakPath);
+}
+```
 
-## ⚠️ Bekannte Einschränkungen
+### Multi-Database Backups (TAR Archive)
 
-### 1. Backup-Datei-Transfer
-MSSQL's `BACKUP DATABASE` schreibt auf das **Server-Filesystem**, nicht auf den Client.
-**Lösung**:
-- Docker: Shared Volume zwischen Container und Host
-- Remote: SMB-Share oder manueller Download nach Backup
+MSSQL cannot create a single backup file for multiple databases. Our solution:
 
-### 2. Azure SQL Database
-Azure SQL unterstützt kein `BACKUP DATABASE`!
-**Alternative**:
-- Azure Blob Storage als Backup-Ziel (`BACKUP DATABASE ... TO URL`)
-- Erfordert separate Azure-Credentials
-- **Scope**: Außerhalb des initialen MVP, als Future Enhancement
+1. Create individual `.bak` files for each database
+2. Pack all files into a TAR archive
+3. Upload the TAR as the final backup
 
-### 3. Transaktionskonsistenz
-- Native BACKUP ist transaktionskonsistent ✅
-- BCP/Schema-Export ist **nicht** transaktionskonsistent ❌
+```typescript
+// Multi-DB: Pack into TAR archive
+const tarPack = pack();
+for (const file of bakFiles) {
+    const entry = tarPack.entry({ name: path.basename(file), size: stats.size });
+    createReadStream(file).pipe(entry);
+}
+tarPack.finalize();
+```
 
-### 4. ARM64 (Apple Silicon)
-- MSSQL Server Images sind nur für amd64
-- Für lokale Entwicklung auf M1/M2: Azure SQL Edge verwenden
+## Restore Implementation
 
----
+### Restore Flow (restore.ts)
 
-## 📊 Risikobewertung
+```typescript
+async function restore(config, sourcePath, onLog) {
+    // 1. Detect if source is TAR archive (multi-DB backup)
+    const isTar = await checkIfTarArchive(sourcePath);
 
-| Risiko | Wahrscheinlichkeit | Impact | Mitigation |
-|--------|-------------------|--------|------------|
-| Backup-Datei nicht abrufbar | Mittel | Hoch | Shared Volume, klare Dokumentation |
-| sqlcmd nicht im Container | Niedrig | Mittel | Dockerfile-Check, `mssql` npm als Fallback |
-| ARM64-Inkompatibilität | Hoch (für M1/M2 Devs) | Mittel | Azure SQL Edge als Alternative |
-| Version-Parsing fehlschlägt | Niedrig | Niedrig | Regex-Fallback, manuelle Eingabe |
+    if (isTar) {
+        // 2a. Extract all .bak files from TAR
+        const extractedFiles = await extractTarArchive(sourcePath, localBackupPath);
 
----
+        // 2b. Restore each .bak file
+        for (const bakFile of extractedFiles) {
+            await restoreDatabase(config, bakFile);
+        }
+    } else {
+        // 2. Single .bak file - copy to server location
+        await copyFile(sourcePath, localBakPath);
 
-## 🔗 Referenzen
+        // 3. Get logical file names from backup
+        const fileList = await executeQuery(config,
+            `RESTORE FILELISTONLY FROM DISK = '${serverBakPath}'`);
 
-- [mssql npm Package](https://www.npmjs.com/package/mssql)
-- [T-SQL BACKUP DATABASE](https://learn.microsoft.com/en-us/sql/t-sql/statements/backup-transact-sql)
-- [T-SQL RESTORE DATABASE](https://learn.microsoft.com/en-us/sql/t-sql/statements/restore-statements-transact-sql)
-- [Docker Hub: mssql/server](https://hub.docker.com/_/microsoft-mssql-server)
-- [Azure SQL Edge](https://hub.docker.com/_/microsoft-azure-sql-edge)
+        // 4. Execute RESTORE with MOVE clauses
+        const query = `RESTORE DATABASE [${targetDb}] FROM DISK = '${serverBakPath}'
+                       WITH REPLACE, RECOVERY, STATS = 10
+                       ${moveFiles.map(f => `MOVE '${f.logical}' TO '${f.physical}'`).join(', ')}`;
+        await executeQuery(config, query);
+    }
+}
+```
 
----
+### TAR Archive Detection
 
-## 📝 Changelog
+```typescript
+async function checkIfTarArchive(filePath: string): Promise<boolean> {
+    const buffer = Buffer.alloc(512);
+    const fd = await fs.open(filePath, "r");
+    await fd.read(buffer, 0, 512, 0);
+    await fd.close();
 
-| Datum | Änderung |
-|-------|----------|
-| 2026-01-31 | Initiale Analyse und Roadmap erstellt |
-| 2026-01-31 | **Phase 1-10 abgeschlossen**: Vollständige MSSQL-Implementierung |
+    // TAR files have "ustar" at offset 257
+    return buffer.slice(257, 262).toString() === "ustar";
+}
+```
+
+## Edition Compatibility
+
+### The Azure SQL Edge Problem
+
+Azure SQL Edge and SQL Server 2019 both report version `15.x`, but they are **not compatible**:
+
+| Product | Version | EngineEdition | Compatible With |
+|---------|---------|---------------|-----------------|
+| SQL Server 2019 Express | 15.0.x | 4 | SQL Server only |
+| SQL Server 2019 Standard | 15.0.x | 2 | SQL Server only |
+| Azure SQL Edge | 15.0.x | 9 | Azure SQL Edge only |
+
+### Solution: Edition Detection
+
+```typescript
+// connection.ts
+export async function test(config): Promise<{ success, message, version, edition }> {
+    const result = await executeQuery(config, `
+        SELECT
+            SERVERPROPERTY('ProductVersion') AS Version,
+            SERVERPROPERTY('Edition') AS Edition,
+            SERVERPROPERTY('EngineEdition') AS EngineEdition
+    `);
+
+    // Detect Azure SQL Edge by EngineEdition = 9
+    let edition = "Unknown";
+    if (engineEdition === 9) edition = "Azure SQL Edge";
+    else if (editionRaw.includes("Express")) edition = "Express";
+    else if (editionRaw.includes("Standard")) edition = "Standard";
+    // ...
+
+    return { success: true, message, version, edition };
+}
+```
+
+### Restore Pre-Flight Check
+
+```typescript
+// restore-service.ts
+if (targetConfig.adapterId === 'mssql' && metadata.engineEdition && testResult.edition) {
+    const sourceIsEdge = metadata.engineEdition === 'Azure SQL Edge';
+    const targetIsEdge = testResult.edition === 'Azure SQL Edge';
+
+    if (sourceIsEdge !== targetIsEdge) {
+        throw new Error(
+            `Incompatible MSSQL editions: Cannot restore backup from ` +
+            `'${metadata.engineEdition}' to '${testResult.edition}'.`
+        );
+    }
+}
+```
+
+## Compression Support
+
+Native backup compression is **not available** in all editions:
+
+| Edition | Compression |
+|---------|-------------|
+| Enterprise | ✅ Yes |
+| Standard | ✅ Yes |
+| Developer | ✅ Yes |
+| Express | ❌ No |
+| Web | ❌ No |
+| Azure SQL Edge | ❌ No |
+
+### Runtime Detection
+
+```typescript
+// connection.ts
+export async function supportsCompression(config: any): Promise<boolean> {
+    const result = await executeQuery(config, `
+        SELECT SERVERPROPERTY('Edition') AS Edition,
+               SERVERPROPERTY('EngineEdition') AS EngineEdition
+    `);
+
+    const edition = result.recordset[0]?.Edition || "";
+    const engineEdition = result.recordset[0]?.EngineEdition || 0;
+
+    // Express, Web, and Azure SQL Edge don't support compression
+    if (edition.toLowerCase().includes("express")) return false;
+    if (edition.toLowerCase().includes("web")) return false;
+    if (engineEdition === 9) return false; // Azure SQL Edge
+
+    return true;
+}
+```
+
+## Docker Test Configuration
+
+### docker-compose.test.yml
+
+```yaml
+services:
+  mssql-2019:
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    platform: linux/amd64
+    environment:
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: "YourStrong!Passw0rd"
+      MSSQL_PID: "Express"
+    ports:
+      - "14339:1433"
+    volumes:
+      - /tmp:/var/opt/mssql/backup
+
+  mssql-2022:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    platform: linux/amd64
+    ports:
+      - "14342:1433"
+    volumes:
+      - /tmp:/var/opt/mssql/backup
+
+  mssql-edge:
+    image: mcr.microsoft.com/azure-sql-edge:latest  # ARM64 compatible!
+    ports:
+      - "14350:1433"
+    volumes:
+      - /tmp:/var/opt/mssql/backup
+```
+
+### Test Configuration
+
+```typescript
+// tests/integration/test-configs.ts
+{
+    name: 'Test MSSQL 2022',
+    config: {
+        type: 'mssql',
+        host: 'localhost',
+        port: 14342,
+        user: 'sa',
+        password: 'YourStrong!Passw0rd',
+        database: 'testdb',
+        encrypt: true,
+        trustServerCertificate: true,
+        backupPath: '/var/opt/mssql/backup',
+        localBackupPath: '/tmp'
+    }
+}
+```
+
+## Known Limitations
+
+### 1. Azure SQL Database (Cloud)
+Azure SQL Database does **not** support `BACKUP DATABASE` commands. It requires:
+- Azure Blob Storage as backup target
+- `BACKUP DATABASE ... TO URL = '...'` syntax
+- Azure-specific credentials
+
+**Status**: Not supported in current implementation.
+
+### 2. ARM64 Support
+Only Azure SQL Edge runs natively on ARM64 (Apple Silicon). SQL Server images require:
+- Rosetta 2 emulation, or
+- QEMU/Docker Desktop amd64 emulation
+
+### 3. Large Database Performance
+T-SQL `BACKUP DATABASE` buffers data on the server. For very large databases (>100GB), consider:
+- Increasing `backupPath` disk space
+- Using compressed backups (Enterprise/Standard)
+- Network bandwidth for file transfer
+
+## Dependencies
+
+```json
+{
+  "dependencies": {
+    "mssql": "^12.2.0",
+    "tar-stream": "^3.1.7"
+  },
+  "devDependencies": {
+    "@types/mssql": "^9.1.9",
+    "@types/tar-stream": "^3.1.4"
+  }
+}
+```
+
+## Changelog
+
+| Date | Change |
+|------|--------|
+| 2026-01-31 | Initial implementation |
+| 2026-01-31 | Added TAR archive support for multi-DB backups |
+| 2026-01-31 | Added Azure SQL Edge edition detection & compatibility check |
+| 2026-01-31 | Fixed compression detection for Express/Web editions |
