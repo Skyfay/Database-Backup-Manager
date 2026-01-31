@@ -58,3 +58,6 @@ storage/avatars/*
 
 # VSCode
 .vscode
+
+# Security Audits
+security/*

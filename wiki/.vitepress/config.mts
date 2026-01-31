@@ -116,7 +116,9 @@ export default defineConfig({
           items: [
             { text: 'Service Layer', link: '/developer-guide/core/services' },
             { text: 'Adapter System', link: '/developer-guide/core/adapters' },
-            { text: 'Runner Pipeline', link: '/developer-guide/core/runner' }
+            { text: 'Runner Pipeline', link: '/developer-guide/core/runner' },
+            { text: 'Logging System', link: '/developer-guide/core/logging' },
+            { text: 'Update Service', link: '/developer-guide/core/updates' }
           ]
         },
         {
@@ -132,9 +134,14 @@ export default defineConfig({
           text: 'Advanced Topics',
           collapsed: false,
           items: [
-            { text: 'Retention System', link: '/developer-guide/advanced/retention' },
+            { text: 'Authentication', link: '/developer-guide/advanced/auth' },
+            { text: 'SSO / OIDC', link: '/developer-guide/advanced/sso' },
+            { text: 'Permission System (RBAC)', link: '/developer-guide/advanced/permissions' },
+            { text: 'Audit Logging', link: '/developer-guide/advanced/audit' },
             { text: 'Encryption Pipeline', link: '/developer-guide/advanced/encryption' },
-            { text: 'Permission System (RBAC)', link: '/developer-guide/advanced/permissions' }
+            { text: 'Retention System', link: '/developer-guide/advanced/retention' },
+            { text: 'Healthcheck System', link: '/developer-guide/advanced/healthcheck' },
+            { text: 'Config Backup (Meta)', link: '/developer-guide/advanced/config-backup' }
           ]
         },
         {

@@ -1,0 +1,181 @@
+# Authentication System
+
+This document explains the authentication architecture, which relies on **Better-Auth** to provide a secure, type-safe identity layer including 2FA, Passkeys, and Session Management.
+
+## Architecture Overview
+
+We strictly separate **Server-Side Auth** and **Client-Side Auth**.
+
+### Core Components
+
+| Component | Location | Purpose |
+|-----------|----------|---------|
+| Server Auth | `src/lib/auth.ts` | Better-Auth instance with Prisma adapter |
+| Client Auth | `src/lib/auth-client.ts` | React hooks (`useSession`) |
+| Middleware | `src/middleware.ts` | Route protection (Edge) |
+| Session Utils | `src/lib/session.ts` | Server-side session helpers |
+
+```
+┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
+│  Client         │────▶│  Middleware      │────▶│  Server Action  │
+│  (React)        │     │  (Edge Runtime)  │     │  or API Route   │
+└─────────────────┘     └──────────────────┘     └─────────────────┘
+        │                       │                        │
+        │                       │                        │
+        ▼                       ▼                        ▼
+   useSession()           Session Check            checkPermission()
+```
+
+## Protection Layers
+
+### Layer 1: Middleware (Edge)
+
+The middleware runs before any component rendering.
+
+**Location**: `src/middleware.ts`
+
+```typescript
+export async function middleware(request: NextRequest) {
+  const session = await auth.api.getSession({
+    headers: request.headers,
+  });
+
+  // Protect dashboard routes
+  if (request.nextUrl.pathname.startsWith('/dashboard')) {
+    if (!session) {
+      return NextResponse.redirect(new URL('/login', request.url));
+    }
+  }
+
+  return NextResponse.next();
+}
+```
+
+::: warning
+Middleware does NOT check fine-grained permissions (RBAC), only authentication status.
+:::
+
+### Layer 2: API Route Handlers
+
+Every sensitive API route MUST verify the session explicitly.
+
+```typescript
+// src/app/api/jobs/route.ts
+export async function POST(req: Request) {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (!session) {
+    return NextResponse.json(
+      { error: "Unauthorized" },
+      { status: 401 }
+    );
+  }
+
+  // Proceed with permission check...
+  await checkPermission(PERMISSIONS.JOBS.WRITE);
+
+  // Handle request...
+}
+```
+
+### Layer 3: Server Actions
+
+Server Actions act as the public API for the frontend and must:
+1. Validate the session
+2. Validate permissions using `checkPermission`
+
+```typescript
+// src/app/actions/job.ts
+"use server";
+
+export async function createJob(data: JobInput) {
+  // 1. Check permission (throws if unauthorized)
+  await checkPermission(PERMISSIONS.JOBS.WRITE);
+
+  // 2. Validate input
+  const validated = JobSchema.parse(data);
+
+  // 3. Execute business logic
+  return jobService.create(validated);
+}
+```
+
+## Advanced Features
+
+### Two-Factor Authentication (2FA)
+
+We use TOTP (Time-based One-Time Password).
+
+**Enabling 2FA:**
+1. User initiates setup in Profile → Security
+2. Server generates a secret key
+3. User scans QR code with authenticator app
+4. User verifies with a code to confirm setup
+5. Secret is stored encrypted in the database
+
+**Verification Flow:**
+```typescript
+// During login, if 2FA is enabled
+if (user.twoFactorEnabled) {
+  // Return partial session, require 2FA verification
+  return { requiresTwoFactor: true, tempToken: "..." };
+}
+```
+
+### Passkeys (WebAuthn)
+
+Allows passwordless login using biometric sensors (TouchID, FaceID, Windows Hello).
+
+**Registration:**
+1. Client generates a public/private key pair
+2. Public key is sent to server and stored
+3. Private key remains securely on device
+
+**Authentication:**
+1. Server sends a "challenge"
+2. Client signs it with private key
+3. Server verifies signature with stored public key
+
+### SSO / OIDC
+
+See [SSO Integration](./sso.md) for detailed OIDC implementation.
+
+## Session Management
+
+### Server-Side Session Access
+
+```typescript
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
+
+export async function getServerSession() {
+  return auth.api.getSession({
+    headers: await headers(),
+  });
+}
+```
+
+### Client-Side Session Access
+
+```typescript
+import { useSession } from "@/lib/auth-client";
+
+function ProfileButton() {
+  const { data: session, isPending } = useSession();
+
+  if (isPending) return <Skeleton />;
+  if (!session) return <LoginButton />;
+
+  return <Avatar user={session.user} />;
+}
+```
+
+## Security Best Practices
+
+1. **Never trust client-side checks alone** — Always verify on server
+2. **Use `checkPermission()` in every Server Action** — Defense in depth
+3. **Log authentication events** — Use the Audit System
+4. **Implement rate limiting** — Prevent brute force attacks
+5. **Secure session cookies** — HttpOnly, Secure, SameSite
