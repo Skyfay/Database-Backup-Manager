@@ -87,17 +87,30 @@ export class RestoreService {
                             const dbConf = decryptConfig(JSON.parse(targetConfig.config));
                             if (privilegedAuth) dbConf.privilegedAuth = privilegedAuth;
 
-                            const testResult = await targetAdapter.test(dbConf);
+                            const testResult = await targetAdapter.test(dbConf) as { success: boolean; version?: string; edition?: string };
                             if (testResult.success && testResult.version) {
                                 // Check if Source (Backup) > Target (Current Server)
                                 if (compareVersions(metadata.engineVersion, testResult.version) > 0) {
                                      throw new Error(`Running restore of a newer database version (${metadata.engineVersion}) on an older server (${testResult.version}) is not recommended. This can cause severe incompatibility issues.`);
                                 }
+
+                                // MSSQL Edition Compatibility Check: Azure SQL Edge <-> SQL Server
+                                if (targetConfig.adapterId === 'mssql' && metadata.engineEdition && testResult.edition) {
+                                    const sourceIsEdge = metadata.engineEdition === 'Azure SQL Edge';
+                                    const targetIsEdge = testResult.edition === 'Azure SQL Edge';
+
+                                    if (sourceIsEdge !== targetIsEdge) {
+                                        throw new Error(
+                                            `Incompatible MSSQL editions: Cannot restore backup from '${metadata.engineEdition}' to '${testResult.edition}'. ` +
+                                            `Azure SQL Edge and SQL Server are not fully compatible despite having similar version numbers.`
+                                        );
+                                    }
+                                }
                             }
                         }
                     }
                 } catch (e: any) {
-                    if (e.message && (e.message.includes('not recommended') || e.message.includes('Incompatible database types'))) {
+                    if (e.message && (e.message.includes('not recommended') || e.message.includes('Incompatible') || e.message.includes('Azure SQL Edge'))) {
                         throw e;
                     }
                     // Ignore metadata read errors (e.g. file missing) or other non-critical issues

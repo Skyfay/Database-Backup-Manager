@@ -22,22 +22,48 @@ export function buildConnectionConfig(config: any): sql.config {
 /**
  * Test connection and retrieve version
  */
-export async function test(config: any): Promise<{ success: boolean; message: string; version?: string }> {
+export async function test(config: any): Promise<{ success: boolean; message: string; version?: string; edition?: string }> {
     let pool: sql.ConnectionPool | null = null;
 
     try {
         const connConfig = buildConnectionConfig(config);
         pool = await sql.connect(connConfig);
 
-        // Get version information
-        const result = await pool.request().query("SELECT @@VERSION AS Version, SERVERPROPERTY('ProductVersion') AS ProductVersion");
+        // Get version and edition information
+        const result = await pool.request().query(`
+            SELECT
+                @@VERSION AS Version,
+                SERVERPROPERTY('ProductVersion') AS ProductVersion,
+                SERVERPROPERTY('Edition') AS Edition,
+                SERVERPROPERTY('EngineEdition') AS EngineEdition
+        `);
 
         const fullVersion = result.recordset[0]?.Version || "";
         const productVersion = result.recordset[0]?.ProductVersion || "";
+        const editionRaw = result.recordset[0]?.Edition || "";
+        const engineEdition = result.recordset[0]?.EngineEdition || 0;
 
         // Parse version: "16.0.1000.6" -> major.minor.build
         const versionMatch = productVersion.match(/^(\d+\.\d+\.\d+)/);
         const version = versionMatch ? versionMatch[1] : productVersion;
+
+        // Determine edition string
+        let edition = "Unknown";
+        if (engineEdition === 9 || fullVersion.includes("Azure SQL Edge")) {
+            edition = "Azure SQL Edge";
+        } else if (editionRaw.toLowerCase().includes("express")) {
+            edition = "Express";
+        } else if (editionRaw.toLowerCase().includes("standard")) {
+            edition = "Standard";
+        } else if (editionRaw.toLowerCase().includes("enterprise")) {
+            edition = "Enterprise";
+        } else if (editionRaw.toLowerCase().includes("developer")) {
+            edition = "Developer";
+        } else if (editionRaw.toLowerCase().includes("web")) {
+            edition = "Web";
+        } else {
+            edition = editionRaw.split(" ")[0] || "Unknown"; // Take first word
+        }
 
         // Determine friendly name from full version string
         let friendlyName = "SQL Server";
@@ -48,8 +74,9 @@ export async function test(config: any): Promise<{ success: boolean; message: st
 
         return {
             success: true,
-            message: `Connection successful (${friendlyName})`,
+            message: `Connection successful (${friendlyName} ${edition})`,
             version,
+            edition,
         };
     } catch (error: any) {
         const message = error.message || "Connection failed";

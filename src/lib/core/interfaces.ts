@@ -15,6 +15,7 @@ export interface BackupMetadata {
     sourceName: string;
     sourceType: string;
     engineVersion?: string;
+    engineEdition?: string; // e.g., "Express", "Standard", "Enterprise", "Azure SQL Edge"
     databases: string[] | { count: number; names?: string[] };
     timestamp: string;
     originalFileName: string;

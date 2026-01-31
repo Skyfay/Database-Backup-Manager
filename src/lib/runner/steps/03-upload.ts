@@ -144,6 +144,7 @@ export async function stepUpload(ctx: RunnerContext) {
                 names: Array.isArray(ctx.metadata?.names) ? ctx.metadata.names : undefined
             },
             engineVersion: ctx.metadata?.engineVersion,
+            engineEdition: ctx.metadata?.engineEdition,
             timestamp: new Date().toISOString(),
             originalFileName: path.basename(ctx.tempFile),
             compression: compressionMeta,
