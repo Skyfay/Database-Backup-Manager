@@ -67,76 +67,75 @@ export async function dump(
         // For multi-database backups, we'll create individual .bak files and combine them
         const tempFiles: { server: string; local: string }[] = [];
 
-        for (const dbName of databases) {
-            const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-            const bakFileName = `${dbName}_${timestamp}.bak`;
-            const serverBakPath = path.posix.join(serverBackupPath, bakFileName);
-            const localBakPath = path.join(localBackupPath, bakFileName);
+        // Helper function to clean up temp files
+        const cleanupTempFiles = async () => {
+            for (const f of tempFiles) {
+                await fs.unlink(f.local).catch(() => {});
+            }
+        };
 
-            log(`Backing up database: ${dbName}`, "info", "command");
+        try {
+            for (const dbName of databases) {
+                const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+                const bakFileName = `${dbName}_${timestamp}.bak`;
+                const serverBakPath = path.posix.join(serverBackupPath, bakFileName);
+                const localBakPath = path.join(localBackupPath, bakFileName);
 
-            // Generate backup query using dialect
-            const backupQuery = dialect.getBackupQuery(dbName, serverBakPath, {
-                compression: useCompression,
-                stats: 10, // Report progress every 10%
-            });
+                log(`Backing up database: ${dbName}`, "info", "command");
 
-            log(`Executing backup`, "info", "command", backupQuery);
+                // Generate backup query using dialect
+                const backupQuery = dialect.getBackupQuery(dbName, serverBakPath, {
+                    compression: useCompression,
+                    stats: 10, // Report progress every 10%
+                });
 
-            try {
+                log(`Executing backup`, "info", "command", backupQuery);
+
                 // Execute backup command on the server
                 await executeQuery(config, backupQuery);
                 log(`Backup completed for: ${dbName}`);
                 tempFiles.push({ server: serverBakPath, local: localBakPath });
-            } catch (error: any) {
-                log(`Backup failed for ${dbName}: ${error.message}`, "error");
-                throw error;
-            }
-        }
-
-        // Copy backup file(s) from local backup path to destination
-        // The local backup path corresponds to the mounted volume on the host
-        if (tempFiles.length === 1) {
-            // Single database - copy directly
-            const localSourcePath = tempFiles[0].local;
-            const serverSourcePath = tempFiles[0].server;
-
-            // Verify source file exists
-            if (!existsSync(localSourcePath)) {
-                throw new Error(`Backup file not found at ${localSourcePath}. Check that localBackupPath is configured correctly and matches the Docker volume mount.`);
             }
 
-            try {
-                await copyFile(localSourcePath, destinationPath);
-                log(`Backup file copied to: ${destinationPath}`);
+            // Copy backup file(s) from local backup path to destination
+            // The local backup path corresponds to the mounted volume on the host
+            if (tempFiles.length === 1) {
+                // Single database - copy directly
+                const localSourcePath = tempFiles[0].local;
+                const serverSourcePath = tempFiles[0].server;
 
-                // Clean up backup file from the mounted volume
-                await fs.unlink(localSourcePath).catch(() => {});
-            } catch (copyError: any) {
-                log(`Warning: Could not copy backup file from ${localSourcePath}: ${copyError.message}`, "warning");
-                // Return the server path if local copy failed
-                return {
-                    success: true,
-                    path: serverSourcePath,
-                    logs,
-                    startedAt,
-                    completedAt: new Date(),
-                    metadata: { serverPath: serverSourcePath, localPath: localSourcePath }
-                };
-            }
-        } else {
-            // Multiple databases - pack all .bak files into a tar archive
-            // MSSQL cannot create multi-DB backups in a single file like MySQL
-            log(`Packing ${tempFiles.length} backup files into archive...`);
-
-            // Verify all source files exist first
-            for (const f of tempFiles) {
-                if (!existsSync(f.local)) {
-                    throw new Error(`Backup file not found at ${f.local}. Check that localBackupPath is configured correctly and matches the Docker volume mount.`);
+                // Verify source file exists
+                if (!existsSync(localSourcePath)) {
+                    throw new Error(`Backup file not found at ${localSourcePath}. Check that localBackupPath is configured correctly and matches the Docker volume mount.`);
                 }
-            }
 
-            try {
+                try {
+                    await copyFile(localSourcePath, destinationPath);
+                    log(`Backup file copied to: ${destinationPath}`);
+                } catch (copyError: any) {
+                    log(`Warning: Could not copy backup file from ${localSourcePath}: ${copyError.message}`, "warning");
+                    // Return the server path if local copy failed
+                    return {
+                        success: true,
+                        path: serverSourcePath,
+                        logs,
+                        startedAt,
+                        completedAt: new Date(),
+                        metadata: { serverPath: serverSourcePath, localPath: localSourcePath }
+                    };
+                }
+            } else {
+                // Multiple databases - pack all .bak files into a tar archive
+                // MSSQL cannot create multi-DB backups in a single file like MySQL
+                log(`Packing ${tempFiles.length} backup files into archive...`);
+
+                // Verify all source files exist first
+                for (const f of tempFiles) {
+                    if (!existsSync(f.local)) {
+                        throw new Error(`Backup file not found at ${f.local}. Check that localBackupPath is configured correctly and matches the Docker volume mount.`);
+                    }
+                }
+
                 // Create tar archive containing all .bak files
                 const tarPack = pack();
                 const outputStream = createWriteStream(destinationPath);
@@ -174,37 +173,29 @@ export async function dump(
                 await pipelinePromise;
 
                 log(`Archive created: ${destinationPath}`);
-
-                // Clean up all backup files from the mounted volume
-                for (const f of tempFiles) {
-                    await fs.unlink(f.local).catch(() => {});
-                }
-            } catch (archiveError: any) {
-                // Clean up partial files
-                for (const f of tempFiles) {
-                    await fs.unlink(f.local).catch(() => {});
-                }
-                throw new Error(`Failed to create archive: ${archiveError.message}`);
             }
+
+            // Verify destination file
+            const stats = await fs.stat(destinationPath);
+            if (stats.size === 0) {
+                throw new Error("Backup file is empty. Check permissions and disk space.");
+            }
+
+            const sizeMB = (stats.size / 1024 / 1024).toFixed(2);
+            log(`Backup finished successfully. Size: ${sizeMB} MB`);
+
+            return {
+                success: true,
+                path: destinationPath,
+                size: stats.size,
+                logs,
+                startedAt,
+                completedAt: new Date(),
+            };
+        } finally {
+            // Always clean up temp .bak files (even on error/abort)
+            await cleanupTempFiles();
         }
-
-        // Verify destination file
-        const stats = await fs.stat(destinationPath);
-        if (stats.size === 0) {
-            throw new Error("Backup file is empty. Check permissions and disk space.");
-        }
-
-        const sizeMB = (stats.size / 1024 / 1024).toFixed(2);
-        log(`Backup finished successfully. Size: ${sizeMB} MB`);
-
-        return {
-            success: true,
-            path: destinationPath,
-            size: stats.size,
-            logs,
-            startedAt,
-            completedAt: new Date(),
-        };
     } catch (error: any) {
         log(`Error: ${error.message}`, "error");
         return {

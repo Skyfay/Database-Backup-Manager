@@ -1,6 +1,6 @@
 import { BackupResult } from "@/lib/core/interfaces";
 import { LogLevel, LogType } from "@/lib/core/logs";
-import { executeQuery } from "./connection";
+import { executeQuery, executeParameterizedQuery } from "./connection";
 import { getDialect } from "./dialects";
 import fs from "fs/promises";
 import { createReadStream, createWriteStream, existsSync } from "fs";
@@ -14,16 +14,18 @@ import { pipeline } from "stream/promises";
 export async function prepareRestore(config: any, databases: string[]): Promise<void> {
     // Check if target databases can be created/overwritten
     for (const dbName of databases) {
-        // Validate database name (prevent SQL injection)
+        // Validate database name (only allow safe characters)
         if (!/^[a-zA-Z0-9_]+$/.test(dbName)) {
             throw new Error(`Invalid database name: ${dbName}`);
         }
 
         try {
             // Check if database exists and if we can access it
-            const result = await executeQuery(
+            // Use parameterized query for safety (even with validated input)
+            const result = await executeParameterizedQuery(
                 config,
-                `SELECT state_desc FROM sys.databases WHERE name = '${dbName}'`
+                `SELECT state_desc FROM sys.databases WHERE name = @dbName`,
+                { dbName }
             );
 
             if (result.recordset.length > 0) {

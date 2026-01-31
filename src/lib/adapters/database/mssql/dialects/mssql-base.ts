@@ -20,8 +20,9 @@ export class MSSQLDialect implements MSSQLDatabaseDialect {
         const opts = options || {};
         const withClauses: string[] = ["FORMAT", "INIT"];
 
-        // Compression (only if explicitly enabled - not supported in Express/Web editions)
-        if (opts.compression === true) {
+        // Compression enabled by default (caller should check edition support first)
+        // Only skip if explicitly set to false
+        if (opts.compression !== false) {
             withClauses.push("COMPRESSION");
         }
 

@@ -44,11 +44,18 @@ describe("MSSQL Dialects", () => {
                 expect(query).toContain("COMPRESSION");
             });
 
-            it("should exclude compression when disabled", () => {
+            it("should exclude compression when explicitly disabled", () => {
                 const query = dialect.getBackupQuery("testdb", "/backup/testdb.bak", {
                     compression: false,
                 });
                 expect(query).not.toContain("COMPRESSION");
+            });
+
+            it("should include compression when explicitly enabled", () => {
+                const query = dialect.getBackupQuery("testdb", "/backup/testdb.bak", {
+                    compression: true,
+                });
+                expect(query).toContain("COMPRESSION");
             });
 
             it("should include stats option", () => {

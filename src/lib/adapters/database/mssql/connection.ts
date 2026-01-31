@@ -14,7 +14,8 @@ export function buildConnectionConfig(config: any): sql.config {
             encrypt: config.encrypt ?? true,
             trustServerCertificate: config.trustServerCertificate ?? false,
             connectTimeout: 15000,
-            requestTimeout: 30000,
+            // Use configurable timeout (default 5 min) for large backup/restore operations
+            requestTimeout: config.requestTimeout ?? 300000,
         },
     };
 }
@@ -145,6 +146,40 @@ export async function executeQuery(config: any, query: string, database?: string
 
         pool = await sql.connect(connConfig);
         return await pool.request().query(query);
+    } finally {
+        if (pool) {
+            await pool.close();
+        }
+    }
+}
+
+/**
+ * Execute a parameterized SQL query (safe from SQL injection)
+ * Used for queries with user-provided values
+ */
+export async function executeParameterizedQuery(
+    config: any,
+    query: string,
+    params: Record<string, string | number | boolean>,
+    database?: string
+): Promise<sql.IResult<any>> {
+    let pool: sql.ConnectionPool | null = null;
+
+    try {
+        const connConfig = buildConnectionConfig(config);
+        if (database) {
+            connConfig.database = database;
+        }
+
+        pool = await sql.connect(connConfig);
+        const request = pool.request();
+
+        // Add parameters to the request
+        for (const [key, value] of Object.entries(params)) {
+            request.input(key, value);
+        }
+
+        return await request.query(query);
     } finally {
         if (pool) {
             await pool.close();

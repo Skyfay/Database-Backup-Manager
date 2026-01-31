@@ -74,6 +74,7 @@ export const MSSQLSchema = z.object({
     trustServerCertificate: z.boolean().default(false).describe("Trust self-signed certificates (for development)"),
     backupPath: z.string().default("/var/opt/mssql/backup").describe("Server-side path for .bak files (inside container)"),
     localBackupPath: z.string().default("/tmp").describe("Host-side path where Docker volume is mounted (must match your docker-compose volume)"),
+    requestTimeout: z.coerce.number().default(300000).describe("Request timeout in ms (default: 5 minutes, increase for large databases)"),
     options: z.string().optional().describe("Additional backup options"),
 });
 
