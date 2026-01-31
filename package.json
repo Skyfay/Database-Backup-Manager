@@ -17,7 +17,11 @@
     "test:ui": "pnpm run test:env:up && sleep 30 && pnpm run test:seed",
     "test:stress:generate": "./scripts/generate-stress-data.sh",
     "test:stress": "pnpm run test:env:up && sleep 45 && pnpm run test:stress:generate",
-    "database:deploy": "prisma db push && npx prisma generate"
+    "database:deploy": "prisma db push && npx prisma generate",
+    "wiki:install": "cd wiki && pnpm install",
+    "wiki:dev": "cd wiki && pnpm dev",
+    "wiki:build": "cd wiki && pnpm build",
+    "wiki:preview": "cd wiki && pnpm preview"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.975.0",
