@@ -3,10 +3,9 @@ import { LogLevel, LogType } from "@/lib/core/logs";
 import { executeQuery, executeParameterizedQuery } from "./connection";
 import { getDialect } from "./dialects";
 import fs from "fs/promises";
-import { createReadStream, createWriteStream, existsSync } from "fs";
+import { createReadStream, createWriteStream } from "fs";
 import path from "path";
 import { extract } from "tar-stream";
-import { pipeline } from "stream/promises";
 
 /**
  * Prepare restore by validating target databases
