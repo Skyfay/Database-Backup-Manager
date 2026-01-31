@@ -104,6 +104,16 @@ Store it securely in a password manager or secrets vault.
 
 ## Reverse Proxy Setup
 
+::: warning Security Recommendation
+**We strongly recommend running DBackup only on a local network or behind a VPN.** Exposing this application to the public internet without additional security measures (IP whitelisting, SSO, fail2ban, etc.) increases the risk of unauthorized access to your database credentials and backups.
+
+If public access is required, ensure you have:
+- Strong, unique passwords
+- Two-factor authentication via SSO (see [SSO Configuration](/developer-guide/advanced/sso))
+- Rate limiting and IP restrictions
+- Regular security audits
+:::
+
 ### Nginx
 
 ```nginx
