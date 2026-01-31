@@ -295,7 +295,7 @@ services:
     ports:
       - "14339:1433"
     volumes:
-      - ./backups/mssql:/var/opt/mssql/backup
+      - /tmp:/var/opt/mssql/backup
     healthcheck:
       test: /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P "YourStrong!Passw0rd" -Q "SELECT 1" -b -o /dev/null
       interval: 10s
@@ -316,7 +316,7 @@ services:
     ports:
       - "14342:1433"
     volumes:
-      - ./backups/mssql:/var/opt/mssql/backup
+      - /tmp:/var/opt/mssql/backup
     healthcheck:
       test: /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "YourStrong!Passw0rd" -Q "SELECT 1" -b -o /dev/null -C
       interval: 10s
@@ -334,7 +334,7 @@ services:
     ports:
       - "14350:1433"
     volumes:
-      - ./backups/mssql:/var/opt/mssql/backup
+      - /tmp:/var/opt/mssql/backup
     healthcheck:
       test: /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P "YourStrong!Passw0rd" -Q "SELECT 1" -b -o /dev/null
       interval: 10s
