@@ -3,9 +3,23 @@ import { registry } from "@/lib/core/registry";
 import { registerAdapters } from "@/lib/adapters";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
+import { checkPermission } from "@/lib/access-control";
+import { PERMISSIONS } from "@/lib/permissions";
 
 // Ensure adapters are registered
 registerAdapters();
+
+// Helper to determine permission based on adapter type
+function getPermissionForAdapter(adapterId: string): string | null {
+    if (/mysql|postgres|mongo|mssql|sqlite/i.test(adapterId)) {
+        return PERMISSIONS.SOURCES.READ;
+    } else if (/local-filesystem|s3|sftp|ftp|webdav/i.test(adapterId)) {
+        return PERMISSIONS.DESTINATIONS.READ;
+    } else if (/discord|email|smtp|slack/i.test(adapterId)) {
+        return PERMISSIONS.NOTIFICATIONS.READ;
+    }
+    return null;
+}
 
 export async function POST(req: NextRequest) {
     const session = await auth.api.getSession({
@@ -19,6 +33,12 @@ export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
         const { adapterId, config } = body;
+
+        // RBAC: Check permission based on adapter type
+        const requiredPermission = getPermissionForAdapter(adapterId || '');
+        if (requiredPermission) {
+            await checkPermission(requiredPermission);
+        }
 
         if (!adapterId || !config) {
             return NextResponse.json({ success: false, message: "Missing required fields" }, { status: 400 });

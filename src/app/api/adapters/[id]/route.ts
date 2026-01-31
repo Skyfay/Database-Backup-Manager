@@ -5,6 +5,18 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { auditService } from "@/services/audit-service";
 import { AUDIT_ACTIONS, AUDIT_RESOURCES } from "@/lib/core/audit-types";
+import { checkPermission } from "@/lib/access-control";
+import { PERMISSIONS } from "@/lib/permissions";
+
+// Helper to get write permission based on adapter type
+function getWritePermissionForType(type: string): string {
+    switch (type) {
+        case 'database': return PERMISSIONS.SOURCES.WRITE;
+        case 'storage': return PERMISSIONS.DESTINATIONS.WRITE;
+        case 'notification': return PERMISSIONS.NOTIFICATIONS.WRITE;
+        default: return PERMISSIONS.SOURCES.WRITE; // Fallback to strictest
+    }
+}
 
 export async function DELETE(
     req: NextRequest,
@@ -20,6 +32,16 @@ export async function DELETE(
 
     const params = await props.params;
     try {
+        // RBAC: Check permission based on adapter type
+        const adapter = await prisma.adapterConfig.findUnique({
+            where: { id: params.id },
+            select: { type: true }
+        });
+        if (!adapter) {
+            return NextResponse.json({ success: false, error: "Adapter not found" }, { status: 404 });
+        }
+        await checkPermission(getWritePermissionForType(adapter.type));
+
         // Check for usage in Jobs (Source or Destination)
         const linkedJobs = await prisma.job.findMany({
             where: {
@@ -80,6 +102,16 @@ export async function PUT(
 
     const params = await props.params;
     try {
+        // RBAC: Check permission based on adapter type
+        const existingAdapter = await prisma.adapterConfig.findUnique({
+            where: { id: params.id },
+            select: { type: true }
+        });
+        if (!existingAdapter) {
+            return NextResponse.json({ success: false, error: "Adapter not found" }, { status: 404 });
+        }
+        await checkPermission(getWritePermissionForType(existingAdapter.type));
+
         const body = await req.json();
         const { name, config } = body;
 

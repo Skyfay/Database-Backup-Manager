@@ -28,20 +28,12 @@ export async function GET(req: NextRequest) {
         } else if (type === 'notification') {
              await checkPermission(PERMISSIONS.NOTIFICATIONS.READ);
         }
-        // If no type is provided, we might be listing all or unknown.
-        // For security, if we can't determine scope, we could block or allow if user has global read (which we don't have).
-        // Assuming frontend always sends type. If not, we block.
+        // Security: Require type parameter to prevent leaking all adapter configs
         else if (!type) {
-             // Optional: Allow fetching all if user has broad permissions, or just forbid.
-             // Safest is to return empty or require type.
-             // But existing code allowed it. Let's check permissions for each item if we proceed, or just throw 400.
-             // Given the instructions "detailed explanations for complex logic", I'll enforce type for now.
-             // Actually, let's filter the results if multiple types.
-             // const hasSources = await checkPermission(PERMISSIONS.SOURCES.READ).then(() => true).catch(() => false);
-             // const hasDestinations = await checkPermission(PERMISSIONS.DESTINATIONS.READ).then(() => true).catch(() => false);
-             // If user requests plain /api/adapters, we return only what they can see.
-             // But prisma findMany filter is 'OR'.
-             // Let's rely on client sending type for now, or just proceed if we assume backend is used by frontend.
+            return NextResponse.json(
+                { error: "Type parameter is required (database, storage, or notification)" },
+                { status: 400 }
+            );
         }
 
         const adapters = await prisma.adapterConfig.findMany({

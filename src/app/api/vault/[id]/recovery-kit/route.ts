@@ -7,6 +7,8 @@ import * as encryptionService from "@/services/encryption-service";
 import AdmZip from "adm-zip";
 import fs from "fs/promises";
 import path from "path";
+import { auditService } from "@/services/audit-service";
+import { AUDIT_ACTIONS, AUDIT_RESOURCES } from "@/lib/core/audit-types";
 
 export async function GET(
     request: NextRequest,
@@ -22,9 +24,21 @@ export async function GET(
         return new NextResponse("Unauthorized", { status: 401 });
     }
 
+    // Security: Require VAULT.WRITE for master key export (sensitive operation)
     const permissions = await getUserPermissions();
-    if (!permissions.includes(PERMISSIONS.VAULT.READ)) {
-        return new NextResponse("Forbidden", { status: 403 });
+    if (!permissions.includes(PERMISSIONS.VAULT.WRITE)) {
+        return new NextResponse("Forbidden - Write permission required for key export", { status: 403 });
+    }
+
+    // Audit log: Track master key export
+    if (session.user) {
+        await auditService.log(
+            session.user.id,
+            AUDIT_ACTIONS.EXPORT,
+            AUDIT_RESOURCES.VAULT,
+            { action: 'recovery_kit_download', profileId: id },
+            id
+        );
     }
 
     try {

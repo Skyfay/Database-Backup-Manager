@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { jobService } from "@/services/job-service";
+import { checkPermission } from "@/lib/access-control";
+import { PERMISSIONS } from "@/lib/permissions";
 
 export async function DELETE(
     req: NextRequest,
@@ -14,6 +16,9 @@ export async function DELETE(
     if (!session) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    // RBAC: Require JOBS.WRITE permission
+    await checkPermission(PERMISSIONS.JOBS.WRITE);
 
     const params = await props.params;
     try {
@@ -35,6 +40,9 @@ export async function PUT(
     if (!session) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    // RBAC: Require JOBS.WRITE permission
+    await checkPermission(PERMISSIONS.JOBS.WRITE);
 
     const params = await props.params;
     try {
