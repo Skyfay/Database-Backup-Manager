@@ -1,7 +1,9 @@
 {
   "$schema": "https://raw.githubusercontent.com/cloudflare/workers-sdk/main/packages/wrangler/config-schema.json",
-  "name": "dbackup-docs",
+  "name": "dbackup",
   "compatibility_date": "2026-01-31",
+  "workers_dev": true,
+  "preview_urls": false,
   "assets": {
     "directory": "./.vitepress/dist"
   }
