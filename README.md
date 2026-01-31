@@ -4,7 +4,7 @@
 > Check out [TODO](docs/todo/features.md) to see the roadmap and pending tasks.
 
 > **Note**: This project is primarily developed on GitLab. This GitHub repository is a mirror.
-> **Main Repository**: [https://gitlab.com/Skyfay/database-backup-manager](https://gitlab.com/Skyfay/database-backup-manager)
+> **Main Repository**: [https://gitlab.com/Skyfay/dbackup](https://gitlab.com/Skyfay/dbackup)
 
 DBackup is a robust, self-hosted solution for automating database backups. Manage sources, destinations, and backup schedules through a modern web interface.
 
@@ -50,7 +50,7 @@ View the latest [docker-compose.yml](docker-compose.yml) in the repository.
 ```yaml
 services:
   app:
-    image: registry.gitlab.com/skyfay/database-backup-manager:beta
+    image: registry.gitlab.com/skyfay/dbackup:beta
     restart: always
     ports:
       - "3000:3000"
@@ -84,7 +84,7 @@ docker run -d \
   -v "$(pwd)/backups:/backups" \
   -v "$(pwd)/db-data:/app/db" \
   -v "$(pwd)/storage:/app/storage" \
-  registry.gitlab.com/skyfay/database-backup-manager:beta
+  registry.gitlab.com/skyfay/dbackup:beta
 ```
 ## �🛠️ Tech Stack
 
@@ -106,8 +106,8 @@ docker run -d \
 
 1. **Clone the repository**
    ```bash
-   git clone https://gitlab.com/Skyfay/database-backup-manager.git
-   cd database-backup-manager
+   git clone https://gitlab.com/Skyfay/dbackup.git
+   cd dbackup
    ```
 
 2. **Install dependencies**

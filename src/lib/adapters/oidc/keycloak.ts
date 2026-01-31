@@ -43,7 +43,7 @@ export const KeycloakAdapter: OIDCAdapter = {
     try {
       const response = await fetch(discoveryUrl, {
         headers: {
-          "User-Agent": "Mozilla/5.0 (compatible; DatabaseBackupManager/1.0; +https://gitlab.com/Skyfay/database-backup-manager)",
+          "User-Agent": "Mozilla/5.0 (compatible; DBackup/1.0; +https://gitlab.com/Skyfay/dbackup)",
           "Accept": "application/json"
         }
       });
