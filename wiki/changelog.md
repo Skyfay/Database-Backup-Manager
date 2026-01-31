@@ -1,233 +1,235 @@
 # Changelog
 
-Alle bemerkenswerten Änderungen an DBackup werden hier dokumentiert.
+All notable changes to DBackup are documented here.
 
 ## v0.9.0-beta - Microsoft SQL Server & Self-Service Security
-*Released: 31. Januar 2026*
+*Released: January 31, 2026*
 
-Diese Version führt vollständige Unterstützung für Microsoft SQL Server (MSSQL) ein und bringt den Database Backup Manager in Enterprise Windows-Umgebungen. Zudem wurde ein dedizierter Self-Service Passwort-Änderungs-Flow für Benutzer hinzugefügt und die Anwendung mit neuen Stress-Testing-Tools gehärtet.
+This release introduces full support for Microsoft SQL Server (MSSQL), bringing the Database Backup Manager to enterprise Windows environments. We have also added a dedicated Self-Service Password Change flow for users and hardened the application with new stress-testing tools.
 
-### ✨ Neue Features
+### ✨ New Features
 
 #### 🏢 Microsoft SQL Server (MSSQL) Support
-- **Native Adapter**: Vollständig ausgestatteter Adapter für Microsoft SQL Server
-- **Smart Detection**: Automatische Erkennung der SQL Server Edition (z.B. Express, Enterprise) und Version für Feature-Kompatibilität
-- **Multi-DB Support**: Unterstützt Backup mehrerer MSSQL-Datenbanken in einem Job durch Bündelung in ein TAR-Archiv
-- **Server-Side Backups**: Optimiert für lokale Backup-Pfade auf dem SQL Server Host mit integrierter Kompressionsunterstützung
-- **Security**: Implementierte parametrisierte Queries und strikte Timeout-Behandlung
+- **Native Adapter**: Added a fully featured adapter for Microsoft SQL Server
+- **Smart Detection**: The adapter automatically detects the SQL Server Edition (e.g., Express, Enterprise) and Version to enforce feature compatibility
+- **Multi-DB Support**: Supports backing up multiple MSSQL databases in a single job by bundling them into a TAR archive
+- **Server-Side Backups**: Optimized to handle local backup paths on the SQL Server host with built-in compression support
+- **Security**: Implemented parameterized queries and strict timeout handling to ensure robust and secure connections
 
 #### 👤 User Self-Service
-- **Password Change UI**: Benutzer können ihr Passwort direkt in den Profileinstellungen ändern
-- **Audit Integration**: Das Audit-Log-System erkennt und taggt "self-service" Aktionen korrekt
+- **Password Change UI**: Users can now securely change their own passwords directly from their profile settings
+- **Audit Integration**: The audit log system has been updated to recognize and correctly tag "self-service" actions performed by users on their own accounts
 
-### 🧪 Testing & Infrastruktur
-- **Stress Testing**: Neuer Stress-Test-Datengenerator und npm-Scripts zur Simulation von hoher Last
-- **Isolation**: Test-Suite refactored um dedizierte `testdb` Container zu verwenden
-- **Cleanup**: Verbesserte temporäre Datei-Behandlung (`/tmp`) für MSSQL-Test-Backups
+### 🧪 Testing & Infrastructure
+- **Stress Testing**: Introduced a new stress test data generator and npm scripts to simulate heavy load and large datasets
+- **Isolation**: Refactored the testing suite to use a dedicated `testdb` container instead of shared resources, preventing flaky tests
+- **Cleanup**: Improved temporary file handling (`/tmp`) for MSSQL test backups to prevent disk bloat during CI runs
 
-### 📚 Dokumentation
-- **MSSQL Guide**: Umfassende Dokumentation zu MSSQL Editions, Server-Side-Backup-Berechtigungen und Deployment-Strategien
-- **Meta-Backup**: Dokumentation zum internen Konfigurations-Backup-System finalisiert
+### 📚 Documentation
+- **MSSQL Guide**: Added comprehensive documentation covering MSSQL Editions, server-side backup permissions, and deployment strategies
+- **Meta-Backup**: Finalized documentation and TODO items regarding the internal configuration backup system
 
 ---
 
 ## v0.8.3-beta - Meta-Backups & System Task Control
-*Released: 30. Januar 2026*
+*Released: January 30, 2026*
 
-Diese Version führt "Meta-Backups" ein – die Fähigkeit für den Database Backup Manager, seine eigene Konfiguration, Benutzer und Zustand zu sichern. Dies stellt sicher, dass deine Backup-Infrastruktur genauso resilient ist wie die Datenbanken, die sie schützt.
+This release introduces "Meta-Backups"—the ability for the Database Backup Manager to backup its own configuration, users, and state. This ensures that your backup infrastructure is just as resilient as the databases it protects.
 
-### ✨ Neue Features
+### ✨ New Features
 
 #### 🛡️ Configuration "Meta-Backups"
-- **Self-Backup**: Die Anwendung kann nun Backups ihrer eigenen internen Konfiguration erstellen, inklusive Benutzer, Jobs und Einstellungen
-- **Storage Integration**: Konfigurations-Backups können zu bestehenden Storage-Adaptern geleitet werden
-- **Disaster Recovery**: Vollständiger "System Config Restore" Flow zum Wiederherstellen des Anwendungszustands
-- **Sanitization**: Benutzerkonten und sensible Daten werden während Export/Import sorgfältig behandelt
+- **Self-Backup**: The application can now create backups of its own internal configuration, including Users, Jobs, and Settings
+- **Storage Integration**: Configuration backups can be routed to your existing storage adapters, with specific filtering options
+- **Disaster Recovery**: Added a full "System Config Restore" flow that allows you to rebuild the application state from a storage file
+- **Sanitization**: User accounts and sensitive data are carefully sanitized and handled during the export/import process to ensure security
 
 #### 🔑 Smart Encryption Recovery
-- **Profile Portability**: Expliziter Export und Import von Encryption Profile Secret Keys für Server-Migration
-- **Smart Detection**: Restore-Logik erkennt fehlende Encryption Profiles und handelt entsprechend
-- **Nested Metadata**: Verbesserte Parsing-Logik für komplexe, verschachtelte Verschlüsselungs-Metadaten
+- **Profile Portability**: You can now explicitly export and import Encryption Profile secret keys. This is critical for migrating your setup to a new server
+- **Smart Detection**: The restore logic now includes "Smart Recovery" which detects if a required Encryption Profile is missing during a restore attempt and prompts/handles the situation accordingly
+- **Nested Metadata**: Improved parsing logic to handle complex, nested encryption metadata structures
 
 #### ⚙️ System Task Management
-- **Task Control**: Administratoren können Hintergrund-System-Tasks manuell aktivieren/deaktivieren
-- **Unified Scheduling**: Konfigurations-Backup-Zeitplan in den Standard System Task Scheduler verschoben
-- **Auto-Save**: Auto-Save-Funktionalität für die Configuration Backup Einstellungsseite
+- **Task Control**: Administrators can now manually Enable or Disable specific background system tasks (e.g., Update Checks, Config Backups)
+- **Unified Scheduling**: The configuration backup schedule has been moved into the standard System Task scheduler for consistent management
+- **Auto-Save**: Added auto-save functionality to the Configuration Backup settings page for a smoother UX
 
 ### 🐛 Fixes & Quality of Life
-- Umfassende Dokumentation für Export/Import von Secrets und Disaster Recovery
-- Metadata-Key-Konsistenz und Ordnerstruktur-Probleme behoben
-- Neue Tests für AI-Transparenz, Scheduler-Logik und Config-Service Edge-Cases
-- Manuellen Backup-Trigger aus UI entfernt zugunsten standardisierter System-Task-Controls
+- Added comprehensive documentation for exporting/importing secrets and disaster recovery procedures
+- Fixed issues with metadata key consistency and folder structures (`config-backups`)
+- Added new tests regarding AI transparency, scheduler logic, and config service edge-cases
+- Removed the manual backup trigger from the UI in favor of the standardized system task controls
 
 ---
 
 ## v0.8.2-beta - Keycloak, Encryption Imports & Database Reset
-*Released: 29. Januar 2026*
+*Released: January 29, 2026*
 
-Diese Version führt native Keycloak OIDC Unterstützung ein, verbessert die Sicherheit von Authentifizierungs-Flows und fügt kritische Funktionalität für den Import von Encryption Profiles hinzu.
+This release introduces native support for Keycloak OIDC, enhances the security of authentication flows, and adds critical functionality for importing Encryption Profiles.
 
 ### ⚠️ BREAKING CHANGE: Database Reset Required
 
-Die gesamte Datenbank-Schema-Historie wurde in eine einzige, saubere Initialisierungs-Migration konsolidiert.
+We have consolidated the entire database schema history into a single, clean initialization migration to ensure long-term stability.
 
-- **Action Required**: Bestehende `dev.db` Datei muss gelöscht werden
-- **Data Loss**: Bestehende Daten können nicht automatisch migriert werden
+- **Action Required**: You must delete your existing `dev.db` file and allow the application to re-initialize on startup
+- **Data Loss**: Existing data cannot be migrated automatically. Please ensure you have offloaded any critical backups before upgrading
 
-### ✨ Neue Features
+### ✨ New Features
 
 #### 🔐 Keycloak & OIDC Security
-- **Keycloak Adapter**: Dedizierter OIDC-Adapter und Icon speziell für Keycloak
-- **Security Hardening**: OIDC-Client erzwingt HTTPS für Keycloak-Provider und lehnt Mixed-Content-Endpoints strikt ab
-- **Discovery Headers**: Notwendige Headers für Keycloak OIDC Discovery Fetches
+- **Keycloak Adapter**: Added a dedicated OIDC adapter and icon specifically for Keycloak integrations
+- **Security Hardening**: The OIDC client now enforces HTTPS for Keycloak providers and strictly rejects mixed-content endpoints to prevent insecurity
+- **Discovery Headers**: Added necessary headers to Keycloak OIDC discovery fetches to ensure reliable connection
 
 #### 🔑 Encryption & Recovery
-- **Profile Import**: Import von Encryption Profiles direkt ins System für Disaster Recovery
-- **Smart Restore**: Intelligente Handhabung von wiederhergestellten Profilen
-- **Documentation**: Erweiterte Verschlüsselungs-Dokumentation und Recovery-Logs
+- **Profile Import**: You can now import Encryption Profiles directly into the system. This is critical for disaster recovery if you need to restore backups on a fresh instance using backed-up keys
+- **Smart Restore**: Added logic to handle restored profiles intelligently during the import process
+- **Documentation**: Enhanced the encryption documentation and recovery logs to better explain key management
 
 #### 👤 Authentication UX
-- **2-Step Login**: Login-Erfahrung refactored zu Email-First 2-Step-Flow
-- **SSO Configuration**: SSO Provider Form in Tabs aufgeteilt für bessere Organisation
+- **2-Step Login**: Refactored the login experience to use an email-first 2-step flow. This improves user experience and prepares the UI for more advanced auth methods
+- **SSO Configuration**: The SSO Provider form has been split into tabs for better organization, and error handling has been significantly improved
 
 ### 🐛 Fixes & Improvements
-- "Edit" Buttons sind nun ghost-styled, Footer rechtsbündig
-- Pagination-Problem behoben wenn Page-Count undefined war
-- Neue Tests für Profile Imports und Smart Recovery Logik
+- "Edit" buttons are now ghost-styled, and footers are right-aligned for consistency
+- Fixed an issue where page count could be undefined unless manual pagination was triggered
+- Added new tests for profile imports and smart recovery logic
 
 ---
 
 ## v0.8.1-beta - SQLite Support & Remote File Browsing
-*Released: 26. Januar 2026*
+*Released: January 26, 2026*
 
-Diese Version führt vollständige Unterstützung für SQLite-Datenbanken ein, inklusive einem leistungsstarken Feature zum Backup von Remote-SQLite-Dateien via SSH-Tunneling.
+This update introduces full support for SQLite databases, including a powerful feature to backup remote SQLite files via SSH tunneling.
 
-### ✨ Neue Features
+### ✨ New Features
 
 #### 🗄️ SQLite Support (Local & SSH)
-- **Native SQLite Adapter**: SQLite-Datenbanken als Backup-Quellen hinzufügen
-- **Remote SSH Support**: Backup von SQLite-Dateien auf Remote-Servern durch SSH-Tunnel-Streaming
-- **Safe Restore**: Automatische Bereinigung der alten Datenbankdatei vor Wiederherstellung
+- **Native SQLite Adapter**: You can now add SQLite databases as backup sources
+- **Remote SSH Support**: Uniquely, this adapter supports backing up SQLite files located on remote servers by streaming them through an SSH tunnel
+- **Safe Restore**: The restore logic automatically handles the cleanup of the old database file before restoring the new one to ensure a clean state
 
 #### 📂 Remote File Browser
-- **File Picker Dialog**: Neuer Modal-Dialog zum direkten Durchsuchen des Dateisystems
-- **SSH Integration**: Browser funktioniert sowohl für lokales Server-Dateisystem als auch für verbundene Remote-SSH-Ziele
-- **Smart Inputs**: File Browser in Adapter-Formulare integriert
+- **File Picker Dialog**: Added a new modal dialog that allows you to browse the filesystem directly from the UI
+- **SSH Integration**: The browser works for both the local server filesystem and connected remote SSH targets
+- **Smart Inputs**: Integrated the file browser into adapter forms (e.g., for selecting database paths or SSH private keys)
 
 ### ⚡ Improvements
-- **SFTP Authentication**: Spezifischer `authType` Selector im SFTP Storage Form für Unterscheidung zwischen Passwort und Private Key
-- **Docker Compose**: Beispiel `docker-compose.yml` verwendet nun standardmässig das `beta` Image-Tag
+- **SFTP Authentication**: Added a specific `authType` selector to the SFTP storage form to clearly distinguish between Password and Private Key authentication
+- **Docker Compose**: Updated the example `docker-compose.yml` to use the new `beta` image tag by default
 
-### 📚 Dokumentation
-- Umfassende Dokumentation und Deployment-Guides für den neuen SQLite Adapter
-- Projekt-Dokumentationsstruktur refactored und reorganisiert
+### 📚 Documentation
+- Added comprehensive documentation and deployment guides for the new SQLite adapter
+- Refactored and reorganized the project documentation structure for better navigability
 
 ---
 
 ## v0.8.0-beta - The First Beta: SSO, Audit Logs & Cloud Storage
-*Released: 25. Januar 2026*
+*Released: January 25, 2026*
 
-Diese Version markiert die erste offizielle Beta des Database Backup Managers! 🚀 Ein massiver Sprung in Funktionalität und Stabilität mit Enterprise-Ready Features.
+This release marks the first official Beta of the Database Backup Manager! 🚀 We have made a massive leap in functionality and stability. This update introduces enterprise-ready features including OIDC/SSO Authentication, S3 & SFTP Storage, a comprehensive Audit Log System, and intelligent Database Dialect Detection.
 
 ### ✨ Key New Features
 
 #### 🔐 SSO & Identity Management
-- **OIDC Support**: Vollständige Unterstützung für OpenID Connect Provider (getestet mit Authentik, PocketID, Generic)
-- **Account Linking**: Bestehende Benutzer können SSO-Provider mit ihren Konten verknüpfen
-- **Auto-Provisioning**: Optionale automatische Benutzererstellung bei erfolgreicher SSO-Anmeldung
-- **Management UI**: Dedizierte Admin-Oberfläche zur Konfiguration von Providern, Domains und Discovery-Endpoints
-- **Security**: Striktes Rate Limiting, Domain-Verifizierung und 2FA-Administrations-Controls
+- **OIDC Support**: Full support for OpenID Connect providers (tested with Authentik, PocketID, and Generic providers)
+- **Account Linking**: Existing users can link SSO providers to their accounts
+- **Auto-Provisioning**: Optional automatic user creation upon successful SSO login
+- **Management UI**: Dedicated admin interface to configure providers, domains, and discovery endpoints
+- **Security**: Added strict rate limiting, domain verification, and 2FA administration controls
 
 #### ☁️ Expanded Storage Options
-- **S3 Support**: Native Unterstützung für AWS S3 und kompatible Provider (MinIO, R2, etc.)
-- **SFTP Support**: Sicheres Auslagern von Backups auf Remote-Server via SFTP
-- **Connection Testing**: "Test Connection" Button zur sofortigen Verifizierung von Credentials
-- **Smart Cleanup**: Automatisches Löschen von zugehörigen Metadata-Sidecar-Dateien
+- **S3 Support**: Native support for AWS S3 and compatible providers (MinIO, R2, etc.) using the AWS SDK
+- **SFTP Support**: Securely offload backups to remote servers via SFTP
+- **Connection Testing**: Added a "Test Connection" button to storage adapters to verify credentials immediately
+- **Smart Cleanup**: Automatically deletes associated metadata sidecar files when a backup is removed
 
 #### 🛡️ Audit & Compliance
-- **Comprehensive Audit Logs**: Tracking aller wichtigen Aktionen (User, Group, System, Adapter-Änderungen)
-- **Detailed Tracking**: Logs beinhalten User IP, User Agent und spezifische Diffs der Änderungen
-- **Retention Policy**: Konfigurierbare Aufbewahrungseinstellungen für Audit Logs
-- **DataTables**: Neue standardisierte Tabellenansicht mit facettiertem Filtern und Suche
+- **Comprehensive Audit Logs**: Tracks all key actions (User, Group, System, Adapter changes)
+- **Detailed Tracking**: Logs include User IP, User Agent, and specific diffs of changes made
+- **Retention Policy**: Configurable retention settings for audit logs to manage database size
+- **DataTables**: New standardized table view with faceted filtering and search for audit history
 
 #### 💾 Database Engine Improvements
-- **Dialect Detection**: Adapter erkennen automatisch die spezifische Version und den Dialekt
-- **MariaDB Support**: Dedizierter Adapter und Dialect-Handling für MariaDB
-- **PostgreSQL**: Verbesserte Restore-Logik überspringt System-Datenbanken
-- **Security**: MySQL Adapter verwendet `MYSQL_PWD` Environment Variable
+- **Dialect Detection**: Adapters now automatically detect the specific version and dialect (e.g., MySQL 5.7 vs 8.0)
+- **MariaDB Support**: Added a dedicated adapter and dialect handling for MariaDB
+- **PostgreSQL**: Improved restore logic to skip system databases and handle version mismatches gracefully
+- **Security**: Switched MySQL adapter to use `MYSQL_PWD` environment variable for safer password handling
 
 #### ⚙️ System & Core
-- **Update Checker**: Integrierter Service zum Prüfen auf neue Anwendungsversionen
-- **System Tasks**: "Run on Startup" Optionen für Wartungsaufgaben
-- **Health Checks**: Visuelle Health-History-Grid und Badges für alle Adapter
-- **Settings**: Auto-Save für System-Einstellungen implementiert
+- **Update Checker**: Built-in service to check for new application versions and notify admins
+- **System Tasks**: Added "Run on Startup" options for maintenance tasks (e.g., permissions sync)
+- **Health Checks**: Visual health history grid and badges for all adapters
+- **Settings**: Implemented auto-save for system settings and improved UI layouts
 
 ### 🧪 Testing & Stability
-- Umfassende Unit- und Integration-Tests für Backup & Restore Pipelines, Storage Services, Notification Logic & Scheduler
-- Strikte TypeScript-Matching in Restore-Services
-- Verbesserte Docker-Komposition für Multi-Database-Test-Umgebungen
+- Massive test coverage with comprehensive Unit and Integration tests for Backup & Restore Pipelines, Storage Services, Notification Logic & Scheduler
+- Enforced strict TypeScript matching in restore services and removed legacy `any` types
+- Improved Docker composition for spinning up multi-database test environments
 
 ### 🐛 Bug Fixes & Refactoring
-- Optimierte Log-Darstellung mit strukturierten Log-Einträgen
-- Alle grossen Listen (Jobs, Users, History) zu `DataTable` Komponente migriert
-- Session-Handling-Fehler bei hoher Last behoben
-- Clipboard-Kopier-Fehlerbehandlung korrigiert
-- Filename-Handling nach Entschlüsselung korrigiert
+- Optimized log rendering with structured log entries and stage grouping
+- Migrated all major lists (Jobs, Users, History) to the new `DataTable` component
+- Resolved session handling errors during heavy load
+- Fixed clipboard copying error handling
+- Fixed filename handling after decryption
+- Corrected "Trusted Providers" mutation issue in auth requests
 
 ---
 
 ## v0.5.0-dev - RBAC System, Encryption Vault & Core Overhaul
-*Released: 24. Januar 2026*
+*Released: January 24, 2026*
 
-Diese Version repräsentiert einen massiven Meilenstein für den Database Backup Manager mit einem vollständigen Role-Based Access Control (RBAC) System.
+This release represents a massive milestone for the Database Backup Manager. We have introduced a full-featured Role-Based Access Control (RBAC) system, significantly enhanced security with Recovery Kits and Rate Limiting, and completely refactored the core execution engine into a modular pipeline architecture.
 
-### ✨ Neue Features
+### ✨ New Features
 
 #### 🛡️ Granular RBAC System
-- Einführung von User Groups & Permissions
-- Volle Management-UI für Users und Groups
-- Strikter Schutz für die `SuperAdmin` Gruppe (kann nicht gelöscht oder modifiziert werden)
-- Granulare Permission-Checks für API-Endpoints und Dashboard-Pages
+- Introduced User Groups & Permissions
+- Added full management UI for Users and Groups
+- Implemented strict protection for the `SuperAdmin` group (cannot be deleted or modified)
+- Added granular permission checks for API endpoints and Dashboard pages
 
 #### 🔐 Enhanced Security & Encryption
-- **Recovery Kits**: Generierung und Download von Offline-Recovery-Kits für Notfall-Entschlüsselung
-- **Master Key Reveal**: Neuer gesicherter UI-Dialog zum Anzeigen und Exportieren des Master Keys
-- **Rate Limiting**: Rate Limiting auf API- und Authentifizierungs-Endpoints
-- **MySQL Security**: Adapter verwendet `MYSQL_PWD` für sichere Passwort-Handhabung
-- **2FA Administration**: Admins können 2FA für gesperrte Benutzer zurücksetzen
+- **Recovery Kits**: Added ability to generate and download offline recovery kits for emergency decryption
+- **Master Key Reveal**: New secured UI dialog to reveal and export the master key
+- **Rate Limiting**: Implemented rate limiting on API and Authentication endpoints to prevent abuse
+- **MySQL Security**: Updated adapter to use `MYSQL_PWD` for safer password handling
+- **2FA Administration**: Admins can now reset 2FA for users if locked out
 
 #### 🗜️ Compression Support
-- Native Unterstützung für Backup-Kompression (UI und Pipelines)
-- Kompressionsstatus-Spalten in Jobs- und Storage-Tabellen
+- Added native support for backup compression (integration into UI and Pipelines)
+- Added compression status columns to Jobs and Storage tables
 
 #### 📊 Live Progress Tracking
-- Echtzeit-Fortschritts-Updates für Backup- und Restore-Operationen
-- Visuelles Feedback für Schritte mit "indeterminate" Progress-Bars
+- Real-time progress updates for backup and restore operations
+- Visual feedback for steps, including "indeterminate" progress bars for streams where size is unknown
 
 ### ⚡ Architecture & Refactoring
-- **Pipeline Pattern**: Job-Runner in modulares Pipeline-Pattern refactored
-- **Service Layer**: Business-Logik in dedizierte Service-Schicht extrahiert
-- **Job Queue**: Limit von 10 max gleichzeitigen Jobs
-- **BigInt Support**: `Execution.size` zu BigInt migriert für grosse Backup-Dateien
-- **Streaming**: MySQL und Postgres Adapter für bessere Streaming-Performance optimiert
-- **Testing**: Vitest Setup und Unit-Tests für Storage Service und Adapter
+- **Pipeline Pattern**: Refactored the job runner into a modular pipeline pattern with distinct steps
+- **Service Layer**: Extracted business logic (Backup, Restore, User Actions) into a dedicated Service Layer for better testability and separation of concerns
+- **Job Queue**: Implemented a limit of 10 max concurrent jobs to prevent system overload
+- **BigInt Support**: Migrated `Execution.size` to BigInt to support massive backup files
+- **Streaming**: Optimized MySQL and Postgres adapters for better streaming performance during dump and restore
+- **Testing**: Added Vitest setup and unit tests for Storage Service and Adapters
 
 ### 🎨 UI/UX Improvements
-- DataTables überall: Jobs, Configs, Logs und Dashboard-Listen standardisiert
-- Loading Skeletons für flüssigere Seitenübergänge
-- "Users" zu "Users & Groups" umbenannt
-- Command-based Popovers statt Standard-Selects
-- Überarbeitete "Recovery Kit" Card UI
+- DataTables everywhere: Migrated Jobs, Configs, Logs, and Dashboard lists to a standardized `DataTable` component with faceted filtering and sorting
+- Added loading skeletons for smoother page transitions
+- Renamed "Users" to "Users & Groups" and improved sidebar organization
+- Replaced standard Selects with Command-based Popovers for better UX
+- Refactored UI to use standard Tailwind utility classes
+- Revamped the "Recovery Kit" card UI in encryption profiles
 
 ### 🐛 Bug Fixes
-- Download-Dateinamen nach Entschlüsselung korrigiert
-- Session-Fehlerbehandlung und Middleware-Logik behoben
-- Clipboard-Kopier-Fehlerbehandlung korrigiert
-- Diverse TypeScript-Typ-Probleme behoben
-- Postgres Adapter Robustheit verbessert
+- Fixed downloaded filenames after decryption
+- Fixed session error handling and middleware logic
+- Fixed clipboard copy error handling
+- Resolved various TypeScript type issues throughout the codebase
+- Improved Postgres adapter robustness and database selection logic
 
 ### 📚 Documentation & Misc
-- GNU General Public License hinzugefügt
-- README mit neuer Galerie und Feature-Listen aktualisiert
-- Entwickler-Dokumentation für Core Systems und Database Adapter
-- Projekt Coding Standards und Instruction Guidelines
+- Added GNU General Public License
+- Updated README with new gallery and feature lists
+- Added developer documentation for Core Systems and Database Adapters
+- Added project coding standards and instruction guidelines

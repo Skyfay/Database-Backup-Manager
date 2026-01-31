@@ -19,10 +19,11 @@ export default defineConfig({
       {
         text: 'Resources',
         items: [
-          { text: 'GitHub', link: 'https://github.com/Skyfay/dbackup' },
-          { text: 'GitLab', link: 'https://gitlab.com/Skyfay/dbackup' },
+          { text: 'Screenshots', link: '/screenshots' },
           { text: 'Changelog', link: '/changelog' },
-          { text: 'Roadmap', link: '/roadmap' }
+          { text: 'Roadmap', link: '/roadmap' },
+          { text: 'GitHub', link: 'https://github.com/Skyfay/dbackup' },
+          { text: 'GitLab', link: 'https://gitlab.com/Skyfay/dbackup' }
         ]
       }
     ],

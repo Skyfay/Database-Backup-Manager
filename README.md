@@ -14,7 +14,7 @@
 > **Note**: This project is primarily developed on GitLab. This GitHub repository is a mirror.
 > **Main Repository**: [https://gitlab.com/Skyfay/dbackup](https://gitlab.com/Skyfay/dbackup)
 
-![Dashboard Preview](docs/images/overview.png)
+![Dashboard Preview](wiki/public/overview.png)
 
 ## ✨ Features
 

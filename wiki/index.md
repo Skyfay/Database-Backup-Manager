@@ -5,9 +5,6 @@ hero:
   name: "DBackup"
   text: "Database Backup Automation"
   tagline: Self-hosted solution for automating database backups with encryption, compression, and smart retention policies.
-  image:
-    src: /logo.svg
-    alt: DBackup Logo
   actions:
     - theme: brand
       text: User Guide
@@ -15,9 +12,6 @@ hero:
     - theme: alt
       text: Developer Guide
       link: /developer-guide/
-    - theme: alt
-      text: GitHub
-      link: https://github.com/Skyfay/dbackup
 
 features:
   - icon: 🗄️
