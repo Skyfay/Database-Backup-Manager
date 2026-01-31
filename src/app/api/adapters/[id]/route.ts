@@ -6,10 +6,10 @@ import { headers } from "next/headers";
 import { auditService } from "@/services/audit-service";
 import { AUDIT_ACTIONS, AUDIT_RESOURCES } from "@/lib/core/audit-types";
 import { checkPermission } from "@/lib/access-control";
-import { PERMISSIONS } from "@/lib/permissions";
+import { PERMISSIONS, Permission } from "@/lib/permissions";
 
 // Helper to get write permission based on adapter type
-function getWritePermissionForType(type: string): string {
+function getWritePermissionForType(type: string): Permission {
     switch (type) {
         case 'database': return PERMISSIONS.SOURCES.WRITE;
         case 'storage': return PERMISSIONS.DESTINATIONS.WRITE;

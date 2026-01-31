@@ -4,13 +4,13 @@ import { registerAdapters } from "@/lib/adapters";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { checkPermission } from "@/lib/access-control";
-import { PERMISSIONS } from "@/lib/permissions";
+import { PERMISSIONS, Permission } from "@/lib/permissions";
 
 // Ensure adapters are registered
 registerAdapters();
 
 // Helper to determine permission based on adapter type
-function getPermissionForAdapter(adapterId: string): string | null {
+function getPermissionForAdapter(adapterId: string): Permission | null {
     if (/mysql|postgres|mongo|mssql|sqlite/i.test(adapterId)) {
         return PERMISSIONS.SOURCES.READ;
     } else if (/local-filesystem|s3|sftp|ftp|webdav/i.test(adapterId)) {
