@@ -12,7 +12,7 @@ A robust, self-hosted solution for automating database backups. Manage sources, 
 
 ## 🚀 Features
 
-- **Multi-Database Support**: Backup **MySQL**, **PostgreSQL**, **MongoDB** and **SQLite** (Local & via SSH). (MSSQL coming soon)
+- **Multi-Database Support**: Backup **MySQL**, **PostgreSQL**, **MongoDB**, **SQLite** (Local & via SSH), and **Microsoft SQL Server**.
 - **Bank-Grade Security**:
   - **Encryption Vault**: Secure your backups with **AES-256-GCM** encryption.
   - **Encryption Profiles**: Manage multiple keys and rotate secrets easily.
@@ -36,6 +36,7 @@ A robust, self-hosted solution for automating database backups. Manage sources, 
 | **MariaDB** | 10, 11 |
 | **MongoDB** | 4, 5, 6, 7, 8 |
 | **SQLite** | 3.x (Local & SSH) |
+| **SQL Server** | 2017, 2019, 2022, Azure SQL Edge |
 
 > For detailed technical information about client versions and extensive compatibility notes, please refer to our [Supported Database Versions Documentation](docs/development/supported-database-versions.md).
 ## 🐳 Deployment (Docker)

@@ -9,6 +9,7 @@ This document outlines the database engines and versions supported by the Databa
 | **MariaDB** | 10.x, 11.x | Uses `mariadb-client` (Native support). |
 | **MongoDB** | 4.x, 5.x, 6.x, 7.x, 8.x | Uses `mongodb-tools` (v100.x). Supports standard `mongodump` operations. |
 | **SQLite** | 3.x | Supports local files and remote SSH backups (`sqlite3 .dump`). |
+| **SQL Server** | 2017, 2019, 2022, Azure SQL Edge | Uses `mssql` npm package for T-SQL `BACKUP DATABASE` / `RESTORE DATABASE` commands. Requires shared volume for backup files. |
 
 ## Technical Details
 
@@ -31,3 +32,6 @@ The system uses a "Dialect" pattern to handle version-specific implementation de
     *   `postgres:default`: Generic dialect handling standard operations via `pg_dump`.
 *   **MongoDB**:
     *   Generic support via standard tools (no version-specific dialects needed currently).
+*   **SQL Server Dialects**:
+    *   `mssql:base`: SQL Server 2019+ (v15.x, v16.x). Supports native backup compression.
+    *   `mssql:2017`: SQL Server 2017 (v14.x). Inherits from base dialect.

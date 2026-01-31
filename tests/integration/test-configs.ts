@@ -69,5 +69,48 @@ export const testDatabases = [
     {
         name: 'Test MongoDB 8.0',
         config: { type: 'mongodb', host: TEST_HOST, port: 27708, user: 'root', password: 'rootpassword', database: 'testdb' }
+    },
+    // --- Microsoft SQL Server ---
+    {
+        name: 'Test MSSQL 2019',
+        config: {
+            type: 'mssql',
+            host: TEST_HOST,
+            port: 14339,
+            user: 'sa',
+            password: 'YourStrong!Passw0rd',
+            database: 'testdb',
+            encrypt: true,
+            trustServerCertificate: true,
+            backupPath: '/var/opt/mssql/backup'
+        }
+    },
+    {
+        name: 'Test MSSQL 2022',
+        config: {
+            type: 'mssql',
+            host: TEST_HOST,
+            port: 14342,
+            user: 'sa',
+            password: 'YourStrong!Passw0rd',
+            database: 'testdb',
+            encrypt: true,
+            trustServerCertificate: true,
+            backupPath: '/var/opt/mssql/backup'
+        }
+    },
+    {
+        name: 'Test Azure SQL Edge',
+        config: {
+            type: 'mssql',
+            host: TEST_HOST,
+            port: 14350,
+            user: 'sa',
+            password: 'YourStrong!Passw0rd',
+            database: 'testdb',
+            encrypt: true,
+            trustServerCertificate: true,
+            backupPath: '/var/opt/mssql/backup'
+        }
     }
 ];
