@@ -1,33 +1,33 @@
-# Schnellstart
+# Getting Started
 
-Willkommen beim Database Backup Manager. Hier erfährst du, wie du das System startest.
+Welcome to the Database Backup Manager. This guide will help you get the system up and running.
 
-## Voraussetzungen
+## Prerequisites
 
 - Docker & Docker Compose
-- Node.js 20+ (nur für lokale Entwicklung ohne Docker)
+- Node.js 20+ (only for local development without Docker)
 
-## Installation mit Docker
+## Installation with Docker
 
-Die einfachste Methode, den Backup Manager zu betreiben, ist Docker Compose.
+The easiest way to run the Backup Manager is using Docker Compose.
 
-1. **Repository klonen**
+1. **Clone Repository**
    ```bash
    git clone https://github.com/database-backup-manager/database-backup-manager.git
    cd database-backup-manager
    ```
 
-2. **Starten**
+2. **Start**
    ```bash
    docker-compose up -d
    ```
 
-3. **Zugriff**
-   Öffne deinen Browser und gehe auf `http://localhost:3000`.
+3. **Access**
+   Open your browser and navigate to `http://localhost:3000`.
 
-## Erste Schritte
+## First Steps
 
-1. **Benutzer erstellen**: Beim ersten Start wirst du aufgefordert, einen Admin-Account zu erstellen.
-2. **Speicherort definieren**: Konfiguriere unter "Destinations" einen Speicherort (z.B. Lokaler Ordner oder S3).
-3. **Datenbank hinzufügen**: Füge unter "Sources" deine erste Datenbank hinzu.
-4. **Job erstellen**: Verbinde Quelle und Ziel in einem Backup-Job unter "Jobs".
+1. **Create User**: On the first start, you will be prompted to create an admin account.
+2. **Define Destination**: Configure a storage location under "Destinations" (e.g., Local Folder or S3).
+3. **Add Database**: Add your first database under "Sources".
+4. **Create Job**: Connect source and destination in a backup job under "Jobs".

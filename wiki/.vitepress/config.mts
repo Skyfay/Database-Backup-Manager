@@ -3,29 +3,29 @@ import { defineConfig } from 'vitepress'
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
   title: "Database Backup Manager",
-  description: "Dokumentation und Anleitungen für den Database Backup Manager",
-  lang: 'de-DE',
+  description: "Documentation and guides for Database Backup Manager",
+  lang: 'en-US',
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
     nav: [
       { text: 'Home', link: '/' },
-      { text: 'Anleitung', link: '/getting-started' }
+      { text: 'Guide', link: '/getting-started' }
     ],
 
     sidebar: [
       {
-        text: 'Einführung',
+        text: 'Introduction',
         items: [
-          { text: 'Schnellstart', link: '/getting-started' },
+          { text: 'Getting Started', link: '/getting-started' },
           { text: 'Installation', link: '/installation' }
         ]
       },
       {
-        text: 'Konfiguration',
+        text: 'Configuration',
         items: [
-          { text: 'Datenbanken', link: '/configuration/databases' },
-          { text: 'Speicherorte', link: '/configuration/destinations' },
-          { text: 'Benachrichtigungen', link: '/configuration/notifications' }
+          { text: 'Databases', link: '/configuration/databases' },
+          { text: 'Destinations', link: '/configuration/destinations' },
+          { text: 'Notifications', link: '/configuration/notifications' }
         ]
       }
     ],
@@ -35,7 +35,7 @@ export default defineConfig({
     ],
 
     footer: {
-      message: 'Veröffentlicht unter der MIT Lizenz.',
+      message: 'Released under the MIT License.',
       copyright: 'Copyright © 2026 Database Backup Manager'
     }
   }

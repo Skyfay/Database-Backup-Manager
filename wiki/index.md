@@ -1,20 +1,20 @@
 # Database Backup Manager
 
-Willkommen im offiziellen Wiki des Database Backup Managers.
+Welcome to the official Wiki of the Database Backup Manager.
 
-Eine selbst gehostete Webanwendung zur Automatisierung von Datenbanksicherungen (MySQL, PostgreSQL, MongoDB, SQLite) mit Verschlüsselung, Komprimierung und flexiblen Aufbewahrungsrichtlinien.
+A self-hosted web application for automating database backups (MySQL, PostgreSQL, MongoDB, SQLite) with encryption, compression, and flexible retention policies.
 
-## Funktionen
+## Features
 
-- 🗄️ **Unterstützt mehrere Datenbanken**: MySQL, MariaDB, PostgreSQL, MongoDB, SQLite.
-- ☁️ **Flexible Speicherorte**: S3 (AWS, MinIO, R2, Hetzner), SFTP, Lokal.
-- 🔒 **Sicherheit First**: AES-256-GCM Backup-Verschlüsselung & Credential-Verschlüsselung.
-- 📦 **Effizienz**: Gzip/Brotli Komprimierung & Streaming-Verarbeitung.
-- 🔔 **Benachrichtigungen**: Discord, E-Mail (SMTP).
-- 📅 **Zeitplanung**: Cron-basierte Job-Planung.
+- 🗄️ **Multi-Database Support**: MySQL, MariaDB, PostgreSQL, MongoDB, SQLite.
+- ☁️ **Flexible Storage**: S3 (AWS, MinIO, R2, Hetzner), SFTP, Local.
+- 🔒 **Security First**: AES-256-GCM Backup Encryption & Credential Encryption.
+- 📦 **Efficiency**: Gzip/Brotli Compression & Streaming Processing.
+- 🔔 **Notifications**: Discord, Email (SMTP).
+- 📅 **Scheduling**: Cron-based Job Scheduling.
 
-## Loslegen
+## Get Started
 
-Beginne mit der Installation und Einrichtung deiner ersten Backups.
+Start by installing and setting up your first backups.
 
-[Schnellstart ansehen](/getting-started)
+[View Getting Started](/getting-started)
