@@ -1,0 +1,414 @@
+# Encryption Pipeline
+
+DBackup uses a two-layer encryption architecture for maximum security of both stored credentials and backup files.
+
+## Architecture Overview
+
+```
+┌────────────────────────────────────────────────────────┐
+│                   Layer 1: System                       │
+│         ENCRYPTION_KEY (Environment Variable)           │
+│                                                         │
+│  Protects: Database credentials, SSO secrets,           │
+│            Encryption Profile Master Keys               │
+└────────────────────────────────────────────────────────┘
+                           │
+                           ▼
+┌────────────────────────────────────────────────────────┐
+│                Layer 2: Backup Profiles                 │
+│         User-created Encryption Profiles                │
+│                                                         │
+│  Protects: Actual backup files in storage               │
+└────────────────────────────────────────────────────────┘
+```
+
+## Layer 1: System Encryption
+
+### ENCRYPTION_KEY
+
+- **Source**: Environment variable
+- **Format**: 32-byte hex string (64 characters)
+- **Algorithm**: AES-256-GCM
+
+### What It Protects
+
+- Database passwords (MySQL, PostgreSQL, etc.)
+- S3 secret keys and credentials
+- OIDC/SSO client secrets
+- Encryption Profile master keys
+
+### Implementation
+
+```typescript
+// src/lib/crypto.ts
+import { createCipheriv, createDecipheriv, randomBytes } from "crypto";
+
+const ALGORITHM = "aes-256-gcm";
+const IV_LENGTH = 12;
+const AUTH_TAG_LENGTH = 16;
+
+export function encrypt(plaintext: string): string {
+  const key = Buffer.from(process.env.ENCRYPTION_KEY!, "hex");
+  const iv = randomBytes(IV_LENGTH);
+
+  const cipher = createCipheriv(ALGORITHM, key, iv);
+  const encrypted = Buffer.concat([
+    cipher.update(plaintext, "utf8"),
+    cipher.final(),
+  ]);
+
+  const authTag = cipher.getAuthTag();
+
+  // Format: iv:authTag:ciphertext (all hex-encoded)
+  return [
+    iv.toString("hex"),
+    authTag.toString("hex"),
+    encrypted.toString("hex"),
+  ].join(":");
+}
+
+export function decrypt(ciphertext: string): string {
+  const key = Buffer.from(process.env.ENCRYPTION_KEY!, "hex");
+  const [ivHex, authTagHex, encryptedHex] = ciphertext.split(":");
+
+  const iv = Buffer.from(ivHex, "hex");
+  const authTag = Buffer.from(authTagHex, "hex");
+  const encrypted = Buffer.from(encryptedHex, "hex");
+
+  const decipher = createDecipheriv(ALGORITHM, key, iv);
+  decipher.setAuthTag(authTag);
+
+  return decipher.update(encrypted) + decipher.final("utf8");
+}
+```
+
+### Config Encryption
+
+Automatically encrypt sensitive fields:
+
+```typescript
+const SENSITIVE_FIELDS = ["password", "secret", "secretKey", "privateKey"];
+
+export function encryptConfig(config: Record<string, unknown>): Record<string, unknown> {
+  const result = { ...config };
+
+  for (const [key, value] of Object.entries(result)) {
+    if (SENSITIVE_FIELDS.some(f => key.toLowerCase().includes(f))) {
+      if (typeof value === "string" && value) {
+        result[key] = encrypt(value);
+      }
+    }
+  }
+
+  return result;
+}
+
+export function decryptConfig(config: Record<string, unknown>): Record<string, unknown> {
+  const result = { ...config };
+
+  for (const [key, value] of Object.entries(result)) {
+    if (SENSITIVE_FIELDS.some(f => key.toLowerCase().includes(f))) {
+      if (typeof value === "string" && value.includes(":")) {
+        try {
+          result[key] = decrypt(value);
+        } catch {
+          // Not encrypted or different format
+        }
+      }
+    }
+  }
+
+  return result;
+}
+```
+
+## Layer 2: Encryption Profiles
+
+### Concept
+
+Users create "Encryption Profiles" in the Vault. Each profile has a unique master key used to encrypt backup files.
+
+### Database Model
+
+```prisma
+model EncryptionProfile {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  key       String   // Master key (encrypted with ENCRYPTION_KEY)
+  createdAt DateTime @default(now())
+}
+```
+
+### Key Generation
+
+```typescript
+// src/services/encryption-service.ts
+export const EncryptionService = {
+  async createProfile(name: string) {
+    // Generate 32-byte random key
+    const masterKey = randomBytes(32).toString("hex");
+
+    // Encrypt with system key before storage
+    const encryptedKey = encrypt(masterKey);
+
+    return prisma.encryptionProfile.create({
+      data: { name, key: encryptedKey },
+    });
+  },
+
+  async getDecryptedKey(profileId: string): Promise<Buffer> {
+    const profile = await prisma.encryptionProfile.findUnique({
+      where: { id: profileId },
+    });
+
+    if (!profile) throw new Error("Profile not found");
+
+    const keyHex = decrypt(profile.key);
+    return Buffer.from(keyHex, "hex");
+  },
+};
+```
+
+## Backup Encryption Pipeline
+
+### Stream-Based Encryption
+
+For efficient memory usage with large backups:
+
+```typescript
+// src/lib/crypto-stream.ts
+import { createCipheriv, createDecipheriv, randomBytes } from "crypto";
+import { Transform } from "stream";
+
+export function createEncryptionStream(key: Buffer) {
+  const iv = randomBytes(12);
+  const cipher = createCipheriv("aes-256-gcm", key, iv);
+
+  let authTag: Buffer;
+
+  const stream = new Transform({
+    transform(chunk, encoding, callback) {
+      callback(null, cipher.update(chunk));
+    },
+    flush(callback) {
+      this.push(cipher.final());
+      authTag = cipher.getAuthTag();
+      callback();
+    },
+  });
+
+  return {
+    stream,
+    iv,
+    getAuthTag: () => authTag,
+  };
+}
+
+export function createDecryptionStream(
+  key: Buffer,
+  iv: Buffer,
+  authTag: Buffer
+) {
+  const decipher = createDecipheriv("aes-256-gcm", key, iv);
+  decipher.setAuthTag(authTag);
+
+  return new Transform({
+    transform(chunk, encoding, callback) {
+      callback(null, decipher.update(chunk));
+    },
+    flush(callback) {
+      try {
+        this.push(decipher.final());
+        callback();
+      } catch (error) {
+        callback(error as Error);
+      }
+    },
+  });
+}
+```
+
+### Backup Flow
+
+```
+Database Dump
+    │
+    ▼
+┌─────────────────┐
+│   Dump Stream   │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐     ┌─────────────────┐
+│   Compression   │ ──▶ │   .sql.gz       │
+│   (Gzip/Brotli) │     │   .sql.br       │
+└────────┬────────┘     └─────────────────┘
+         │
+         ▼
+┌─────────────────┐     ┌─────────────────┐
+│   Encryption    │ ──▶ │   .sql.gz.enc   │
+│   (AES-256-GCM) │     │   .sql.br.enc   │
+└────────┬────────┘     └─────────────────┘
+         │
+         ▼
+┌─────────────────┐
+│ Storage Upload  │
+└─────────────────┘
+```
+
+### Metadata File
+
+Every encrypted backup has a sidecar `.meta.json`:
+
+```json
+{
+  "jobId": "abc123",
+  "jobName": "daily-mysql",
+  "timestamp": "2024-01-15T10:30:00Z",
+  "sourceAdapter": "mysql",
+  "databases": ["myapp", "analytics"],
+  "size": 52428800,
+  "compression": "brotli",
+  "encrypted": true,
+  "encryptionProfileId": "profile-uuid",
+  "iv": "a1b2c3d4e5f6...",
+  "authTag": "f6e5d4c3b2a1..."
+}
+```
+
+## Restore Decryption
+
+### Standard Flow
+
+```typescript
+async function decryptBackup(
+  encryptedPath: string,
+  metadata: BackupMetadata
+): Promise<string> {
+  // 1. Get encryption key
+  const key = await EncryptionService.getDecryptedKey(
+    metadata.encryptionProfileId!
+  );
+
+  // 2. Create decryption stream
+  const decryptStream = createDecryptionStream(
+    key,
+    Buffer.from(metadata.iv!, "hex"),
+    Buffer.from(metadata.authTag!, "hex")
+  );
+
+  // 3. Pipe through decryption
+  const decryptedPath = encryptedPath.replace(".enc", "");
+
+  await pipeline(
+    createReadStream(encryptedPath),
+    decryptStream,
+    createWriteStream(decryptedPath)
+  );
+
+  return decryptedPath;
+}
+```
+
+### Smart Recovery
+
+If the encryption profile ID doesn't match (e.g., after reimporting a key), the system attempts automatic key discovery:
+
+```typescript
+async function smartRecovery(
+  encryptedPath: string,
+  metadata: BackupMetadata
+): Promise<Buffer | null> {
+  // Get all available profiles
+  const profiles = await prisma.encryptionProfile.findMany();
+
+  for (const profile of profiles) {
+    try {
+      const key = await EncryptionService.getDecryptedKey(profile.id);
+
+      // Try to decrypt first 1KB
+      const decryptStream = createDecryptionStream(
+        key,
+        Buffer.from(metadata.iv!, "hex"),
+        Buffer.from(metadata.authTag!, "hex")
+      );
+
+      const sample = await readFirstBytes(encryptedPath, 1024);
+      const decrypted = decryptStream.update(sample);
+
+      // Validate: check for compression magic bytes or SQL content
+      if (isValidContent(decrypted)) {
+        console.log(`Smart Recovery: Matched profile "${profile.name}"`);
+        return key;
+      }
+    } catch {
+      // Try next profile
+    }
+  }
+
+  return null;
+}
+
+function isValidContent(buffer: Buffer): boolean {
+  // Check for Gzip magic bytes
+  if (buffer[0] === 0x1f && buffer[1] === 0x8b) return true;
+
+  // Check for Brotli (less reliable)
+  // Check for SQL content (ASCII printable)
+  const printableRatio = buffer
+    .filter(b => b >= 32 && b <= 126)
+    .length / buffer.length;
+
+  return printableRatio > 0.9;
+}
+```
+
+## Key Management
+
+### Exporting Keys
+
+Users can export keys for disaster recovery:
+
+```typescript
+// UI: Copy raw hex key
+const rawKey = decrypt(profile.key); // 64-char hex string
+
+// UI: Download Recovery Kit
+const recoveryKit = {
+  profileName: profile.name,
+  masterKey: rawKey,
+  createdAt: profile.createdAt,
+  instructions: "Import this key to restore access to encrypted backups...",
+};
+```
+
+### Importing Keys
+
+```typescript
+async function importKey(name: string, hexKey: string) {
+  // Validate key format (64 hex chars = 32 bytes)
+  if (!/^[a-f0-9]{64}$/i.test(hexKey)) {
+    throw new Error("Invalid key format");
+  }
+
+  // Encrypt and store as new profile
+  const encryptedKey = encrypt(hexKey);
+
+  return prisma.encryptionProfile.create({
+    data: { name, key: encryptedKey },
+  });
+}
+```
+
+## Security Best Practices
+
+1. **Backup ENCRYPTION_KEY**: Store it securely outside the application
+2. **Export Profile Keys**: Save master keys in a password manager
+3. **Regular Restore Tests**: Verify encryption/decryption works
+4. **Key Rotation**: Create new profiles periodically for new backups
+
+## Related Documentation
+
+- [Security - Encryption](/user-guide/security/encryption)
+- [Recovery Kit](/user-guide/security/recovery-kit)
+- [Runner Pipeline](/developer-guide/core/runner)
