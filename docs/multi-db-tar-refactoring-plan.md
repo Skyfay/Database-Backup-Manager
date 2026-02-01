@@ -1,6 +1,6 @@
 # Multi-DB Backup Refactoring: TAR-Archiv Konzept
 
-> **Status:** Geplant
+> **Status:** In Bearbeitung (Phase 3 abgeschlossen)
 > **Erstellt:** 2026-02-01
 > **Ziel:** Einheitliches TAR-basiertes Multi-DB Backup/Restore für alle Datenbank-Adapter
 
@@ -69,15 +69,15 @@ interface TarManifest {
 
 ## 🔄 Phasen-Übersicht
 
-| Phase | Beschreibung | Geschätzter Aufwand |
-|-------|--------------|---------------------|
-| **Phase 1** | Shared Utilities & Interfaces | 0.5 Tage |
-| **Phase 2** | MySQL/MariaDB Adapter | 0.5 Tage |
-| **Phase 3** | PostgreSQL Adapter | 0.5 Tage |
-| **Phase 4** | MongoDB Adapter | 0.5 Tage |
-| **Phase 5** | Integration & Testing | 1 Tag |
-| **Phase 6** | Code Cleanup | 0.5 Tage |
-| **Phase 7** | Dokumentation | 0.5 Tage |
+| Phase | Beschreibung | Geschätzter Aufwand | Status |
+|-------|--------------|---------------------|--------|
+| **Phase 1** | Shared Utilities & Interfaces | 0.5 Tage | ✅ Abgeschlossen |
+| **Phase 2** | MySQL/MariaDB Adapter | 0.5 Tage | ✅ Abgeschlossen |
+| **Phase 3** | PostgreSQL Adapter | 0.5 Tage | ✅ Abgeschlossen |
+| **Phase 4** | MongoDB Adapter | 0.5 Tage | ⏳ Ausstehend |
+| **Phase 5** | Integration & Testing | 1 Tag | ⏳ Ausstehend |
+| **Phase 6** | Code Cleanup | 0.5 Tage | ⏳ Ausstehend |
+| **Phase 7** | Dokumentation | 0.5 Tage | ⏳ Ausstehend |
 
 **Gesamt: ~4 Tage**
 
@@ -306,11 +306,11 @@ if (await isMultiDbTar(sourcePath)) {
 
 ### TODOs Phase 3
 
-- [ ] `dump.ts` - Multi-DB mit `pg_dump -Fc` pro DB implementieren
-- [ ] `dump.ts` - `pg_dumpall` Code komplett entfernen
-- [ ] `restore.ts` - TAR-basiertes Multi-DB Restore
-- [ ] `restore.ts` - Kompletten Plain-SQL Transform-Stream Code entfernen
-- [ ] `analyze.ts` - TAR-Support hinzufügen
+- [x] `dump.ts` - Multi-DB mit `pg_dump -Fc` pro DB implementieren
+- [x] `dump.ts` - `pg_dumpall` Code komplett entfernen
+- [x] `restore.ts` - TAR-basiertes Multi-DB Restore
+- [x] `restore.ts` - Kompletten Plain-SQL Transform-Stream Code entfernen (592 → 279 LOC = -53%)
+- [x] `analyze.ts` - TAR-Support hinzufügen
 - [ ] Integration Tests für PostgreSQL Multi-DB
 
 ---
