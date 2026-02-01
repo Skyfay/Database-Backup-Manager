@@ -162,7 +162,8 @@ export default defineConfig({
 
     socialLinks: [
       { icon: 'github', link: 'https://github.com/Skyfay/dbackup' },
-      { icon: 'gitlab', link: 'https://gitlab.com/Skyfay/dbackup' }
+      { icon: 'gitlab', link: 'https://gitlab.com/Skyfay/dbackup' },
+      { icon: 'discord', link: 'https://dc.skyfay.ch' }
     ],
 
     footer: {

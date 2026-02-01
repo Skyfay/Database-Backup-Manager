@@ -105,3 +105,9 @@ DBackup is built with modern technologies:
 - **Streaming**: Native Node.js streams for efficient encryption/compression
 
 The plugin-based adapter architecture makes it easy to add new databases, storage providers, or notification channels.
+
+## Community & Support
+
+- 💬 **Discord**: Join our community at [https://dc.skyfay.ch](https://dc.skyfay.ch)
+- 📝 **Documentation**: Full guides and API reference in this wiki
+- 🐛 **Issues**: Report bugs or request features on [GitLab Issues](https://gitlab.com/skyfay/dbackup/-/issues)
