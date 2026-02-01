@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { LoginForm } from "@/components/auth/login-form";
 import { getPublicSsoProviders } from "@/app/actions/oidc";
+import Image from "next/image";
 
 interface HomeProps {
     searchParams: Promise<{ error?: string }>;
@@ -34,8 +35,15 @@ export default async function Home({ searchParams }: HomeProps) {
 
     return (
         <div className="flex min-h-screen flex-col items-center justify-center bg-muted/50">
-             <div className="mb-8 font-bold text-2xl tracking-tight">
-                DBackup
+             <div className="mb-8 flex items-center gap-3">
+                <Image
+                    src="/logo.svg"
+                    alt="DBackup Logo"
+                    width={40}
+                    height={40}
+                    priority
+                />
+                <h1 className="font-bold text-2xl tracking-tight">DBackup</h1>
              </div>
             <LoginForm
                 allowSignUp={userCount === 0}

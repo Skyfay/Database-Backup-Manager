@@ -6,6 +6,7 @@ import { LayoutDashboard, Database, HardDrive, FolderOpen, CalendarClock, Histor
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { useSession, signOut } from "@/lib/auth-client"
+import Image from "next/image"
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -78,8 +79,15 @@ export function Sidebar({ permissions = [], isSuperAdmin = false, updateAvailabl
 
     return (
         <div className="w-64 border-r bg-background h-screen flex flex-col hidden md:flex sticky top-0">
-            <div className="h-16 flex items-center px-6 border-b">
-                <h1 className="text-xl font-bold tracking-tight">DBackup Dashboard</h1>
+            <div className="h-16 flex items-center px-6 border-b gap-3">
+                <Image
+                    src="/logo.svg"
+                    alt="DBackup Logo"
+                    width={28}
+                    height={28}
+                    priority
+                />
+                <h1 className="text-xl font-bold tracking-tight">DBackup</h1>
             </div>
             <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
                 {sidebarItems.map((item) => {
