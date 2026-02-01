@@ -43,6 +43,12 @@ The backup format for **multi-database backups** has fundamentally changed from 
 - **Shared Utilities**: New `tar-utils.ts` with 18 unit tests for TAR operations
 - **Cleaner Adapters**: Removed legacy multi-DB parsing code from all adapters
 
+### 🧪 Testing & Quality
+- **Multi-DB Integration Tests**: New test suites for TAR-based multi-database backup and restore
+- **MSSQL Test Setup**: Automatic `testdb` database creation for MSSQL containers via `setup-mssql-testdb.sh`
+- **Azure SQL Edge Skip**: Tests gracefully skip Azure SQL Edge on ARM64 Macs (limited functionality)
+- **84 Integration Tests**: Full coverage across MySQL, MariaDB, PostgreSQL, MongoDB, and MSSQL
+
 ### 📚 Documentation
 - **Developer Guide**: Updated database adapter documentation with TAR format details
 - **User Guide**: Added Multi-DB restore workflow documentation

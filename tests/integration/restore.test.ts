@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { registry } from '@/lib/core/registry';
 import { registerAdapters } from '@/lib/adapters';
 import { DatabaseAdapter } from '@/lib/core/interfaces';
-import { testDatabases } from './test-configs';
+import { testDatabases, limitedDatabases } from './test-configs';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
@@ -24,10 +24,13 @@ describe('Integration Tests: Database Restore', () => {
     });
 
     testDatabases.forEach(({ name, config }) => {
+        // Skip known limited databases (e.g., Azure SQL Edge on ARM64)
+        const shouldSkip = limitedDatabases.includes(name);
+
         describe(name, () => {
             const dumpFile = path.join(tempDir, `${name.replace(/\s+/g, '_')}_restore_source.sql`);
 
-            it('should successfully restore a valid dump', async () => {
+            it.skipIf(shouldSkip)('should successfully restore a valid dump', async () => {
                 const adapter = registry.get(config.type) as DatabaseAdapter;
                 if (!adapter) throw new Error(`Adapter ${config.type} not found`);
 

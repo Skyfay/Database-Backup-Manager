@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import { registry } from '@/lib/core/registry';
 import { registerAdapters } from '@/lib/adapters';
 import { DatabaseAdapter } from '@/lib/core/interfaces';
-import { testDatabases } from './test-configs';
+import { testDatabases, limitedDatabases } from './test-configs';
 
 describe('Integration Tests: Database Connectivity', () => {
 
@@ -11,9 +11,12 @@ describe('Integration Tests: Database Connectivity', () => {
     });
 
     testDatabases.forEach(({ name, config }) => {
+        // Skip known limited databases (e.g., Azure SQL Edge on ARM64)
+        const shouldSkip = limitedDatabases.includes(name);
+
         describe(name, () => {
             // Test 1: Connectivity
-            it('should successfully connect', async () => {
+            it.skipIf(shouldSkip)('should successfully connect', async () => {
                 const adapter = registry.get(config.type) as DatabaseAdapter;
                 if (!adapter) throw new Error(`Adapter ${config.type} not found`);
 
@@ -35,7 +38,7 @@ describe('Integration Tests: Database Connectivity', () => {
             }, 20000); // Increased timeout per test
 
             // Test 2: Listing
-            it('should list databases', async () => {
+            it.skipIf(shouldSkip)('should list databases', async () => {
                 const adapter = registry.get(config.type) as DatabaseAdapter;
                 if (!adapter.getDatabases) throw new Error("Adapter does not implement getDatabases method");
 

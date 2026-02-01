@@ -25,6 +25,10 @@ if [ "$KEEP_RUNNING" = false ]; then
     echo "" # New line after skip/timeout
 fi
 
+# Setup MSSQL testdb (MSSQL doesn't auto-create databases like MySQL/PostgreSQL)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+"$SCRIPT_DIR/setup-mssql-testdb.sh" || echo "⚠️ MSSQL setup had issues (non-fatal)"
+
 echo "🧪 Running Integration Tests..."
 npm run test:integration:run
 

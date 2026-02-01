@@ -120,3 +120,44 @@ export const testDatabases = [
         }
     }
 ];
+
+// Multi-Database test configurations
+// These test the TAR-based multi-DB backup/restore functionality
+export const multiDbTestConfigs = [
+    {
+        name: 'MySQL 8 Multi-DB',
+        config: {
+            type: 'mysql',
+            host: TEST_HOST,
+            port: 33380,
+            user: 'root',
+            password: 'rootpassword',
+            database: ['testdb', 'mysql'] // Multiple databases
+        }
+    },
+    {
+        name: 'PostgreSQL 16 Multi-DB',
+        config: {
+            type: 'postgres',
+            host: TEST_HOST,
+            port: 54416,
+            user: 'testuser',
+            password: 'testpassword',
+            database: ['testdb', 'postgres'] // Multiple databases
+        }
+    },
+    {
+        name: 'MongoDB 7 Multi-DB',
+        config: {
+            type: 'mongodb',
+            host: TEST_HOST,
+            port: 27707,
+            user: 'root',
+            password: 'rootpassword',
+            database: ['testdb', 'admin'] // Multiple databases
+        }
+    }
+];
+
+// Databases that are known to have limitations (e.g., Azure SQL Edge on ARM64)
+export const limitedDatabases = ['Test Azure SQL Edge'];
