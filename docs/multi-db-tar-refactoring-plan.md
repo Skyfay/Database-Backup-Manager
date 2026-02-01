@@ -458,24 +458,29 @@ if (await isMultiDbTar(sourcePath)) {
 - [ ] Warning für Multi-DB entfernen
 - [ ] `targetDbs = [dbs[0]]` Workaround entfernen
 
-### 6.2 Code-Reduktion Schätzung
+### 6.2 Code-Reduktion Schätzung → Tatsächliche Ergebnisse
 
 | Adapter | Vorher (LOC) | Nachher (LOC) | Reduktion |
 |---------|--------------|---------------|-----------|
-| MySQL restore.ts | ~213 | ~150 | -30% |
-| PostgreSQL dump.ts | ~120 | ~100 | -17% |
-| PostgreSQL restore.ts | ~592 | ~300 | **-49%** |
-| MongoDB dump.ts | ~80 | ~90 | +12% (mehr Features) |
-| **Gesamt** | ~1005 | ~640 | **~36% weniger** |
+| MySQL dump.ts | ~220 | **147** | **-33%** |
+| MySQL restore.ts | ~213 | **163** | **-23%** |
+| PostgreSQL dump.ts | ~120 | **200** | +67% (mehr Features) |
+| PostgreSQL restore.ts | ~592 | **279** | **-53%** |
+| MongoDB dump.ts | ~80 | **192** | +140% (Multi-DB!) |
+| MongoDB restore.ts | ~98 | **256** | +161% (Multi-DB!) |
+| **Neue Dateien** | 0 | **~360** | TAR Utils + Types |
+| **Gesamt** | ~1323 | ~1597 | ~+20% |
+
+**Hinweis:** Die Code-Menge ist gestiegen, weil wir jetzt echtes Multi-DB Support haben (vorher nur Workarounds/Warnungen). Die Komplexität pro Zeile ist jedoch drastisch gesunken da keine Transform-Streams mehr nötig sind.
 
 ### TODOs Phase 6
 
-- [ ] MySQL: Transform Stream Code komplett entfernen
-- [ ] PostgreSQL: pg_dumpall Code komplett entfernen
-- [ ] PostgreSQL: Plain-SQL Transform Stream komplett entfernen
-- [ ] MongoDB: Workarounds entfernen
-- [ ] Code Review: Alle Adapter auf toten Code prüfen
-- [ ] Unused Imports/Dependencies entfernen
+- [x] MySQL: Transform Stream Code komplett entfernen (bereits in Phase 2 erledigt!)
+- [x] PostgreSQL: pg_dumpall Code komplett entfernen (bereits in Phase 3 erledigt!)
+- [x] PostgreSQL: Plain-SQL Transform Stream komplett entfernen (bereits in Phase 3 erledigt!)
+- [x] MongoDB: Workarounds entfernen (bereits in Phase 4 erledigt!)
+- [x] Code Review: Alle Adapter auf toten Code prüfen (ESLint check)
+- [x] Unused Imports/Dependencies entfernen (3 Fixes: Readable, chunks, dialect)
 
 ---
 

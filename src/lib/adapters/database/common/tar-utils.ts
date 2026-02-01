@@ -10,7 +10,6 @@ import fs from "fs/promises";
 import path from "path";
 import { pack, extract } from "tar-stream";
 import { pipeline } from "stream/promises";
-import { Readable } from "stream";
 import {
     TarManifest,
     TarFileEntry,
@@ -124,7 +123,6 @@ export async function extractMultiDbTar(
 
     return new Promise((resolve, reject) => {
         const extractor = extract();
-        const chunks: Map<string, Buffer[]> = new Map();
 
         extractor.on("entry", (header, stream, next) => {
             const entryChunks: Buffer[] = [];

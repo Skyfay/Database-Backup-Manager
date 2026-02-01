@@ -22,9 +22,6 @@ async function dumpSingleDatabase(
     config: any,
     log: (msg: string, level?: LogLevel, type?: LogType, details?: string) => void
 ): Promise<void> {
-    const dialect = getDialect('mongodb', config.detectedVersion);
-
-    // Get base args but override to dump specific DB to file
     const args: string[] = [];
 
     if (config.uri) {
