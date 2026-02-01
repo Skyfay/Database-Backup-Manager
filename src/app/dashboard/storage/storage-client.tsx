@@ -81,11 +81,19 @@ export function StorageClient({ canDownload, canRestore, canDelete }: StorageCli
 
     const fetchAdapters = async () => {
         try {
-            const res = await fetch("/api/adapters");
-            if (res.ok) {
-                const all = await res.json();
-                setDestinations(all.filter((a: AdapterConfig) => a.type === "storage"));
-                setSources(all.filter((a: AdapterConfig) => a.type === "database"));
+            // Fetch storage destinations and database sources separately
+            const [storageRes, databaseRes] = await Promise.all([
+                fetch("/api/adapters?type=storage"),
+                fetch("/api/adapters?type=database")
+            ]);
+
+            if (storageRes.ok) {
+                const storageData = await storageRes.json();
+                setDestinations(storageData);
+            }
+            if (databaseRes.ok) {
+                const databaseData = await databaseRes.json();
+                setSources(databaseData);
             }
         } catch (e) {
             console.error(e);
