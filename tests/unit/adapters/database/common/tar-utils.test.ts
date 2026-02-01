@@ -10,9 +10,8 @@ import {
     cleanupTempDir,
     shouldRestoreDatabase,
     getTargetDatabaseName,
-    MANIFEST_FILENAME,
 } from "@/lib/adapters/database/common/tar-utils";
-import { TarManifest, TarFileEntry } from "@/lib/adapters/database/common/types";
+import type { TarFileEntry } from "@/lib/adapters/database/common/types";
 
 describe("TAR Utils for Multi-DB Backups", () => {
     let tempDir: string;

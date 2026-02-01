@@ -25,6 +25,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Wiki (VitePress) build artifacts - not our code
+    "wiki/.vitepress/cache/**",
+    "wiki/.vitepress/dist/**",
   ]),
 ]);
 
