@@ -212,7 +212,7 @@ export default defineConfig({
     ],
 
     footer: {
-      message: 'Released under the GNU General Public License.',
+      message: 'Released under the GNU General Public License. | <a href="https://skyfay.ch/privacy" target="_blank" rel="noopener noreferrer">Privacy</a> · <a href="https://skyfay.ch/legal" target="_blank" rel="noopener noreferrer">Legal Notice</a>',
       copyright: 'Copyright © 2026 DBackup'
     },
 
