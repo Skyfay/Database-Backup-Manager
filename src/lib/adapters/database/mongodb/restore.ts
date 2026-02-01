@@ -201,8 +201,59 @@ export async function restore(
             // ===== SINGLE DATABASE RESTORE =====
             log('Detected single-database archive', 'info');
 
-            const dialect = getDialect('mongodb', config.detectedVersion);
-            const args = dialect.getRestoreArgs(config);
+            // Determine source and target database from mapping or config
+            let sourceDb: string | undefined;
+            let targetDb: string | undefined;
+
+            if (mapping && mapping.length > 0) {
+                const selected = mapping.filter(m => m.selected);
+                if (selected.length > 0) {
+                    sourceDb = selected[0].originalName;
+                    targetDb = selected[0].targetName || sourceDb;
+                }
+            }
+
+            // Fallback: use originalDatabase or database as source, and targetDatabaseName for rename
+            if (!sourceDb) {
+                // originalDatabase is set by restore-service when targetDatabaseName differs
+                const origDb = config.originalDatabase || config.database;
+                sourceDb = Array.isArray(origDb) ? origDb[0] : origDb;
+            }
+            if (!targetDb && config.targetDatabaseName) {
+                targetDb = config.targetDatabaseName;
+            }
+            if (!targetDb) {
+                targetDb = sourceDb; // No rename, restore to same name
+            }
+
+            // Build restore arguments
+            const args: string[] = [];
+
+            if (config.uri) {
+                args.push(`--uri=${config.uri}`);
+            } else {
+                args.push('--host', config.host);
+                args.push('--port', String(config.port));
+
+                if (config.user && config.password) {
+                    args.push('--username', config.user);
+                    args.push('--password', config.password);
+                    args.push('--authenticationDatabase', config.authenticationDatabase || 'admin');
+                }
+            }
+
+            args.push('--archive');
+            args.push('--gzip');
+            args.push('--drop');
+
+            // Handle database renaming with nsFrom/nsTo
+            if (sourceDb && targetDb && sourceDb !== targetDb) {
+                args.push('--nsFrom', `${sourceDb}.*`);
+                args.push('--nsTo', `${targetDb}.*`);
+                log(`Restoring database: ${sourceDb} -> ${targetDb}`, 'info');
+            } else if (sourceDb) {
+                log(`Restoring database: ${sourceDb}`, 'info');
+            }
 
             // Masking for logs
             const logArgs = args.map(arg => {
@@ -211,7 +262,7 @@ export async function restore(
                 return arg;
             });
 
-            log(`Starting restore with args: mongorestore ${logArgs.join(' ')}`);
+            log(`Restoring database`, 'info', 'command', `mongorestore ${logArgs.join(' ')}`);
 
             // Spawn process
             const restoreProcess = spawn('mongorestore', args);

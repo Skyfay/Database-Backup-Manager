@@ -538,6 +538,9 @@ export class RestoreService {
                     const dir = path.dirname(dbConf.path);
                     dbConf.path = path.join(dir, targetDatabaseName);
                 } else {
+                    // Store original database name for adapters that need it (e.g., MongoDB nsFrom/nsTo)
+                    dbConf.originalDatabase = dbConf.database;
+                    dbConf.targetDatabaseName = targetDatabaseName;
                     dbConf.database = targetDatabaseName;
                 }
             }
