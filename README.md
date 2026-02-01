@@ -1,7 +1,27 @@
-# DBackup
+<div align="center">
+  <img src="wiki/public/logo.svg" alt="DBackup Logo" width="120">
+</div>
+
+<h1 align="center">DBackup</h1>
 
 <p align="center">
   <strong>Self-hosted database backup automation with encryption, compression, and smart retention.</strong>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/MySQL-4479A1?logo=mysql&logoColor=white" alt="MySQL">
+  <img src="https://img.shields.io/badge/PostgreSQL-4169E1?logo=postgresql&logoColor=white" alt="PostgreSQL">
+  <img src="https://img.shields.io/badge/MongoDB-47A248?logo=mongodb&logoColor=white" alt="MongoDB">
+  <img src="https://img.shields.io/badge/SQLite-003B57?logo=sqlite&logoColor=white" alt="SQLite">
+  <img src="https://img.shields.io/badge/Microsoft_SQL_Server-CC2927" alt="MSSQL">
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/license-GPL--3.0-blue.svg" alt="License">
+  <img src="https://img.shields.io/badge/docker-multi--arch-2496ED?logo=docker&logoColor=white" alt="Docker">
+  <img src="https://img.shields.io/badge/platform-linux%20%7C%20macos%20%7C%20windows-lightgrey" alt="Platform">
+  <img src="https://img.shields.io/badge/self--hosted-yes-brightgreen" alt="Self-hosted">
+  <img src="https://img.shields.io/badge/open_source-%E2%9D%A4%EF%B8%8F-red" alt="Open Source">
 </p>
 
 <p align="center">
@@ -10,6 +30,14 @@
   <a href="https://dbackup.app/changelog">Changelog</a> •
   <a href="https://dbackup.app/roadmap">Roadmap</a>
 </p>
+
+
+### What is DBackup?
+
+DBackup is a comprehensive, self-hosted backup solution designed to automate and secure your database backups. It provides enterprise-grade encryption (AES-256-GCM), flexible storage options, and intelligent retention policies to ensure your data is always protected and recoverable.
+
+Whether you're running a single MySQL database or managing multiple PostgreSQL, MongoDB, and SQL Server instances, DBackup offers a unified interface with real-time monitoring, granular access control, and seamless restore capabilities.
+
 
 > **Note**: This project is primarily developed on GitLab. This GitHub repository is a mirror.
 > **Main Repository**: [https://gitlab.com/Skyfay/dbackup](https://gitlab.com/Skyfay/dbackup)
