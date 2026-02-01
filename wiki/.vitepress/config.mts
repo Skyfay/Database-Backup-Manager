@@ -14,7 +14,13 @@ export default defineConfig({
     /localhost/
   ],
   head: [
-    ['link', { rel: 'icon', href: '/favicon.ico' }],
+    // Favicons - Multiple sizes for best compatibility
+    ['link', { rel: 'icon', type: 'image/png', sizes: '16x16', href: '/favicon/favicon-16x16.png' }],
+    ['link', { rel: 'icon', type: 'image/png', sizes: '32x32', href: '/favicon/favicon-32x32.png' }],
+    ['link', { rel: 'icon', type: 'image/png', sizes: '64x64', href: '/favicon/favicon-64x64.png' }],
+    ['link', { rel: 'icon', type: 'image/png', sizes: '128x128', href: '/favicon/favicon-128x128.png' }],
+    ['link', { rel: 'icon', type: 'image/png', sizes: '256x256', href: '/favicon/favicon-256x256.png' }],
+    ['link', { rel: 'apple-touch-icon', sizes: '180x180', href: '/favicon/favicon-256x256.png' }], // iOS uses closest size
     // SEO Meta Tags
     ['meta', { name: 'keywords', content: 'database backup, mysql backup, postgresql backup, mongodb backup, automated backup, encryption, compression, self-hosted, docker' }],
     ['meta', { name: 'author', content: 'Skyfay' }],
