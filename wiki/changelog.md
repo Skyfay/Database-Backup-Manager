@@ -2,6 +2,26 @@
 
 All notable changes to DBackup are documented here.
 
+## v0.9.2-beta - Branding & Documentation
+*In Development*
+
+This release focuses on improving the visual identity and accessibility of the project.
+
+### ✨ New Features
+
+#### 🎨 Visual Identity
+- **Official Logo**: Introduced the first official DBackup logo (database with cloud and backup symbol)
+- **Favicon**: Multi-resolution favicon support (16x16 to 512x512) for all browsers and devices
+- **Brand Integration**: Logo now appears in the application (login page, sidebar header, browser tab)
+
+#### 📚 Documentation & Community
+- **Documentation Portal**: Launched official documentation at [https://dbackup.app](https://dbackup.app)
+- **In-App Link**: Added quick access to documentation from the user menu in the sidebar
+- **Discord Community**: Linked Discord server in the documentation for community support
+- **SEO Optimization**: Added comprehensive meta tags, Open Graph, Twitter Cards, and structured data for better discoverability
+
+---
+
 ## v0.9.1-beta - Unified Multi-DB TAR Architecture
 *Released: February 1, 2026*
 
