@@ -144,10 +144,10 @@ export interface BackupMetadata {
 
 ### TODOs Phase 1
 
-- [ ] `src/lib/adapters/database/common/tar-utils.ts` erstellen
-- [ ] `src/lib/adapters/database/common/types.ts` erstellen
-- [ ] `src/lib/core/interfaces.ts` - `BackupMetadata` erweitern
-- [ ] Unit Tests für TAR-Utils schreiben
+- [x] `src/lib/adapters/database/common/tar-utils.ts` erstellen
+- [x] `src/lib/adapters/database/common/types.ts` erstellen
+- [x] `src/lib/core/interfaces.ts` - `BackupMetadata` erweitern
+- [x] Unit Tests für TAR-Utils schreiben (18 Tests)
 
 ---
 
@@ -599,7 +599,7 @@ tests/integration/
 
 | Phase | Status | Notizen |
 |-------|--------|---------|
-| Phase 1: Shared Utilities | ⬜ Nicht gestartet | |
+| Phase 1: Shared Utilities | ✅ Abgeschlossen | 18 Unit Tests bestanden |
 | Phase 2: MySQL Adapter | ⬜ Nicht gestartet | |
 | Phase 3: PostgreSQL Adapter | ⬜ Nicht gestartet | |
 | Phase 4: MongoDB Adapter | ⬜ Nicht gestartet | |

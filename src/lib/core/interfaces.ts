@@ -29,6 +29,12 @@ export interface BackupMetadata {
         iv: string;
         authTag: string;
     };
+    /** Multi-DB TAR archive metadata */
+    multiDb?: {
+        format: 'tar';
+        /** Database names contained in the archive */
+        databases: string[];
+    };
 }
 
 export interface BaseAdapter {
