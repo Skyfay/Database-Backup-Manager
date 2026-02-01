@@ -15,10 +15,11 @@ DBackup supports SSO authentication via OIDC (OpenID Connect):
 | Provider | Type | Adapter |
 | :--- | :--- | :--- |
 | **Authentik** | Self-hosted | Pre-configured |
+| **Keycloak** | Self-hosted | Pre-configured |
 | **PocketID** | Self-hosted | Pre-configured |
 | **Generic** | Any OIDC | Manual configuration |
 
-Pre-configured adapters automatically generate endpoints from a base URL.
+Pre-configured adapters automatically generate endpoints from a base URL or discovery.
 
 ## Adding an SSO Provider
 
@@ -39,7 +40,7 @@ Create an OIDC application in your identity provider:
 
 1. Go to **Settings** → **SSO Providers**
 2. Click **Add Provider**
-3. Select adapter type (Authentik, PocketID, or Generic)
+3. Select adapter type (Authentik, PocketID, Keycloak or Generic)
 4. Fill in configuration
 5. Click **Test** to verify
 6. Save
@@ -64,6 +65,24 @@ Authorization: {baseUrl}/application/o/authorize/
 Token: {baseUrl}/application/o/token/
 UserInfo: {baseUrl}/application/o/userinfo/
 ```
+
+### Keycloak
+
+[Keycloak](https://www.keycloak.org/) is an enterprise-grade open-source identity and access management solution.
+
+**Configuration**:
+| Field | Description | Example |
+| :--- | :--- | :--- |
+| **Name** | Display name | "Company SSO" |
+| **Keycloak URL** | Keycloak instance base URL | `https://auth.company.com` |
+| **Realm Name** | Authentication realm | `master` |
+| **Client ID** | From Keycloak client | `dbackup-client` |
+| **Client Secret** | From Keycloak client | `secret-key` |
+
+**Notes**:
+- Endpoints discovered via OIDC Discovery (`.well-known/openid-configuration`)
+- Supports both modern (Quarkus) and legacy versions
+- For Keycloak < 18: Include `/auth` in base URL (e.g., `https://auth.company.com/auth`)
 
 ### PocketID
 
@@ -213,7 +232,28 @@ Client secrets are encrypted:
 
 ## Provider-Specific Guides
 
-### Keycloak Setup
+### Keycloak Setup (Pre-configured Adapter)
+
+If using the **Keycloak adapter** (recommended):
+
+1. In Keycloak admin console, select your realm
+2. Go to **Clients** → **Create client**
+3. Configure:
+   - Client type: OpenID Connect
+   - Client ID: `dbackup`
+   - Client authentication: On
+4. Set **Valid redirect URIs**: `https://dbackup.example.com/*`
+5. Save and go to **Credentials** tab
+6. Copy **Client secret**
+7. In DBackup:
+   - Select **Keycloak** adapter
+   - Base URL: `https://auth.company.com` (or `https://auth.company.com/auth` for legacy versions)
+   - Realm: Your realm name (e.g., `master`)
+   - Client ID & Secret from Keycloak
+
+### Keycloak Setup (Generic Adapter)
+
+If you prefer manual configuration:
 
 1. Create realm or use existing
 2. Create client:
