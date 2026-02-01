@@ -219,11 +219,11 @@ if (await isMultiDbTar(sourcePath)) {
 
 ### TODOs Phase 2
 
-- [ ] `dump.ts` - `dumpSingleDatabase()` Helper extrahieren
-- [ ] `dump.ts` - Multi-DB TAR-Erstellung implementieren
-- [ ] `restore.ts` - TAR-Extraktion & Loop-Restore implementieren
-- [ ] `restore.ts` - Alten Multi-DB Stream-Code entfernen
-- [ ] `analyze.ts` - TAR-Support für DB-Analyse hinzufügen
+- [x] `dump.ts` - `dumpSingleDatabase()` Helper extrahieren
+- [x] `dump.ts` - Multi-DB TAR-Erstellung implementieren
+- [x] `restore.ts` - TAR-Extraktion & Loop-Restore implementieren
+- [x] `restore.ts` - Alten Multi-DB Stream-Code entfernen
+- [x] `analyze.ts` - TAR-Support für DB-Analyse hinzufügen
 - [ ] Integration Tests für MySQL Multi-DB
 
 ---
@@ -600,7 +600,7 @@ tests/integration/
 | Phase | Status | Notizen |
 |-------|--------|---------|
 | Phase 1: Shared Utilities | ✅ Abgeschlossen | 18 Unit Tests bestanden |
-| Phase 2: MySQL Adapter | ⬜ Nicht gestartet | |
+| Phase 2: MySQL Adapter | ✅ Abgeschlossen | Code -40% reduziert |
 | Phase 3: PostgreSQL Adapter | ⬜ Nicht gestartet | |
 | Phase 4: MongoDB Adapter | ⬜ Nicht gestartet | |
 | Phase 5: Integration & Testing | ⬜ Nicht gestartet | |

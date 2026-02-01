@@ -1,6 +1,17 @@
 import { execFileAsync } from "./connection";
+import { isMultiDbTar, readTarManifest } from "../common/tar-utils";
 
 export async function analyzeDump(sourcePath: string): Promise<string[]> {
+    // Check if this is a Multi-DB TAR archive
+    if (await isMultiDbTar(sourcePath)) {
+        const manifest = await readTarManifest(sourcePath);
+        if (manifest) {
+            return manifest.databases.map(d => d.name);
+        }
+        return [];
+    }
+
+    // Single SQL file analysis
     const dbs = new Set<string>();
 
     try {
