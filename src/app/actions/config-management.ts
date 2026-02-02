@@ -5,9 +5,9 @@ import { PERMISSIONS } from "@/lib/permissions";
 import { ConfigService } from "@/services/config-service";
 import { RestoreOptions } from "@/lib/types/config-backup";
 import { runConfigBackup } from "@/lib/runner/config-runner";
+import { getTempDir } from "@/lib/temp-dir";
 import { promises as fs } from "fs";
 import path from "path";
-import os from "os";
 
 const configService = new ConfigService();
 
@@ -42,7 +42,7 @@ export async function uploadAndRestoreConfigAction(formData: FormData) {
         return { success: false, error: "No backup file provided" };
     }
 
-    const tempDir = os.tmpdir();
+    const tempDir = getTempDir();
     const tempBackupPath = path.join(tempDir, `upload_restore_${Date.now()}_${backupFile.name}`);
     let tempMetaPath: string | undefined;
 

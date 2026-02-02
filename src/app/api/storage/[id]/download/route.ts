@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { registerAdapters } from "@/lib/adapters";
 import { storageService } from "@/services/storage-service";
+import { getTempDir } from "@/lib/temp-dir";
 import path from "path";
-import os from "os";
 import fs from "fs";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
@@ -34,7 +34,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
              return NextResponse.json({ error: "Missing file param" }, { status: 400 });
         }
 
-        const tempDir = os.tmpdir();
+        const tempDir = getTempDir();
         // Use random suffix to avoid collision if multiple downloads happen
         const tempName = `${path.basename(file)}_${Date.now()}`;
         tempFile = path.join(tempDir, tempName);

@@ -4,8 +4,8 @@ import { registerAdapters } from "@/lib/adapters";
 import { StorageAdapter, DatabaseAdapter, BackupMetadata } from "@/lib/core/interfaces";
 import { decryptConfig } from "@/lib/crypto";
 import { compareVersions } from "@/lib/utils";
+import { getTempDir } from "@/lib/temp-dir";
 import path from "path";
-import os from "os";
 import fs from "fs";
 import { pipeline } from "stream/promises";
 import { createReadStream, createWriteStream } from "fs";
@@ -233,7 +233,7 @@ export class RestoreService {
             // 3. Download File
             updateProgress(5, "Downloading");
             log(`Downloading backup file: ${file}...`, 'info');
-            const tempDir = os.tmpdir();
+            const tempDir = getTempDir();
             tempFile = path.join(tempDir, path.basename(file));
 
             const sConf = decryptConfig(JSON.parse(storageConfig.config));
@@ -245,7 +245,7 @@ export class RestoreService {
 
             try {
                 const metaRemotePath = file + ".meta.json";
-                const tempMetaPath = path.join(os.tmpdir(), "meta_" + Date.now() + ".json");
+                const tempMetaPath = path.join(getTempDir(), "meta_" + Date.now() + ".json");
 
                 // Try to download metadata to check for encryption/compression
                 const metaDownSuccess = await storageAdapter.download(sConf, metaRemotePath, tempMetaPath, () => {}).catch(() => false);

@@ -3,7 +3,7 @@
 import { ConfigService } from "@/services/config-service";
 import fs from "fs";
 import path from "path";
-import os from "os";
+import { getTempDir } from "@/lib/temp-dir";
 import { Readable, Transform, pipeline } from "stream";
 import { promisify } from "util";
 import { createGzip } from "zlib";
@@ -94,7 +94,7 @@ export async function runConfigBackup() {
 
     // 5. Create Temp File for Processing
     const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-    const tempDir = os.tmpdir();
+    const tempDir = getTempDir();
     let finalExtension = ".json";
 
     // Base Stream

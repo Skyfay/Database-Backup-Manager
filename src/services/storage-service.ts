@@ -6,8 +6,8 @@ import { pipeline } from "stream/promises";
 import { createReadStream, createWriteStream, promises as fs } from "fs";
 import { getProfileMasterKey } from "@/services/encryption-service";
 import { createDecryptionStream } from "@/lib/crypto-stream";
+import { getTempDir } from "@/lib/temp-dir";
 import path from "path";
-import os from "os";
 import AdmZip from "adm-zip";
 import { registerAdapters } from "@/lib/adapters";
 
@@ -59,7 +59,7 @@ export class StorageService {
         // StorageAdapter interface usually only has 'upload' (from local file).
         // We need 'write' (string content) or we create a temp file.
         // Let's create a temp file.
-        const tempPath = path.join(os.tmpdir(), `meta-${Date.now()}.json`);
+        const tempPath = path.join(getTempDir(), `meta-${Date.now()}.json`);
         await fs.writeFile(tempPath, JSON.stringify(metadata, null, 2));
 
         try {
@@ -404,7 +404,7 @@ export class StorageService {
             if (!success) return { success: false };
 
             const metaRemotePath = remotePath + ".meta.json";
-            const tempMetaPath = path.join(os.tmpdir(), "dlmeta_" + Date.now() + ".json");
+            const tempMetaPath = path.join(getTempDir(), "dlmeta_" + Date.now() + ".json");
 
             try {
                 // Try to get metadata logic

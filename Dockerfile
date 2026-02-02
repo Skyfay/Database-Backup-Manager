@@ -68,6 +68,10 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
+# Default environment variables (can be overridden at runtime)
+ENV DATABASE_URL="file:/app/db/dbackup.db"
+ENV TZ="UTC"
+
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 

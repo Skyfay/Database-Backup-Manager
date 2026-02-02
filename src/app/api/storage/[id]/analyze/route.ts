@@ -5,8 +5,8 @@ import { registerAdapters } from "@/lib/adapters";
 import { StorageAdapter, DatabaseAdapter } from "@/lib/core/interfaces";
 import { decryptConfig } from "@/lib/crypto";
 import prisma from "@/lib/prisma";
+import { getTempDir } from "@/lib/temp-dir";
 import path from "path";
-import os from "os";
 import fs from "fs";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
@@ -61,7 +61,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
 
         // Simpler flow for now: Just download to temp and try to detect known formats.
 
-        const tempDir = os.tmpdir();
+        const tempDir = getTempDir();
         tempFile = path.join(tempDir, path.basename(file));
         const sConf = decryptConfig(JSON.parse(storageConfig.config));
 

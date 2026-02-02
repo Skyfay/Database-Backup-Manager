@@ -7,8 +7,8 @@ import { StorageAdapter } from "@/lib/core/interfaces";
 import { createDecryptionStream } from "@/lib/crypto-stream";
 import { createGunzip } from "zlib";
 import { createReadStream, promises as fs } from "fs";
+import { getTempDir } from "@/lib/temp-dir";
 import path from "path";
-import os from "os";
 import { Readable, Transform } from "stream";
 import { getProfileMasterKey, getEncryptionProfiles } from "@/services/encryption-service";
 import { pipeline } from "stream/promises";
@@ -446,7 +446,7 @@ export class ConfigService {
       };
 
       try {
-          const tempDir = os.tmpdir();
+          const tempDir = getTempDir();
           const downloadPath = path.join(tempDir, `restore-${executionId}-${path.basename(filePath)}`);
 
           log(`Initializing restore from ${filePath}`);

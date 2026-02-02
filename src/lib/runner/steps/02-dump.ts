@@ -1,7 +1,7 @@
 import { RunnerContext } from "../types";
 import { decryptConfig } from "@/lib/crypto";
+import { getTempDir } from "@/lib/temp-dir";
 import path from "path";
-import os from "os";
 import fs from "fs/promises";
 import { isMultiDbTar, readTarManifest } from "@/lib/adapters/database/common/tar-utils";
 
@@ -16,7 +16,7 @@ export async function stepExecuteDump(ctx: RunnerContext) {
     // 1. Prepare Paths
     const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
     const fileName = `${job.name.replace(/[^a-z0-9]/gi, '_')}_${timestamp}.sql`;
-    const tempDir = os.tmpdir();
+    const tempDir = getTempDir();
     const tempFile = path.join(tempDir, fileName);
 
     ctx.tempFile = tempFile;

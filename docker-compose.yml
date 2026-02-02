@@ -1,18 +1,16 @@
 services:
-  app:
+  dbackup:
     image: registry.gitlab.com/skyfay/dbackup:beta
+    container_name: dbackup
     restart: always
     ports:
       - "3000:3000"
     environment:
-      - DATABASE_URL=file:/app/db/prod.db
       - ENCRYPTION_KEY= # openssl rand -hex 32
       - BETTER_AUTH_URL=http://localhost:3000
       - BETTER_AUTH_SECRET= # openssl rand -base64 32
+      # - TZ=Europe/Zurich  # Optional: Server timezone
     volumes:
-      # Persist local backups
-      - ./backups:/backups # use /backups as local adapter path in the application
-      # Persist SQLite DB in a dedicated folder
-      - ./app/db:/app/db
-      # Persist Uploads/Avatars
-      - ./app/storage:/app/storage
+      - ./backups:/backups      # Local backup storage
+      - ./db:/app/db            # SQLite database
+      - ./storage:/app/storage  # Uploads & avatars

@@ -135,11 +135,4 @@ pnpm test
 
 ## Environment Variables
 
-| Variable | Description |
-| :--- | :--- |
-| `DATABASE_URL` | SQLite database path |
-| `ENCRYPTION_KEY` | 32-byte hex for encryption |
-| `BETTER_AUTH_SECRET` | Auth session secret |
-| `BETTER_AUTH_URL` | Public URL |
-
-See [Environment Configuration](/developer-guide/reference/environment) for details.
+See **[Environment Reference](/developer-guide/reference/environment)** for all variables and **[Installation Guide](/user-guide/installation)** for Docker setup.

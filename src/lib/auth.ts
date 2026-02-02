@@ -92,17 +92,23 @@ export const auth = betterAuth({
     logging: {
         level: "debug"
     },
-    baseURL: process.env.NEXT_PUBLIC_APP_URL || process.env.BETTER_AUTH_URL || "http://localhost:3000",
+    baseURL: process.env.BETTER_AUTH_URL || "http://localhost:3000",
     trustedOrigins: async (_request) => {
         // Refresh trusted providers on every auth request
         // This ensures newly added SSO providers work immediately without server restart
         // We mutate the same array reference, so better-auth sees the changes
         await loadTrustedProviders();
 
-        // Base trusted origins
-        const baseOrigins = [
-            process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
-        ];
+        // Base trusted origins from BETTER_AUTH_URL
+        const primaryUrl = process.env.BETTER_AUTH_URL || "http://localhost:3000";
+
+        // Additional trusted origins (comma-separated) for multiple access URLs
+        // Example: TRUSTED_ORIGINS="https://192.168.1.1:3000,https://backup.example.com"
+        const additionalOrigins = process.env.TRUSTED_ORIGINS
+            ? process.env.TRUSTED_ORIGINS.split(",").map(url => url.trim()).filter(Boolean)
+            : [];
+
+        const baseOrigins = [primaryUrl, ...additionalOrigins];
 
         // During SSO callback, we need to trust the IdP origins
         // Fetch them dynamically from the database

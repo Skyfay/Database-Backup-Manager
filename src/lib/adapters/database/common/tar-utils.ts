@@ -10,6 +10,7 @@ import fs from "fs/promises";
 import path from "path";
 import { pack, extract } from "tar-stream";
 import { pipeline } from "stream/promises";
+import { getTempDir } from "@/lib/temp-dir";
 import {
     TarManifest,
     TarFileEntry,
@@ -279,7 +280,7 @@ export async function readTarManifest(filePath: string): Promise<TarManifest | n
  * @returns Path to the created temporary directory
  */
 export async function createTempDir(prefix: string = "multidb-"): Promise<string> {
-    const tmpBase = process.env.TMPDIR || "/tmp";
+    const tmpBase = getTempDir();
     const dirName = `${prefix}${Date.now()}-${Math.random().toString(36).slice(2)}`;
     const dirPath = path.join(tmpBase, dirName);
     await fs.mkdir(dirPath, { recursive: true });

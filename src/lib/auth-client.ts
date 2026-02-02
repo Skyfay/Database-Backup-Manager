@@ -4,7 +4,9 @@ import { passkeyClient } from "@better-auth/passkey/client"
 import { ssoClient } from "@better-auth/sso/client"
 
 export const authClient = createAuthClient({
-    baseURL: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+    // Note: Client-side uses relative URLs - the browser handles the base URL
+    // This works because auth API routes are on the same origin
+    baseURL: "",
     plugins: [
         twoFactorClient(),
         passkeyClient(),

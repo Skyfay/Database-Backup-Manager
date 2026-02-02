@@ -67,7 +67,6 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - DATABASE_URL=file:/app/db/prod.db
       - ENCRYPTION_KEY=       # openssl rand -hex 32
       - BETTER_AUTH_URL=http://localhost:3000
       - BETTER_AUTH_SECRET=   # openssl rand -base64 32

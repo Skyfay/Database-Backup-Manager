@@ -2,14 +2,10 @@
 
 This guide covers all installation methods for DBackup.
 
-## Docker Compose (Recommended)
-
-Docker Compose is the recommended way to run DBackup in production.
-
-### Prerequisites
+## Prerequisites
 
 - Docker Engine 20.10+
-- Docker Compose v2+
+- Docker Compose v2+ (recommended)
 
 ::: tip Multi-Architecture Support
 DBackup images are available for **AMD64** (x86_64) and **ARM64** (aarch64) architectures.
@@ -17,65 +13,35 @@ DBackup images are available for **AMD64** (x86_64) and **ARM64** (aarch64) arch
 Supports: Intel/AMD servers, Raspberry Pi 4+, Apple Silicon (M1/M2/M3), AWS Graviton
 :::
 
-### Basic Setup
+## Docker Installation
 
-Create a `docker-compose.yml` file:
+::: code-group
 
-```yaml
+```yaml [Docker Compose (Recommended)]
+# docker-compose.yml
 services:
   dbackup:
     image: registry.gitlab.com/skyfay/dbackup:beta
+    container_name: dbackup
     restart: always
     ports:
       - "3000:3000"
     environment:
-      - DATABASE_URL=file:/app/db/prod.db
       - ENCRYPTION_KEY=${ENCRYPTION_KEY}
       - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}
       - BETTER_AUTH_URL=http://localhost:3000
+      # - TZ=Europe/Zurich  # Optional: Server timezone
     volumes:
-      - ./backups:/backups
-      - ./db:/app/db
-      - ./storage:/app/storage
+      - ./backups:/backups      # Local backup storage
+      - ./db:/app/db            # SQLite database
+      - ./storage:/app/storage  # Uploads & avatars
 ```
 
-### Generate Secrets
-
-Before starting, generate the required secrets:
-
-```bash
-# Generate ENCRYPTION_KEY (32 bytes as hex = 64 characters)
-openssl rand -hex 32
-
-# Generate BETTER_AUTH_SECRET
-openssl rand -base64 32
-```
-
-Create a `.env` file with your secrets:
-
-```bash
-ENCRYPTION_KEY=your-64-character-hex-key-here
-BETTER_AUTH_SECRET=your-base64-secret-here
-```
-
-### Start the Application
-
-```bash
-docker-compose up -d
-```
-
-Access the application at [http://localhost:3000](http://localhost:3000).
-
-## Docker Run
-
-For quick testing, you can use `docker run`:
-
-```bash
+```bash [Docker Run]
 docker run -d \
   --name dbackup \
   --restart always \
   -p 3000:3000 \
-  -e DATABASE_URL="file:/app/db/prod.db" \
   -e ENCRYPTION_KEY="$(openssl rand -hex 32)" \
   -e BETTER_AUTH_SECRET="$(openssl rand -base64 32)" \
   -e BETTER_AUTH_URL="http://localhost:3000" \
@@ -85,14 +51,58 @@ docker run -d \
   registry.gitlab.com/skyfay/dbackup:beta
 ```
 
+:::
+
+### Generate Secrets
+
+Before starting with Docker Compose, generate the required secrets:
+
+```bash
+# Generate ENCRYPTION_KEY (32 bytes as hex = 64 characters)
+openssl rand -hex 32
+
+# Generate BETTER_AUTH_SECRET
+openssl rand -base64 32
+```
+
+Create a `.env` file next to your `docker-compose.yml`:
+
+```bash
+ENCRYPTION_KEY=your-64-character-hex-key-here
+BETTER_AUTH_SECRET=your-base64-secret-here
+```
+
+### Start & Access
+
+```bash
+docker-compose up -d
+```
+
+Open [http://localhost:3000](http://localhost:3000) and create your first admin account.
+
 ## Environment Variables
 
 | Variable | Required | Description |
 | :--- | :---: | :--- |
-| `DATABASE_URL` | ✅ | SQLite database path. Use `file:/app/db/prod.db` for Docker. |
 | `ENCRYPTION_KEY` | ✅ | 32-byte hex string (64 chars) for encrypting credentials at rest. |
 | `BETTER_AUTH_SECRET` | ✅ | Base64 secret for authentication sessions. |
-| `BETTER_AUTH_URL` | ✅ | Public URL of your application (for OAuth callbacks). |
+| `BETTER_AUTH_URL` | ✅ | **Primary** URL where users access DBackup (for auth redirects). |
+| `TRUSTED_ORIGINS` | ❌ | Additional access URLs, comma-separated (see below). |
+| `PORT` | ❌ | Internal server port. Default: `3000` |
+| `DATABASE_URL` | ❌ | SQLite path. Default: `file:/app/db/dbackup.db` |
+| `TZ` | ❌ | Server timezone for logs. Default: `UTC` |
+| `TMPDIR` | ❌ | Temp directory for large backups. Default: `/tmp` |
+
+→ **[Full Environment Reference](/developer-guide/reference/environment)** for advanced configuration.
+
+::: tip Multiple Access URLs
+If DBackup is accessible via both IP and domain (e.g., reverse proxy), use `TRUSTED_ORIGINS`:
+```yaml
+environment:
+  - BETTER_AUTH_URL=https://backup.example.com       # Primary URL
+  - TRUSTED_ORIGINS=https://192.168.1.10:3000,http://localhost:3000
+```
+:::
 
 ::: danger Critical Security Note
 **Never lose your `ENCRYPTION_KEY`!** This key encrypts all stored credentials (database passwords, API keys). If lost, you cannot decrypt existing configurations.

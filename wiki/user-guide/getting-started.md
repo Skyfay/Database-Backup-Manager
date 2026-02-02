@@ -19,38 +19,13 @@ DBackup is a self-hosted web application for automating database backups. It sup
 - **Docker & Docker Compose** (recommended)
 - Or: **Node.js 20+** for local development
 
-## Quick Start with Docker
+## Installation
 
-The fastest way to get started is using Docker Compose:
-
-```yaml
-# docker-compose.yml
-services:
-  dbackup:
-    image: registry.gitlab.com/skyfay/dbackup:beta
-    restart: always
-    ports:
-      - "3000:3000"
-    environment:
-      - DATABASE_URL=file:/app/db/prod.db
-      - ENCRYPTION_KEY=your-64-char-hex-key  # openssl rand -hex 32
-      - BETTER_AUTH_SECRET=your-base64-secret # openssl rand -base64 32
-      - BETTER_AUTH_URL=http://localhost:3000
-    volumes:
-      - ./backups:/backups
-      - ./db:/app/db
-      - ./storage:/app/storage
-```
-
-Then run:
-
-```bash
-docker-compose up -d
-```
-
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+Follow the **[Installation Guide](/user-guide/installation)** to set up DBackup with Docker Compose or Docker Run.
 
 ## First Steps
+
+After installation, open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ### 1. Create Admin Account
 
@@ -92,7 +67,7 @@ Click the **Run Now** button on your job to execute it immediately. You can moni
 
 ## Next Steps
 
-- [Installation Guide](/user-guide/installation) - Detailed setup instructions
 - [Database Sources](/user-guide/sources/) - Configure database connections
 - [Storage Destinations](/user-guide/destinations/) - Setup backup storage
 - [Encryption](/user-guide/security/encryption) - Secure your backups
+- [Scheduling](/user-guide/jobs/scheduling) - Automate your backups
