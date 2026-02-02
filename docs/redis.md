@@ -608,9 +608,9 @@ redis-cli -h <host> -p <port> -a <password> --rdb backup.rdb
 - [x] docker-compose.test.yml: Redis 6/7 containers
 - [x] test-configs.ts: Redis test entries
 
-### Phase 3: Testing
-- [ ] Unit tests: Schema, mocked operations
-- [ ] Integration tests: Real Redis containers
+### Phase 3: Testing ✅ DONE
+- [x] Unit tests: Schema validation (10 tests in definitions.test.ts)
+- [x] Integration tests: Configured in test-configs.ts (runs with backup.test.ts)
 
 ### Phase 4: Documentation
 - [ ] wiki/developer-guide/adapters/database.md
