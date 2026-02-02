@@ -4,15 +4,48 @@ Database adapters handle the dump and restore operations for different database 
 
 ## Available Adapters
 
-| Adapter | ID | CLI Tools Required |
-| :--- | :--- | :--- |
-| MySQL | `mysql` | `mysql`, `mysqldump` |
-| MariaDB | `mariadb` | `mysql`, `mysqldump` |
-| PostgreSQL | `postgresql` | `psql`, `pg_dump`, `pg_restore` |
-| MongoDB | `mongodb` | `mongodump`, `mongorestore` |
-| SQLite | `sqlite` | None (file copy) |
-| MSSQL | `mssql` | `sqlcmd` |
-| Redis | `redis` | `redis-cli` |
+| Adapter | ID | CLI Tools Required | File Extension |
+| :--- | :--- | :--- | :--- |
+| MySQL | `mysql` | `mysql`, `mysqldump` | `.sql` |
+| MariaDB | `mariadb` | `mysql`, `mysqldump` | `.sql` |
+| PostgreSQL | `postgresql` | `psql`, `pg_dump`, `pg_restore` | `.sql` |
+| MongoDB | `mongodb` | `mongodump`, `mongorestore` | `.archive` |
+| SQLite | `sqlite` | None (file copy) | `.db` |
+| MSSQL | `mssql` | `sqlcmd` | `.bak` |
+| Redis | `redis` | `redis-cli` | `.rdb` |
+
+## Backup File Extensions
+
+Each adapter uses an appropriate file extension that reflects the actual backup format. This is handled by the `backup-extensions.ts` utility:
+
+```typescript
+import { getBackupFileExtension } from "@/lib/backup-extensions";
+
+// Returns the extension without leading dot
+getBackupFileExtension("mysql");    // "sql"
+getBackupFileExtension("redis");    // "rdb"
+getBackupFileExtension("mongodb");  // "archive"
+getBackupFileExtension("sqlite");   // "db"
+getBackupFileExtension("mssql");    // "bak"
+```
+
+### Extension Mapping
+
+| Adapter | Extension | Reason |
+|---------|-----------|--------|
+| MySQL/MariaDB | `.sql` | Standard SQL dump format |
+| PostgreSQL | `.sql` | SQL dump (or `.dump` for custom format) |
+| MSSQL | `.bak` | Native SQL Server backup format |
+| MongoDB | `.archive` | mongodump `--archive` format |
+| Redis | `.rdb` | Redis Database snapshot format |
+| SQLite | `.db` | Direct database file copy |
+
+### Final Filename Examples
+
+With compression and encryption enabled:
+- MySQL: `backup_2026-02-02.sql.gz.enc`
+- Redis: `backup_2026-02-02.rdb.gz.enc`
+- MongoDB: `backup_2026-02-02.archive.gz.enc`
 
 ## Interface
 
@@ -506,6 +539,48 @@ const mapping = [
   { originalName: 'logs', targetName: 'logs', selected: false }, // Skip
 ];
 ```
+
+## Custom Restore UI
+
+Some databases require special restore workflows. The restore dialog checks the `sourceType` and renders adapter-specific components:
+
+```typescript
+// src/components/dashboard/storage/restore-dialog.tsx
+if (file.sourceType?.toLowerCase() === "redis") {
+  return <RedisRestoreWizard file={file} storageConfigId={id} onClose={onClose} />;
+}
+```
+
+### Redis Restore Wizard
+
+Redis cannot restore RDB files remotely - the file must be placed on the server's filesystem and the server restarted. The `RedisRestoreWizard` provides a guided 6-step process:
+
+1. **Intro**: Explains why manual restore is required
+2. **Download**: Provides wget/curl commands with token-based authentication
+3. **Stop Server**: Shows `redis-cli SHUTDOWN NOSAVE` command
+4. **Replace File**: Instructions to replace `dump.rdb`
+5. **Start Server**: Commands to restart Redis
+6. **Verify**: How to check the restore succeeded
+
+### Token-Based Public Downloads
+
+For wget/curl access (where session cookies aren't available), the app generates temporary download tokens:
+
+```typescript
+// src/lib/download-tokens.ts
+import { generateDownloadToken, consumeDownloadToken } from "@/lib/download-tokens";
+
+// Generate (5-min TTL, single-use)
+const token = await generateDownloadToken(storageConfigId, filePath);
+
+// wget example
+`wget "${baseUrl}/api/storage/public-download?token=${token}" -O backup.rdb`
+
+// Consume (returns null if invalid/expired)
+const data = consumeDownloadToken(token);
+```
+
+The public download endpoint (`/api/storage/public-download`) validates the token and streams the file without requiring session authentication.
 
 ## Related Documentation
 

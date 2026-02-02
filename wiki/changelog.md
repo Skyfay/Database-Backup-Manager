@@ -2,25 +2,53 @@
 
 All notable changes to DBackup are documented here.
 
-## v0.9.3-beta - Redis Support, Docker Deployment & Auth Improvements
+## v0.9.3-beta - Redis Support, Restore UX & Smart File Extensions
 *Released: February 2, 2026*
 
-This release adds Redis as a new supported database type and improves the Docker deployment experience.
+This release adds Redis as a new supported database type, introduces a guided restore wizard for Redis, and implements adapter-specific backup file extensions for better file identification.
 
 ### ✨ New Features
 
 #### 🗄️ Redis Database Support
 - **New Adapter**: Added Redis adapter for backing up Redis databases via RDB snapshots
 - **Standalone & Sentinel Mode**: Support for standalone Redis servers and Sentinel high-availability setups
-- **Redis 6+ ACL Support**: Optional username/password authentication for Redis 6+ Access Control Lists
+- **Redis 6, 7 & 8**: Full support and test coverage for all current Redis versions
+- **ACL Support**: Optional username/password authentication for Redis 6+ Access Control Lists
 - **TLS Support**: Secure connections via `--tls` flag
 - **Database Selection**: Support for Redis database indices (0-15)
+
+#### 🧙 Redis Restore Wizard
+Since Redis cannot restore RDB files remotely, we've built a dedicated step-by-step wizard:
+- **Guided Process**: 6-step wizard walks users through the manual restore process
+- **Secure Download Links**: Generate temporary, single-use download URLs (5-minute expiry) for wget/curl
+- **Copy-to-Clipboard**: All commands have one-click copy buttons
+- **Platform-Specific**: Separate instructions for Systemd (Linux) and Docker deployments
+- **Progress Tracking**: Visual step completion indicators
 
 ::: warning Redis Restore Limitations
 - **Restore requires server access**: Redis RDB restore cannot be performed remotely. The backup file must be copied to the server's data directory and Redis must be restarted
 - **Full server backup only**: RDB snapshots contain all databases (0-15), not individual databases
 - **Cluster mode not yet supported**: Only standalone and Sentinel modes are available
 :::
+
+#### 📁 Smart Backup File Extensions
+Backup files now use appropriate extensions based on the database type:
+
+| Database | Extension | Example |
+|----------|-----------|---------|
+| MySQL | `.sql` | `backup_2026-02-02.sql.gz.enc` |
+| MariaDB | `.sql` | `backup_2026-02-02.sql.gz.enc` |
+| PostgreSQL | `.sql` | `backup_2026-02-02.sql.gz.enc` |
+| MSSQL | `.bak` | `backup_2026-02-02.bak.gz.enc` |
+| MongoDB | `.archive` | `backup_2026-02-02.archive.gz.enc` |
+| Redis | `.rdb` | `backup_2026-02-02.rdb.gz.enc` |
+| SQLite | `.db` | `backup_2026-02-02.db.gz.enc` |
+
+#### 🔗 Token-Based Public Downloads
+- **Temporary Tokens**: Generate secure, single-use download links for backup files
+- **No Auth Required**: Links work with wget/curl without session cookies
+- **5-Minute Expiry**: Tokens automatically expire for security
+- **Audit Trail**: Token generation is tied to authenticated users
 
 #### 🐳 Docker Deployment Enhancements
 - **Docker Hub**: Images are now available on Docker Hub at [`skyfay/dbackup`](https://hub.docker.com/r/skyfay/dbackup) in addition to GitLab Registry. Docker Hub is now the default in all documentation
@@ -46,9 +74,14 @@ This release adds Redis as a new supported database type and improves the Docker
 - Added `redis` package to Docker image for `redis-cli`
 - New adapter at `src/lib/adapters/database/redis/`
 - Test containers for Redis 6, 7 and 8 in `docker-compose.test.yml`
+- New `backup-extensions.ts` utility for adapter-specific file extensions
+- New `download-tokens.ts` for temporary public download URLs
+- New `public-download` API endpoint for token-based downloads
+- New `RedisRestoreWizard` component with step-by-step guidance
 - Centralized temp directory handling in `src/lib/temp-dir.ts`
 - Updated all files using `os.tmpdir()` to use the new `getTempDir()` utility
 - Auth client `baseURL` changed to empty string for proper origin detection
+- Integration tests now skip adapters with missing CLI tools automatically
 
 ---
 
