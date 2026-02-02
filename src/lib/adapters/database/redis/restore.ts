@@ -109,16 +109,23 @@ export async function restore(
         log(`3. Ensure correct file permissions (redis:redis)`, "info");
         log(`4. Start the Redis server`, "info");
         log("", "info");
-        log("Example commands:", "info", "command");
-        log(`  sudo systemctl stop redis`, "info", "command");
-        log(`  sudo cp "${sourcePath}" ${dataDir}/${rdbFilename}`, "info", "command");
-        log(`  sudo chown redis:redis ${dataDir}/${rdbFilename}`, "info", "command");
-        log(`  sudo systemctl start redis`, "info", "command");
-        log("", "info");
-        log("For Docker:", "info", "command");
-        log(`  docker stop <redis-container>`, "info", "command");
-        log(`  docker cp "${sourcePath}" <redis-container>:/data/${rdbFilename}`, "info", "command");
-        log(`  docker start <redis-container>`, "info", "command");
+
+        // Format manual commands as collapsible details
+        const systemdCommands = [
+            `sudo systemctl stop redis`,
+            `sudo cp "${sourcePath}" ${dataDir}/${rdbFilename}`,
+            `sudo chown redis:redis ${dataDir}/${rdbFilename}`,
+            `sudo systemctl start redis`,
+        ].join("\n");
+        log("Systemd commands", "info", "command", systemdCommands);
+
+        const dockerCommands = [
+            `docker stop <redis-container>`,
+            `docker cp "${sourcePath}" <redis-container>:/data/${rdbFilename}`,
+            `docker start <redis-container>`,
+        ].join("\n");
+        log("Docker commands", "info", "command", dockerCommands);
+
         log("", "info");
         log("═══════════════════════════════════════════════════════════", "info");
 

@@ -40,7 +40,8 @@ export async function dump(
             if (arg === config.password) return "******";
             return arg;
         });
-        log(`Executing: redis-cli ${logArgs.join(" ")}`, "info", "command");
+        const command = `redis-cli ${logArgs.join(" ")}`;
+        log("Executing redis-cli", "info", "command", command);
 
         // Execute redis-cli --rdb
         const rdbProcess = spawn("redis-cli", args);

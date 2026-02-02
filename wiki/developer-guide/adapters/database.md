@@ -295,7 +295,7 @@ const RedisSchema = z.object({
 Redis backups download the RDB snapshot directly from the server:
 
 ```typescript
-async dump(config, destinationPath) {
+async dump(config, destinationPath, onLog) {
   const validated = RedisSchema.parse(config);
 
   const args = [
@@ -314,6 +314,11 @@ async dump(config, destinationPath) {
   // Download RDB snapshot
   args.push("--rdb", destinationPath);
 
+  // Log command with collapsible details (password masked)
+  const maskedArgs = args.map(a => a === validated.password ? "******" : a);
+  const command = `redis-cli ${maskedArgs.join(" ")}`;
+  onLog?.("Executing redis-cli", "info", "command", command);
+
   await execAsync(`redis-cli ${args.join(" ")}`);
 
   return {
@@ -322,6 +327,14 @@ async dump(config, destinationPath) {
     logs: ["RDB snapshot downloaded"],
   };
 }
+```
+
+::: tip Collapsible Command Logs
+Use the fourth parameter (`details`) of `onLog()` to show commands in a collapsible format. This keeps the log clean while making the full command available on click:
+```typescript
+onLog("Executing backup", "info", "command", fullCommandString);
+```
+:::
 ```
 
 ### Restore Limitations
