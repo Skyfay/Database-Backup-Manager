@@ -34,6 +34,9 @@ brew tap mongodb/brew
 brew install mongodb-database-tools
 brew install mongosh
 
+echo -e "${GREEN}Installing Redis CLI (redis-cli)...${NC}"
+brew install redis
+
 echo -e "${GREEN}Installing generally useful tools (zip)...${NC}"
 brew install zip
 

@@ -1,5 +1,36 @@
+import { execSync } from 'child_process';
+
 // Shared configuration for Integration Tests and Seeding
 const TEST_HOST = process.env.TEST_DB_HOST || 'localhost';
+
+// Check if a CLI tool is available on the system
+function isCliAvailable(command: string): boolean {
+    try {
+        execSync(`which ${command}`, { stdio: 'ignore' });
+        return true;
+    } catch {
+        return false;
+    }
+}
+
+// CLI tools required for each database type
+const CLI_REQUIREMENTS: Record<string, string> = {
+    mysql: 'mysqldump',
+    mariadb: 'mysqldump',
+    postgres: 'pg_dump',
+    mongodb: 'mongodump',
+    mssql: 'sqlcmd',
+    redis: 'redis-cli',
+};
+
+// Check which CLI tools are missing
+const missingCli = Object.entries(CLI_REQUIREMENTS)
+    .filter(([, cli]) => !isCliAvailable(cli))
+    .map(([type]) => type);
+
+if (missingCli.length > 0) {
+    console.log(`⚠️  Missing CLI tools for: ${missingCli.join(', ')} - these tests will be skipped`);
+}
 
 // Test database: testdb (use pnpm run test:stress:generate to populate with ~1.5GB of data)
 export const testDatabases = [
@@ -192,3 +223,14 @@ export const multiDbTestConfigs = [
 
 // Databases that are known to have limitations (e.g., Azure SQL Edge on ARM64)
 export const limitedDatabases = ['Test Azure SQL Edge'];
+
+// Get list of databases to skip based on missing CLI tools
+export function shouldSkipDatabase(name: string, type: string): boolean {
+    // Skip known limited databases
+    if (limitedDatabases.includes(name)) return true;
+
+    // Skip if required CLI tool is not installed
+    if (missingCli.includes(type)) return true;
+
+    return false;
+}

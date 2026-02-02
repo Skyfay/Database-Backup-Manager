@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import { registry } from '@/lib/core/registry';
 import { registerAdapters } from '@/lib/adapters';
 import { DatabaseAdapter } from '@/lib/core/interfaces';
-import { testDatabases, limitedDatabases } from './test-configs';
+import { testDatabases, shouldSkipDatabase } from './test-configs';
 
 describe('Integration Tests: Database Connectivity', () => {
 
@@ -11,8 +11,8 @@ describe('Integration Tests: Database Connectivity', () => {
     });
 
     testDatabases.forEach(({ name, config }) => {
-        // Skip known limited databases (e.g., Azure SQL Edge on ARM64)
-        const shouldSkip = limitedDatabases.includes(name);
+        // Skip databases with missing CLI tools or known limitations
+        const shouldSkip = shouldSkipDatabase(name, config.type);
 
         describe(name, () => {
             // Test 1: Connectivity

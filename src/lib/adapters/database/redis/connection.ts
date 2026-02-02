@@ -71,10 +71,11 @@ export async function test(config: any): Promise<{ success: boolean; message: st
 }
 
 /**
- * Get list of databases with data
+ * Get list of available databases
  *
  * Redis uses numbered databases (0-15 by default).
- * This function returns databases that contain at least one key.
+ * This function returns all configured databases.
+ * Note: Redis databases are always available, even if empty.
  */
 export async function getDatabases(config: any): Promise<string[]> {
     try {
@@ -88,27 +89,17 @@ export async function getDatabases(config: any): Promise<string[]> {
         const lines = configResult.trim().split("\n");
         const maxDbs = parseInt(lines[1] || "16", 10);
 
-        const nonEmptyDbs: string[] = [];
-
-        // Check each database for keys
+        // Return all database indices as strings
+        const databases: string[] = [];
         for (let i = 0; i < maxDbs; i++) {
-            const dbArgs = [...baseArgs, "-n", String(i), "DBSIZE"];
-            const { stdout } = await execFileAsync("redis-cli", dbArgs);
-
-            // Parse: "(integer) 42" -> 42
-            const sizeMatch = stdout.match(/\(integer\)\s*(\d+)/);
-            const size = sizeMatch ? parseInt(sizeMatch[1], 10) : 0;
-
-            if (size > 0) {
-                nonEmptyDbs.push(String(i));
-            }
+            databases.push(String(i));
         }
 
-        return nonEmptyDbs;
+        return databases;
     } catch (error: any) {
         console.error("Failed to get databases:", error.message);
-        // Return default database on error
-        return ["0"];
+        // Return default 16 databases on error
+        return Array.from({ length: 16 }, (_, i) => String(i));
     }
 }
 
