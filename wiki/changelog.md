@@ -10,6 +10,7 @@ This release focuses on improving the Docker deployment experience and fixing au
 ### ✨ New Features
 
 #### 🐳 Docker Deployment Enhancements
+- **Docker Hub**: Images are now available on Docker Hub at [`skyfay/dbackup`](https://hub.docker.com/r/skyfay/dbackup) in addition to GitLab Registry. Docker Hub is now the default in all documentation
 - **DATABASE_URL Default**: The Dockerfile now includes a sensible default (`file:/app/db/dbackup.db`), eliminating the need to configure this variable for standard deployments
 - **TZ Variable**: Added timezone support via `TZ` environment variable (defaults to `UTC`)
 - **TMPDIR Support**: New centralized `getTempDir()` utility respects the `TMPDIR` environment variable for custom temp directories (useful for tmpfs mounts)

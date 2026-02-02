@@ -14,39 +14,58 @@ stages:
 build-and-publish:
   stage: build
   script:
-    - echo "🔐 Docker Login..."
+    # GitLab Registry Login
+    - echo "🔐 GitLab Registry Login..."
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
+
+    # Docker Hub Login (optional - only if credentials are set)
+    - |
+      if [ -n "$DOCKERHUB_USERNAME" ] && [ -n "$DOCKERHUB_TOKEN" ]; then
+        echo "🐳 Docker Hub Login..."
+        docker login -u "$DOCKERHUB_USERNAME" -p "$DOCKERHUB_TOKEN"
+      else
+        echo "⚠️ Docker Hub credentials not set, skipping Docker Hub push"
+      fi
 
     # Setup Docker Buildx for Multi-Arch
     - docker buildx create --use
     - docker buildx inspect --bootstrap
 
-    # Projektname in Kleinbuchstaben umwandeln
+    # Image Names
     - export LOWERCASE_PROJECT_PATH=$(echo "$CI_PROJECT_PATH" | tr '[:upper:]' '[:lower:]')
-    - export DOCKER_IMAGE_NAME="$CI_REGISTRY/$LOWERCASE_PROJECT_PATH"
+    - export GITLAB_IMAGE="$CI_REGISTRY/$LOWERCASE_PROJECT_PATH"
 
-    # Calculate Tags and Build
+    # Build Tags
     - |
-      TAGS="-t $DOCKER_IMAGE_NAME:$CI_COMMIT_TAG"
-      
+      TAGS="-t $GITLAB_IMAGE:$CI_COMMIT_TAG"
+
+      # Add Docker Hub tags if configured
+      if [ -n "$DOCKERHUB_REPO" ]; then
+        TAGS="$TAGS -t $DOCKERHUB_REPO:$CI_COMMIT_TAG"
+      fi
+
       if echo "$CI_COMMIT_TAG" | grep -q "\-dev"; then
         echo "🚧 Development Build detected (-dev suffix)"
-        TAGS="$TAGS -t $DOCKER_IMAGE_NAME:dev"
+        TAGS="$TAGS -t $GITLAB_IMAGE:dev"
+        [ -n "$DOCKERHUB_REPO" ] && TAGS="$TAGS -t $DOCKERHUB_REPO:dev"
       elif echo "$CI_COMMIT_TAG" | grep -q "\-beta"; then
         echo "🧪 Beta Build detected (-beta suffix)"
-        TAGS="$TAGS -t $DOCKER_IMAGE_NAME:beta"
+        TAGS="$TAGS -t $GITLAB_IMAGE:beta"
+        [ -n "$DOCKERHUB_REPO" ] && TAGS="$TAGS -t $DOCKERHUB_REPO:beta"
       else
         echo "🚀 Release Build detected"
-        TAGS="$TAGS -t $DOCKER_IMAGE_NAME:latest"
+        TAGS="$TAGS -t $GITLAB_IMAGE:latest"
+        [ -n "$DOCKERHUB_REPO" ] && TAGS="$TAGS -t $DOCKERHUB_REPO:latest"
 
-        # Major version logic
+        # Major version logic (e.g., v1.2.3 -> v1)
         MAJOR_TAG=$(echo "$CI_COMMIT_TAG" | sed -nE 's/^(v[0-9]+)\..*$/\1/p')
         if [ -n "$MAJOR_TAG" ] && [ "$MAJOR_TAG" != "v0" ]; then
-           TAGS="$TAGS -t $DOCKER_IMAGE_NAME:$MAJOR_TAG"
+           TAGS="$TAGS -t $GITLAB_IMAGE:$MAJOR_TAG"
+           [ -n "$DOCKERHUB_REPO" ] && TAGS="$TAGS -t $DOCKERHUB_REPO:$MAJOR_TAG"
         fi
       fi
-      
-      echo "🐳 Building and Pushing for AMD64 and ARM64 with tags: $TAGS"
+
+      echo "📦 Building and Pushing with tags: $TAGS"
       docker buildx build --platform linux/amd64,linux/arm64 --push $TAGS .
   only:
     - tags

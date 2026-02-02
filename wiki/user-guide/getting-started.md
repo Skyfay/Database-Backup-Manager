@@ -27,7 +27,7 @@ The fastest way to get started is using Docker Compose:
 # docker-compose.yml
 services:
   dbackup:
-    image: registry.gitlab.com/skyfay/dbackup:beta
+    image: skyfay/dbackup:beta
     restart: always
     ports:
       - "3000:3000"

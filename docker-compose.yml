@@ -1,6 +1,6 @@
 services:
   app:
-    image: registry.gitlab.com/skyfay/dbackup:beta
+    image: skyfay/dbackup:beta
     restart: always
     ports:
       - "3000:3000"

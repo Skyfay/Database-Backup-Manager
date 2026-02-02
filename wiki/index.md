@@ -58,13 +58,13 @@ docker run -d \
   -v "$(pwd)/backups:/backups" \
   -v "$(pwd)/db:/app/db" \
   -v "$(pwd)/storage:/app/storage" \
-  registry.gitlab.com/skyfay/dbackup:beta
+  skyfay/dbackup:beta
 ```
 
 ```yaml [Docker Compose]
 services:
   dbackup:
-    image: registry.gitlab.com/skyfay/dbackup:beta
+    image: skyfay/dbackup:beta
     container_name: dbackup
     restart: always
     ports:

@@ -24,7 +24,7 @@ Create a `docker-compose.yml` file:
 ```yaml
 services:
   dbackup:
-    image: registry.gitlab.com/skyfay/dbackup:beta
+    image: skyfay/dbackup:beta
     restart: always
     ports:
       - "3000:3000"
@@ -82,7 +82,7 @@ docker run -d \
   -v "$(pwd)/backups:/backups" \
   -v "$(pwd)/db:/app/db" \
   -v "$(pwd)/storage:/app/storage" \
-  registry.gitlab.com/skyfay/dbackup:beta
+  skyfay/dbackup:beta
 ```
 
 ## Environment Variables
