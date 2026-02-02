@@ -1,7 +1,12 @@
 services:
+<<<<<<< HEAD
   dbackup:
     image: registry.gitlab.com/skyfay/dbackup:beta
     container_name: dbackup
+=======
+  app:
+    image: skyfay/dbackup:beta
+>>>>>>> 9b0d64b (Add Docker Hub support and sync script)
     restart: always
     ports:
       - "3000:3000"

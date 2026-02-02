@@ -21,8 +21,7 @@ Supports: Intel/AMD servers, Raspberry Pi 4+, Apple Silicon (M1/M2/M3), AWS Grav
 # docker-compose.yml
 services:
   dbackup:
-    image: registry.gitlab.com/skyfay/dbackup:beta
-    container_name: dbackup
+    image: skyfay/dbackup:beta
     restart: always
     ports:
       - "3000:3000"
@@ -78,7 +77,26 @@ BETTER_AUTH_SECRET=your-base64-secret-here
 docker-compose up -d
 ```
 
-Open [http://localhost:3000](http://localhost:3000) and create your first admin account.
+Access the application at [http://localhost:3000](http://localhost:3000).
+
+## Docker Run
+
+For quick testing, you can use `docker run`:
+
+```bash
+docker run -d \
+  --name dbackup \
+  --restart always \
+  -p 3000:3000 \
+  -e DATABASE_URL="file:/app/db/prod.db" \
+  -e ENCRYPTION_KEY="$(openssl rand -hex 32)" \
+  -e BETTER_AUTH_SECRET="$(openssl rand -base64 32)" \
+  -e BETTER_AUTH_URL="http://localhost:3000" \
+  -v "$(pwd)/backups:/backups" \
+  -v "$(pwd)/db:/app/db" \
+  -v "$(pwd)/storage:/app/storage" \
+  skyfay/dbackup:beta
+```
 
 ## Environment Variables
 

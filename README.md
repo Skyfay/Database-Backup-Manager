@@ -18,6 +18,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/license-GPL--3.0-blue.svg" alt="License">
+  <img src="https://img.shields.io/docker/pulls/skyfay/dbackup?logo=docker&logoColor=white" alt="Docker Pulls">
   <img src="https://img.shields.io/badge/docker-multi--arch-2496ED?logo=docker&logoColor=white" alt="Docker">
   <img src="https://img.shields.io/badge/platform-linux%20%7C%20macos%20%7C%20windows-lightgrey" alt="Platform">
   <img src="https://img.shields.io/badge/self--hosted-yes-brightgreen" alt="Self-hosted">
@@ -62,7 +63,7 @@ Whether you're running a single MySQL database or managing multiple PostgreSQL, 
 # docker-compose.yml
 services:
   dbackup:
-    image: registry.gitlab.com/skyfay/dbackup:beta
+    image: skyfay/dbackup:beta
     restart: always
     ports:
       - "3000:3000"
