@@ -78,6 +78,19 @@ export const MSSQLSchema = z.object({
     options: z.string().optional().describe("Additional backup options"),
 });
 
+export const RedisSchema = z.object({
+    mode: z.enum(["standalone", "sentinel"]).default("standalone").describe("Connection mode"),
+    host: z.string().default("localhost"),
+    port: z.coerce.number().default(6379),
+    username: z.string().optional().describe("Username (Redis 6+ ACL, leave empty for default)"),
+    password: z.string().optional(),
+    database: z.coerce.number().min(0).max(15).default(0).describe("Database index (0-15)"),
+    tls: z.boolean().default(false).describe("Enable TLS/SSL connection"),
+    sentinelMasterName: z.string().optional().describe("Master name for Sentinel mode"),
+    sentinelNodes: z.string().optional().describe("Comma-separated sentinel nodes (host:port,host:port)"),
+    options: z.string().optional().describe("Additional redis-cli options"),
+});
+
 export const LocalStorageSchema = z.object({
     basePath: z.string().min(1, "Base path is required").default("/backups").describe("Absolute path to store backups (e.g., /backups)"),
 });
@@ -153,6 +166,7 @@ export const ADAPTER_DEFINITIONS: AdapterDefinition[] = [
     { id: "mongodb", type: "database", name: "MongoDB", configSchema: MongoDBSchema },
     { id: "sqlite", type: "database", name: "SQLite", configSchema: SQLiteSchema },
     { id: "mssql", type: "database", name: "Microsoft SQL Server", configSchema: MSSQLSchema },
+    { id: "redis", type: "database", name: "Redis", configSchema: RedisSchema },
 
     { id: "local-filesystem", type: "storage", name: "Local Filesystem", configSchema: LocalStorageSchema },
     { id: "s3-generic", type: "storage", name: "S3 Compatible (Generic)", configSchema: S3GenericSchema },
