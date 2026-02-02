@@ -105,7 +105,8 @@ export default defineConfig({
             { text: 'PostgreSQL', link: '/user-guide/sources/postgresql' },
             { text: 'MongoDB', link: '/user-guide/sources/mongodb' },
             { text: 'SQLite', link: '/user-guide/sources/sqlite' },
-            { text: 'Microsoft SQL Server', link: '/user-guide/sources/mssql' }
+            { text: 'Microsoft SQL Server', link: '/user-guide/sources/mssql' },
+            { text: 'Redis', link: '/user-guide/sources/redis' }
           ]
         },
         {

@@ -1,13 +1,13 @@
 // https://vitepress.dev/guide/custom-theme
 import DefaultTheme from 'vitepress/theme'
 import { useData } from 'vitepress'
-import { h, watch } from 'vue'
+import { watch } from 'vue'
 
 export default {
   extends: DefaultTheme,
   setup() {
     // Override date formatting to use European format (DD.MM.YYYY)
-    const { lang, page } = useData()
+    const { page } = useData()
 
     // Watch for page changes and reformat the date display
     if (typeof window !== 'undefined') {

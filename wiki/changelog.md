@@ -92,8 +92,6 @@ Backup files now use appropriate extensions based on the database type:
 - Auth client `baseURL` changed to empty string for proper origin detection
 - Integration tests now skip adapters with missing CLI tools automatically
 
----
-
 ## v0.9.2-beta - Branding & Documentation
 *Released: February 1, 2026*
 
@@ -111,8 +109,6 @@ This release focuses on improving the visual identity and accessibility of the p
 - **In-App Link**: Added quick access to documentation from the user menu in the sidebar
 - **Discord Community**: Linked Discord server in the documentation for community support
 - **SEO Optimization**: Added comprehensive meta tags, Open Graph, Twitter Cards, and structured data for better discoverability
-
----
 
 ## v0.9.1-beta - Unified Multi-DB TAR Architecture
 *Released: February 1, 2026*
@@ -166,8 +162,6 @@ The backup format for **multi-database backups** has fundamentally changed from 
 - **User Guide**: Added Multi-DB restore workflow documentation
 - **Naming Consistency**: Standardized "Microsoft SQL Server" / "MSSQL" naming throughout docs
 
----
-
 ## v0.9.0-beta - Microsoft SQL Server & Self-Service Security
 *Released: January 31, 2026*
 
@@ -194,8 +188,6 @@ This release introduces full support for Microsoft SQL Server (MSSQL), bringing 
 ### 📚 Documentation
 - **MSSQL Guide**: Added comprehensive documentation covering MSSQL Editions, server-side backup permissions, and deployment strategies
 - **Meta-Backup**: Finalized documentation and TODO items regarding the internal configuration backup system
-
----
 
 ## v0.8.3-beta - Meta-Backups & System Task Control
 *Released: January 30, 2026*
@@ -225,8 +217,6 @@ This release introduces "Meta-Backups"—the ability for the Database Backup Man
 - Fixed issues with metadata key consistency and folder structures (`config-backups`)
 - Added new tests regarding AI transparency, scheduler logic, and config service edge-cases
 - Removed the manual backup trigger from the UI in favor of the standardized system task controls
-
----
 
 ## v0.8.2-beta - Keycloak, Encryption Imports & Database Reset
 *Released: January 29, 2026*
@@ -261,8 +251,6 @@ We have consolidated the entire database schema history into a single, clean ini
 - Fixed an issue where page count could be undefined unless manual pagination was triggered
 - Added new tests for profile imports and smart recovery logic
 
----
-
 ## v0.8.1-beta - SQLite Support & Remote File Browsing
 *Released: January 26, 2026*
 
@@ -287,8 +275,6 @@ This update introduces full support for SQLite databases, including a powerful f
 ### 📚 Documentation
 - Added comprehensive documentation and deployment guides for the new SQLite adapter
 - Refactored and reorganized the project documentation structure for better navigability
-
----
 
 ## v0.8.0-beta - The First Beta: SSO, Audit Logs & Cloud Storage
 *Released: January 25, 2026*
@@ -340,8 +326,6 @@ This release marks the first official Beta of the Database Backup Manager! 🚀 
 - Fixed clipboard copying error handling
 - Fixed filename handling after decryption
 - Corrected "Trusted Providers" mutation issue in auth requests
-
----
 
 ## v0.5.0-dev - RBAC System, Encryption Vault & Core Overhaul
 *Released: January 24, 2026*

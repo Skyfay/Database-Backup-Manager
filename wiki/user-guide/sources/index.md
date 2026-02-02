@@ -12,6 +12,7 @@ DBackup supports a wide variety of database engines. This section provides an ov
 | [MongoDB](/user-guide/sources/mongodb) | 4.x - 8.x | `mongodump` |
 | [SQLite](/user-guide/sources/sqlite) | 3.x | `.dump` command |
 | [MSSQL](/user-guide/sources/mssql) | 2017, 2019, 2022 | `BACKUP DATABASE` |
+| [Redis](/user-guide/sources/redis) | 6.x, 7.x, 8.x | `redis-cli --rdb` |
 
 ## Adding a Source
 
