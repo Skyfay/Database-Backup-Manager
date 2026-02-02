@@ -1,16 +1,12 @@
 services:
-<<<<<<< HEAD
   dbackup:
-    image: registry.gitlab.com/skyfay/dbackup:beta
-    container_name: dbackup
-=======
-  app:
     image: skyfay/dbackup:beta
->>>>>>> 9b0d64b (Add Docker Hub support and sync script)
+    container_name: dbackup
     restart: always
     ports:
       - "3000:3000"
     environment:
+      # for all environmentvariables, check out: https://dbackup.app/developer-guide/reference/environment
       - ENCRYPTION_KEY= # openssl rand -hex 32
       - BETTER_AUTH_URL=http://localhost:3000
       - BETTER_AUTH_SECRET= # openssl rand -base64 32
