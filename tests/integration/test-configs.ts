@@ -118,6 +118,27 @@ export const testDatabases = [
             backupPath: '/var/opt/mssql/backup',
             localBackupPath: '/tmp'
         }
+    },
+    // --- Redis ---
+    {
+        name: 'Test Redis 6',
+        config: {
+            type: 'redis',
+            host: TEST_HOST,
+            port: 63796,
+            password: 'testpassword',
+            database: 0
+        }
+    },
+    {
+        name: 'Test Redis 7',
+        config: {
+            type: 'redis',
+            host: TEST_HOST,
+            port: 63797,
+            password: 'testpassword',
+            database: 0
+        }
     }
 ];
 

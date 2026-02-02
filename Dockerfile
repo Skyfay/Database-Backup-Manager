@@ -5,6 +5,7 @@ FROM node:20-alpine AS base
 # mysql-client -> mysqldump
 # postgresql-client -> pg_dump (latest version, currently 18)
 # mongodb-tools -> mongodump
+# redis -> redis-cli (for Redis backups)
 # Strategic PostgreSQL versions: 14, 16, 18 (covers 12-18 via backward compatibility)
 # PostgreSQL Versions Strategy:
 # - pg_dump 14 (from Alpine 3.17 repo) -> handles PG 12, 13, 14
@@ -19,6 +20,7 @@ RUN echo 'http://dl-cdn.alpinelinux.org/alpine/v3.17/main' >> /etc/apk/repositor
     postgresql14-client \
     postgresql16-client \
     mongodb-tools \
+    redis \
     openssl \
     zip \
     su-exec

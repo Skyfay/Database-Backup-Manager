@@ -1,7 +1,6 @@
 import { BackupResult } from "@/lib/core/interfaces";
 import { LogLevel, LogType } from "@/lib/core/logs";
 import { spawn } from "child_process";
-import { createWriteStream } from "fs";
 import fs from "fs/promises";
 import { buildConnectionArgs } from "./connection";
 

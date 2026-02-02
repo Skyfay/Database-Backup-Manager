@@ -603,10 +603,10 @@ redis-cli -h <host> -p <port> -a <password> --rdb backup.rdb
 - [x] `index.ts` - Adapter export
 - [x] Register in `src/lib/adapters/index.ts`
 
-### Phase 2: Infrastructure
-- [ ] Dockerfile: Add `redis` package
-- [ ] docker-compose.test.yml: Redis 6/7 containers
-- [ ] test-configs.ts: Redis test entries
+### Phase 2: Infrastructure ✅ DONE
+- [x] Dockerfile: Add `redis` package
+- [x] docker-compose.test.yml: Redis 6/7 containers
+- [x] test-configs.ts: Redis test entries
 
 ### Phase 3: Testing
 - [ ] Unit tests: Schema, mocked operations
