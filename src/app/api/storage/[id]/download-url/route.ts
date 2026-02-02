@@ -3,13 +3,14 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { checkPermission } from "@/lib/access-control";
 import { PERMISSIONS } from "@/lib/permissions";
+import { generateDownloadToken } from "@/lib/download-tokens";
 
 /**
  * Generate a download URL for a file
  *
- * This creates a URL that can be used to download the file directly.
- * For local storage, it returns the API download endpoint URL.
- * For S3/cloud storage, it could return a pre-signed URL (future enhancement).
+ * This creates a temporary token-based URL that can be used to download
+ * the file without authentication (e.g., via wget/curl from a server).
+ * Tokens are single-use and expire after 5 minutes.
  */
 export async function POST(req: NextRequest, props: { params: Promise<{ id: string }> }) {
     const session = await auth.api.getSession({
@@ -32,16 +33,18 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
             return NextResponse.json({ error: "Missing file param" }, { status: 400 });
         }
 
-        // For now, we generate a URL to our download endpoint
-        // In the future, for S3 storage, this could return a pre-signed URL
+        // Generate a temporary download token
+        const token = generateDownloadToken(params.id, file, true);
+
+        // Create public download URL with token
         const baseUrl = req.headers.get("origin") || "";
-        const downloadUrl = `${baseUrl}/api/storage/${params.id}/download?file=${encodeURIComponent(file)}&decrypt=true`;
+        const downloadUrl = `${baseUrl}/api/storage/public-download?token=${token}`;
 
         return NextResponse.json({
             success: true,
             url: downloadUrl,
-            // Flag to indicate this is an internal URL (vs pre-signed cloud URL)
-            internal: true
+            expiresIn: "5 minutes",
+            singleUse: true
         });
 
     } catch (error: unknown) {

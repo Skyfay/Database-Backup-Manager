@@ -249,6 +249,7 @@ export function RedisRestoreWizard({ file, open, onOpenChange, destinationId }: 
                                         <div className="flex items-center gap-2">
                                             <CheckCircle2 className="h-5 w-5 text-green-500" />
                                             <span className="text-sm font-medium">Download link ready!</span>
+                                            <Badge variant="outline" className="text-xs">Expires in 5 min</Badge>
                                         </div>
                                         <div className="flex gap-2">
                                             <Button asChild className="flex-1">
@@ -262,11 +263,11 @@ export function RedisRestoreWizard({ file, open, onOpenChange, destinationId }: 
                                             </Button>
                                         </div>
                                         <p className="text-xs text-muted-foreground">
-                                            Or use wget/curl on your server:
+                                            Or use wget/curl on your server (link is single-use):
                                         </p>
                                         <div className="relative">
-                                            <pre className="text-xs bg-muted p-3 rounded-md overflow-x-auto">
-                                                wget -O dump.rdb &quot;{downloadUrl.substring(0, 60)}...&quot;
+                                            <pre className="text-xs bg-muted p-3 rounded-md overflow-x-auto whitespace-pre-wrap break-all">
+                                                wget -O dump.rdb &quot;{downloadUrl}&quot;
                                             </pre>
                                             <Button
                                                 variant="ghost"
