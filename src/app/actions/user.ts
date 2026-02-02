@@ -222,6 +222,11 @@ export async function updateUser(userId: string, data: { name?: string; email?: 
     }
 }
 
+/**
+ * Update user preferences (self-service)
+ * Users can only update their own preferences - no admin permission required
+ * @no-permission-required
+ */
 export async function updateUserPreferences(userId: string, data: { autoRedirectOnJobStart?: boolean }) {
     const currentUser = await getCurrentUserWithGroup();
     if (!currentUser) throw new Error("Unauthorized");
@@ -256,6 +261,11 @@ export async function updateUserPreferences(userId: string, data: { autoRedirect
     }
 }
 
+/**
+ * Get user preference value (self-service)
+ * Users can only read their own preferences - no admin permission required
+ * @no-permission-required
+ */
 export async function getUserPreference(key: 'autoRedirectOnJobStart'): Promise<boolean> {
     const currentUser = await getCurrentUserWithGroup();
     if (!currentUser) return true; // Default to true if not logged in
