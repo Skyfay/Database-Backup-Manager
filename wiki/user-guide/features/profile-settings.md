@@ -58,4 +58,4 @@ Manage your account security:
 ## Related
 
 - [Getting Started](/user-guide/getting-started)
-- [Security Best Practices](/user-guide/security/)
+- [Encryption Vault](/user-guide/security/encryption)

@@ -44,7 +44,9 @@ features:
 
 Get DBackup running in minutes with Docker:
 
-```bash
+::: code-group
+
+```bash [Docker Run]
 docker run -d --name dbackup -p 3000:3000 \
   -e ENCRYPTION_KEY="$(openssl rand -hex 32)" \
   -e BETTER_AUTH_SECRET="$(openssl rand -base64 32)" \
@@ -56,13 +58,12 @@ docker run -d --name dbackup -p 3000:3000 \
 ```yaml [Docker Compose]
 services:
   dbackup:
-    image: registry.gitlab.com/skyfay/dbackup:beta
+    image: skyfay/dbackup:beta
     container_name: dbackup
     restart: always
     ports:
       - "3000:3000"
     environment:
-      - DATABASE_URL=file:/app/db/prod.db
       - ENCRYPTION_KEY=  # openssl rand -hex 32
       - BETTER_AUTH_URL=http://localhost:3000
       - BETTER_AUTH_SECRET=  # openssl rand -base64 32
@@ -73,6 +74,7 @@ services:
 ```
 
 :::
+
 
 Then open [http://localhost:3000](http://localhost:3000) and create your first admin account.
 
