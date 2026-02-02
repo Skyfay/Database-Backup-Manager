@@ -12,6 +12,7 @@ Database adapters handle the dump and restore operations for different database 
 | MongoDB | `mongodb` | `mongodump`, `mongorestore` |
 | SQLite | `sqlite` | None (file copy) |
 | MSSQL | `mssql` | `sqlcmd` |
+| Redis | `redis` | `redis-cli` |
 
 ## Interface
 
@@ -267,6 +268,80 @@ async dumpBinary(config, destinationPath) {
   await copyFile(validated.path, destinationPath);
 }
 ```
+
+## Redis Adapter
+
+Redis is an in-memory key-value store. Backups use the **RDB snapshot** format.
+
+### Configuration Schema
+
+```typescript
+const RedisSchema = z.object({
+  mode: z.enum(["standalone", "sentinel"]).default("standalone"),
+  host: z.string().default("localhost"),
+  port: z.coerce.number().default(6379),
+  username: z.string().optional(), // Redis 6+ ACL
+  password: z.string().optional(),
+  database: z.coerce.number().min(0).max(15).default(0),
+  tls: z.boolean().default(false),
+  sentinelMasterName: z.string().optional(),
+  sentinelNodes: z.string().optional(),
+  options: z.string().optional(),
+});
+```
+
+### Dump Implementation
+
+Redis backups download the RDB snapshot directly from the server:
+
+```typescript
+async dump(config, destinationPath) {
+  const validated = RedisSchema.parse(config);
+
+  const args = [
+    "-h", validated.host,
+    "-p", validated.port.toString(),
+  ];
+
+  if (validated.password) {
+    args.push("-a", validated.password);
+  }
+
+  if (validated.tls) {
+    args.push("--tls");
+  }
+
+  // Download RDB snapshot
+  args.push("--rdb", destinationPath);
+
+  await execAsync(`redis-cli ${args.join(" ")}`);
+
+  return {
+    success: true,
+    size: (await stat(destinationPath)).size,
+    logs: ["RDB snapshot downloaded"],
+  };
+}
+```
+
+### Restore Limitations
+
+::: warning Important
+Redis does **not** support remote RDB restore. The RDB file must be:
+1. Copied to the server's data directory
+2. Server must be restarted to load the new RDB
+
+The restore function provides instructions but cannot perform the actual restore without server filesystem access.
+:::
+
+### Key Differences from Other Adapters
+
+| Aspect | Other Databases | Redis |
+|--------|-----------------|-------|
+| Database Selection | Named databases | Numbered (0-15) |
+| Backup Scope | Single/Multiple DBs | Always full server |
+| Restore Method | Stream via TCP | File replacement + restart |
+| Authentication | User/Password | Optional ACL (Redis 6+) |
 
 ## Testing Database Connections
 

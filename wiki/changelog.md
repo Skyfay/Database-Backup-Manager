@@ -2,12 +2,25 @@
 
 All notable changes to DBackup are documented here.
 
-## v0.9.3-beta - Docker Deployment & Auth Improvements
+## v0.9.3-beta - Redis Support, Docker Deployment & Auth Improvements
 *Released: February 2, 2026*
 
-This release focuses on improving the Docker deployment experience and fixing authentication issues with custom port mappings.
+This release adds Redis as a new supported database type and improves the Docker deployment experience.
 
 ### ✨ New Features
+
+#### 🗄️ Redis Database Support
+- **New Adapter**: Added Redis adapter for backing up Redis databases via RDB snapshots
+- **Standalone & Sentinel Mode**: Support for standalone Redis servers and Sentinel high-availability setups
+- **Redis 6+ ACL Support**: Optional username/password authentication for Redis 6+ Access Control Lists
+- **TLS Support**: Secure connections via `--tls` flag
+- **Database Selection**: Support for Redis database indices (0-15)
+
+::: warning Redis Restore Limitations
+- **Restore requires server access**: Redis RDB restore cannot be performed remotely. The backup file must be copied to the server's data directory and Redis must be restarted
+- **Full server backup only**: RDB snapshots contain all databases (0-15), not individual databases
+- **Cluster mode not yet supported**: Only standalone and Sentinel modes are available
+:::
 
 #### 🐳 Docker Deployment Enhancements
 - **Docker Hub**: Images are now available on Docker Hub at [`skyfay/dbackup`](https://hub.docker.com/r/skyfay/dbackup) in addition to GitLab Registry. Docker Hub is now the default in all documentation
@@ -30,6 +43,9 @@ This release focuses on improving the Docker deployment experience and fixing au
 - **European Date Format**: Changed date display format to DD/MM/YYYY for better international compatibility
 
 ### 🔧 Technical Changes
+- Added `redis` package to Docker image for `redis-cli`
+- New adapter at `src/lib/adapters/database/redis/`
+- Test containers for Redis 6 and Redis 7 in `docker-compose.test.yml`
 - Centralized temp directory handling in `src/lib/temp-dir.ts`
 - Updated all files using `os.tmpdir()` to use the new `getTempDir()` utility
 - Auth client `baseURL` changed to empty string for proper origin detection

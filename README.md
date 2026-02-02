@@ -13,6 +13,7 @@
   <img src="https://img.shields.io/badge/PostgreSQL-4169E1?logo=postgresql&logoColor=white" alt="PostgreSQL">
   <img src="https://img.shields.io/badge/MongoDB-47A248?logo=mongodb&logoColor=white" alt="MongoDB">
   <img src="https://img.shields.io/badge/SQLite-003B57?logo=sqlite&logoColor=white" alt="SQLite">
+  <img src="https://img.shields.io/badge/Redis-DC382D?logo=redis&logoColor=white" alt="Redis">
   <img src="https://img.shields.io/badge/Microsoft_SQL_Server-CC2927" alt="MSSQL">
 </p>
 
@@ -47,7 +48,7 @@ Whether you're running a single MySQL database or managing multiple PostgreSQL, 
 
 ## ✨ Features
 
-- **Multi-Database Support** — MySQL, PostgreSQL, MongoDB, SQLite, Microsoft SQL Server
+- **Multi-Database Support** — MySQL, PostgreSQL, MongoDB, SQLite, Microsoft SQL Server, Redis
 - **Enterprise-Grade Security** — AES-256-GCM encryption with key rotation and offline recovery kits
 - **Flexible Storage** — Local filesystem, S3-compatible (AWS, MinIO, R2), SFTP
 - **Smart Retention** — Grandfather-Father-Son rotation policies

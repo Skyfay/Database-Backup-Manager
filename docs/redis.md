@@ -612,9 +612,9 @@ redis-cli -h <host> -p <port> -a <password> --rdb backup.rdb
 - [x] Unit tests: Schema validation (10 tests in definitions.test.ts)
 - [x] Integration tests: Configured in test-configs.ts (runs with backup.test.ts)
 
-### Phase 4: Documentation
-- [ ] wiki/developer-guide/adapters/database.md
-- [ ] Changelog entry
+### Phase 4: Documentation ✅ DONE
+- [x] wiki/developer-guide/adapters/database.md - Redis section added
+- [x] Changelog entry - v0.9.4-beta
 
 ### Phase 5: UI
 - [ ] Redis icon
