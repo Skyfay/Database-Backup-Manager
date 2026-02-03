@@ -88,6 +88,11 @@ Click on a file to see:
 3. Decryption happens automatically (if encrypted)
 4. Decompression is **not** automatic
 
+For encrypted files, you'll see a dropdown with options:
+- **Download Encrypted (.enc)**: Downloads the raw encrypted file
+- **Download Decrypted**: Decrypts before download
+- **wget / curl Link**: Opens the Download Link modal
+
 To decompress locally:
 ```bash
 # Gzip
@@ -96,6 +101,35 @@ gunzip backup.sql.gz
 # Brotli
 brotli -d backup.sql.br
 ```
+
+### wget / curl Download Links
+
+::: tip Server-Side Downloads
+For downloading backups directly to a remote server (e.g., during Redis restore), you can generate temporary download URLs that work with wget or curl.
+:::
+
+1. Click **Download** button on any backup
+2. Select **wget / curl Link** from the dropdown
+3. Choose download format:
+   - **Decrypted**: File will be decrypted server-side (recommended)
+   - **Encrypted (.enc)**: Downloads raw encrypted file
+4. Click **Generate Download Link**
+5. Copy the provided wget or curl command
+
+**Generated Commands:**
+```bash
+# wget
+wget -O "backup.sql.gz" "https://your-server/api/storage/public-download?token=..."
+
+# curl
+curl -o "backup.sql.gz" "https://your-server/api/storage/public-download?token=..."
+```
+
+**Important:**
+- Links expire after **5 minutes**
+- Links are **single-use** (token consumed on first download)
+- The modal shows a live countdown timer
+- You can generate a new link anytime
 
 ### Restore
 

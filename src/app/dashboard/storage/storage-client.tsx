@@ -33,6 +33,7 @@ import { Label } from "@/components/ui/label";
 import { getColumns, FileInfo } from "./columns";
 import { lockBackup } from "@/app/actions/storage/lock";
 import { RestoreDialog } from "@/components/dashboard/storage/restore-dialog";
+import { DownloadLinkModal } from "@/components/dashboard/storage/download-link-modal";
 
 interface AdapterConfig {
     id: string;
@@ -66,6 +67,9 @@ export function StorageClient({ canDownload, canRestore, canDelete }: StorageCli
 
     // Restore State
     const [restoreFile, setRestoreFile] = useState<FileInfo | null>(null);
+
+    // Download Link Modal State
+    const [downloadLinkFile, setDownloadLinkFile] = useState<FileInfo | null>(null);
 
     useEffect(() => {
         fetchAdapters();
@@ -164,6 +168,14 @@ export function StorageClient({ canDownload, canRestore, canDelete }: StorageCli
         }
     }, [selectedDestination, showSystemConfigs]);
 
+    const handleGenerateLink = useCallback((file: FileInfo) => {
+        if (!canDownload) {
+            toast.error("Permission denied");
+            return;
+        }
+        setDownloadLinkFile(file);
+    }, [canDownload]);
+
     const confirmDelete = async () => {
         if (!fileToDelete) return;
         setDeleting(true);
@@ -194,10 +206,11 @@ export function StorageClient({ canDownload, canRestore, canDelete }: StorageCli
         onDownload: handleDownload,
         onDelete: handleDeleteClick,
         onToggleLock: handleToggleLock,
+        onGenerateLink: handleGenerateLink,
         canDownload,
         canRestore,
         canDelete
-    }), [handleRestoreClick, handleDownload, handleDeleteClick, handleToggleLock, canDownload, canRestore, canDelete]);
+    }), [handleRestoreClick, handleDownload, handleDeleteClick, handleToggleLock, handleGenerateLink, canDownload, canRestore, canDelete]);
 
     const filterableColumns = useMemo(() => {
         const jobs = Array.from(new Set(files.map(f => f.jobName).filter(Boolean).filter(n => n !== "Unknown"))) as string[];
@@ -330,6 +343,21 @@ export function StorageClient({ canDownload, canRestore, canDelete }: StorageCli
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            {/* Download Link Modal */}
+            {downloadLinkFile && (
+                <DownloadLinkModal
+                    open={!!downloadLinkFile}
+                    onOpenChange={(o) => { if (!o) setDownloadLinkFile(null); }}
+                    storageId={selectedDestination}
+                    file={{
+                        name: downloadLinkFile.name,
+                        path: downloadLinkFile.path,
+                        size: downloadLinkFile.size,
+                        isEncrypted: downloadLinkFile.isEncrypted,
+                    }}
+                />
+            )}
         </div>
     );
 }

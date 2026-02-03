@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Download, RotateCcw, Trash2, Lock, FileLock2, FileCheck } from "lucide-react"; // Import FileLock2, FileCheck
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Download, RotateCcw, Trash2, Lock, FileLock2, FileCheck, Terminal } from "lucide-react";
 import { FileInfo } from "@/app/dashboard/storage/columns";
 
 interface ActionsCellProps {
@@ -10,6 +10,7 @@ interface ActionsCellProps {
     onRestore: (file: FileInfo) => void;
     onDelete: (file: FileInfo) => void;
     onToggleLock?: (file: FileInfo) => void;
+    onGenerateLink?: (file: FileInfo) => void;
     canDownload: boolean;
     canRestore: boolean;
     canDelete: boolean;
@@ -21,6 +22,7 @@ export function ActionsCell({
     onRestore,
     onDelete,
     onToggleLock,
+    onGenerateLink,
     canDownload,
     canRestore,
     canDelete
@@ -71,19 +73,47 @@ export function ActionsCell({
                                 <FileCheck className="mr-2 h-4 w-4" />
                                 <span>Download Decrypted</span>
                             </DropdownMenuItem>
+                            {onGenerateLink && (
+                                <>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem onClick={() => onGenerateLink(file)}>
+                                        <Terminal className="mr-2 h-4 w-4" />
+                                        <span>wget / curl Link</span>
+                                    </DropdownMenuItem>
+                                </>
+                            )}
                         </DropdownMenuContent>
                     </DropdownMenu>
                 ) : (
-                    <TooltipProvider>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onDownload(file, false)}>
-                                    <Download className="h-4 w-4" />
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>Download</TooltipContent>
-                        </Tooltip>
-                    </TooltipProvider>
+                    <DropdownMenu>
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                                            <Download className="h-4 w-4" />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                </TooltipTrigger>
+                                <TooltipContent>Download Options</TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => onDownload(file, false)}>
+                                <Download className="mr-2 h-4 w-4" />
+                                <span>Download</span>
+                            </DropdownMenuItem>
+                            {onGenerateLink && (
+                                <>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem onClick={() => onGenerateLink(file)}>
+                                        <Terminal className="mr-2 h-4 w-4" />
+                                        <span>wget / curl Link</span>
+                                    </DropdownMenuItem>
+                                </>
+                            )}
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 )
             )}
 

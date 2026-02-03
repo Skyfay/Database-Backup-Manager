@@ -2,6 +2,32 @@
 
 All notable changes to DBackup are documented here.
 
+## v0.9.4-beta - Universal Download Links
+*Released: February 3, 2026*
+
+This release extends the token-based download link feature (introduced for Redis restore) to all backup downloads in Storage Explorer.
+
+### ✨ New Features
+
+#### 🔗 wget/curl Download Links for All Backups
+The temporary download link feature is now available for all backup files:
+- **Universal Access**: Click the Download button on any backup file and select "wget / curl Link"
+- **Download Format Selection**: Choose between encrypted (.enc) or decrypted download for encrypted backups
+- **Live Countdown Timer**: See exactly how much time remains before the link expires
+- **Reusable Modal**: New `DownloadLinkModal` component can be integrated anywhere in the app
+- **Ready-to-Use Commands**: Pre-formatted wget and curl commands with one-click copy
+
+#### 🎯 Improved Download UX
+- All files now show a dropdown menu on the Download button (not just encrypted files)
+- Consistent download experience across all backup types
+- wget/curl option always available regardless of encryption status
+
+### 📚 Documentation
+- Added comprehensive developer documentation for Download Tokens system
+- Updated Storage Explorer user guide with wget/curl download section
+
+---
+
 ## v0.9.3-beta - Redis Support, Restore UX & Smart File Extensions
 *Released: February 2, 2026*
 

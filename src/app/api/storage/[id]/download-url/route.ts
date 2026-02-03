@@ -27,14 +27,16 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
         await checkPermission(PERMISSIONS.STORAGE.DOWNLOAD);
 
         const body = await req.json();
-        const { file } = body;
+        const { file, decrypt = true } = body;
 
         if (!file) {
             return NextResponse.json({ error: "Missing file param" }, { status: 400 });
         }
 
         // Generate a temporary download token
-        const token = generateDownloadToken(params.id, file, true);
+        // decrypt=true means the file will be decrypted before download
+        // decrypt=false means the file will be downloaded as-is (encrypted)
+        const token = generateDownloadToken(params.id, file, decrypt);
 
         // Create public download URL with token
         const baseUrl = req.headers.get("origin") || "";

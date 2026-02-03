@@ -32,12 +32,13 @@ interface ColumnsProps {
     onDownload: (file: FileInfo, decrypt?: boolean) => void;
     onDelete: (file: FileInfo) => void;
     onToggleLock: (file: FileInfo) => void;
+    onGenerateLink: (file: FileInfo) => void;
     canDownload: boolean;
     canRestore: boolean;
     canDelete: boolean;
 }
 
-export const getColumns = ({ onRestore, onDownload, onDelete, onToggleLock, canDownload, canRestore, canDelete }: ColumnsProps): ColumnDef<FileInfo>[] => [
+export const getColumns = ({ onRestore, onDownload, onDelete, onToggleLock, onGenerateLink, canDownload, canRestore, canDelete }: ColumnsProps): ColumnDef<FileInfo>[] => [
     {
         accessorKey: "name",
         header: ({ column }) => {
@@ -173,6 +174,7 @@ export const getColumns = ({ onRestore, onDownload, onDelete, onToggleLock, canD
                 onRestore={onRestore}
                 onDelete={onDelete}
                 onToggleLock={onToggleLock}
+                onGenerateLink={onGenerateLink}
                 canDownload={canDownload}
                 canRestore={canRestore}
                 canDelete={canDelete}

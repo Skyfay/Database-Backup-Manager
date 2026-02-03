@@ -571,7 +571,7 @@ For wget/curl access (where session cookies aren't available), the app generates
 import { generateDownloadToken, consumeDownloadToken } from "@/lib/download-tokens";
 
 // Generate (5-min TTL, single-use)
-const token = await generateDownloadToken(storageConfigId, filePath);
+const token = generateDownloadToken(storageConfigId, filePath, decrypt);
 
 // wget example
 `wget "${baseUrl}/api/storage/public-download?token=${token}" -O backup.rdb`
@@ -581,6 +581,8 @@ const data = consumeDownloadToken(token);
 ```
 
 The public download endpoint (`/api/storage/public-download`) validates the token and streams the file without requiring session authentication.
+
+For the reusable UI component (`DownloadLinkModal`), see [Download Tokens](/developer-guide/core/download-tokens).
 
 ## Related Documentation
 
