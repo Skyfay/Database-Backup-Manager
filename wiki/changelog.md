@@ -3,7 +3,7 @@
 All notable changes to DBackup are documented here.
 
 ## v0.9.4-beta - Universal Download Links
-*Released: February 3, 2026*
+*Released: In Progress*
 
 This release extends the token-based download link feature (introduced for Redis restore) to all backup downloads in Storage Explorer.
 
