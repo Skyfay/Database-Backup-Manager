@@ -56,46 +56,10 @@ export class MongoDBBaseDialect implements DatabaseDialect {
         return args;
     }
 
-    getRestoreArgs(config: any, _targetDatabase?: string): string[] {
-        const args: string[] = [];
-
-        if (config.uri) {
-             args.push(`--uri=${config.uri}`);
-        } else {
-            args.push('--host', config.host);
-            args.push('--port', String(config.port));
-             if (config.user && config.password) {
-                args.push('--username', config.user);
-                args.push('--password', config.password);
-                 if (config.authenticationDatabase) {
-                    args.push('--authenticationDatabase', config.authenticationDatabase);
-                } else {
-                    args.push('--authenticationDatabase', 'admin');
-                }
-            }
-        }
-
-        args.push('--archive'); // We expect input from stdin as archive
-        args.push('--gzip');
-        args.push('--drop'); // Drop collections before restoring to avoid duplicate key errors
-
-        // For restore, we can remap using --nsInclude or --nsFrom/--nsTo in recent mongo versions.
-        // Or if simple restore, --db?
-        // mongorestore --archive < file
-        // If we want to restore to a SPECIFIC DB from an archive that contains that DB, we might need --nsFrom/--nsTo if the name changes.
-        // If we just want to filter: --nsInclude 'dbname.*'
-
-        // If targetDatabase is different from source, we need remapping.
-        // But DatabaseDialect doesn't know source DB name easily here.
-        // We assume config.database is the target if set.
-
-        // This is complex for Mongo.
-        // If targetDatabase provided:
-        // args.push('--nsFrom', '*', '--nsTo', targetDatabase + '.*'); // Rough approximation, might be risky.
-
-        // Let's stick to basic args for connection.
-
-        return args;
+    getRestoreArgs(_config: any, _targetDatabase?: string): string[] {
+        // Note: MongoDB restore uses mongorestore with args built directly in restore.ts
+        // This method exists only to satisfy the DatabaseDialect interface
+        return [];
     }
 
     getConnectionArgs(config: any): string[] {

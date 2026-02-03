@@ -71,8 +71,6 @@ Allow users to edit their own profile regardless of strict RBAC permissions.
 - Scripts to generate large test datasets (1GB+)
 - Performance benchmarking for backup/restore operations
 
----
-
 ## ✅ Recently Completed
 
 For a full list of completed features, see the [Changelog](/changelog).
@@ -91,8 +89,6 @@ For a full list of completed features, see the [Changelog](/changelog).
 - ✅ Live backup progress monitoring
 - ✅ System configuration backup
 - ✅ Audit logging
-
----
 
 ## 💡 Feature Requests
 

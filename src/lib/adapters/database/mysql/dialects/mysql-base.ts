@@ -15,13 +15,9 @@ export class MySQLBaseDialect extends BaseDialect {
             args.push(...config.options.split(' ').filter((s: string) => s.trim().length > 0));
         }
 
-        // Databases
-        if (databases.length === 1 && databases[0] !== '--all-databases') {
-             args.push('--databases', databases[0]);
-        } else if (databases.length > 0 && databases[0] !== '--all-databases') {
-             args.push('--databases', ...databases);
-        } else {
-             args.push('--all-databases');
+        // Single database dump (Multi-DB is handled via TAR in dump.ts)
+        if (databases.length === 1) {
+            args.push('--databases', databases[0]);
         }
 
         return args;
