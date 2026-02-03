@@ -1,12 +1,13 @@
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Download, RotateCcw, Trash2, Lock, FileLock2, FileCheck } from "lucide-react"; // Import FileLock2, FileCheck
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { Download, RotateCcw, Trash2, Lock, FileLock2, FileCheck, ExternalLink } from "lucide-react"; // Import FileLock2, FileCheck
 import { FileInfo } from "@/app/dashboard/storage/columns";
 
 interface ActionsCellProps {
     file: FileInfo;
     onDownload: (file: FileInfo, decrypt?: boolean) => void;
+    onGenerateUrl?: (file: FileInfo) => void;
     onRestore: (file: FileInfo) => void;
     onDelete: (file: FileInfo) => void;
     onToggleLock?: (file: FileInfo) => void;
@@ -18,6 +19,7 @@ interface ActionsCellProps {
 export function ActionsCell({
     file,
     onDownload,
+    onGenerateUrl,
     onRestore,
     onDelete,
     onToggleLock,
@@ -48,43 +50,49 @@ export function ActionsCell({
             )}
 
             {canDownload && (
-                file.isEncrypted ? (
-                    <DropdownMenu>
-                        <TooltipProvider>
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                                            <Download className="h-4 w-4" />
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                </TooltipTrigger>
-                                <TooltipContent>Download Options</TooltipContent>
-                            </Tooltip>
-                        </TooltipProvider>
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => onDownload(file, false)}>
-                                <FileLock2 className="mr-2 h-4 w-4" />
-                                <span>Download Encrypted (.enc)</span>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => onDownload(file, true)}>
-                                <FileCheck className="mr-2 h-4 w-4" />
-                                <span>Download Decrypted</span>
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                ) : (
+                <DropdownMenu>
                     <TooltipProvider>
                         <Tooltip>
                             <TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onDownload(file, false)}>
-                                    <Download className="h-4 w-4" />
-                                </Button>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                                        <Download className="h-4 w-4" />
+                                    </Button>
+                                </DropdownMenuTrigger>
                             </TooltipTrigger>
-                            <TooltipContent>Download</TooltipContent>
+                            <TooltipContent>Download Options</TooltipContent>
                         </Tooltip>
                     </TooltipProvider>
-                )
+                    <DropdownMenuContent align="end">
+                        {file.isEncrypted ? (
+                            <>
+                                <DropdownMenuItem onClick={() => onDownload(file, false)}>
+                                    <FileLock2 className="mr-2 h-4 w-4" />
+                                    <span>Download Encrypted (.enc)</span>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => onDownload(file, true)}>
+                                    <FileCheck className="mr-2 h-4 w-4" />
+                                    <span>Download Decrypted</span>
+                                </DropdownMenuItem>
+                            </>
+                        ) : (
+                            <DropdownMenuItem onClick={() => onDownload(file, false)}>
+                                <Download className="mr-2 h-4 w-4" />
+                                <span>Download File</span>
+                            </DropdownMenuItem>
+                        )}
+
+                        {onGenerateUrl && (
+                            <>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={() => onGenerateUrl(file)}>
+                                    <ExternalLink className="mr-2 h-4 w-4" />
+                                    <span>Wget / Curl Link</span>
+                                </DropdownMenuItem>
+                            </>
+                        )}
+                    </DropdownMenuContent>
+                </DropdownMenu>
             )}
 
             {canRestore && (

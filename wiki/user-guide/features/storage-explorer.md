@@ -83,18 +83,26 @@ Click on a file to see:
 
 ### Download
 
-1. Click **Download** button
-2. File downloads to your browser
-3. Decryption happens automatically (if encrypted)
-4. Decompression is **not** automatic
+Click the **Download** button to access options:
 
-To decompress locally:
+1. **Download File**: Direct browser download.
+2. **Download Encrypted (.enc)**: Download the raw encrypted file (if encrypted).
+3. **Download Decrypted**: Download and transparently decrypt the file.
+4. **Wget / Curl Link**: Generate a temporary, signed link for CLI tools.
+
+#### CLI Download (Wget / Curl)
+
+The "Wget / Curl Link" option provides a secure way to download backups directly to your servers without transferring them to your local machine first.
+
+- **Security**: Links are signed with a temporary token.
+- **Expiration**: Links expire automatically after **5 minutes**.
+- **Usage**: Single-use only.
+
+Example usage:
 ```bash
-# Gzip
-gunzip backup.sql.gz
-
-# Brotli
-brotli -d backup.sql.br
+wget -O backup.sql.gz "https://dbackup.example.com/api/storage/public-download?token=xyz..."
+# Or
+curl -o backup.sql.gz "https://dbackup.example.com/api/storage/public-download?token=xyz..."
 ```
 
 ### Restore

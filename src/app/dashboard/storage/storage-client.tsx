@@ -33,6 +33,7 @@ import { Label } from "@/components/ui/label";
 import { getColumns, FileInfo } from "./columns";
 import { lockBackup } from "@/app/actions/storage/lock";
 import { RestoreDialog } from "@/components/dashboard/storage/restore-dialog";
+import { DownloadLinkModal } from "@/components/dashboard/storage/download-link-modal";
 
 interface AdapterConfig {
     id: string;
@@ -66,6 +67,10 @@ export function StorageClient({ canDownload, canRestore, canDelete }: StorageCli
 
     // Restore State
     const [restoreFile, setRestoreFile] = useState<FileInfo | null>(null);
+
+    // Download Link State
+    const [urlFile, setUrlFile] = useState<FileInfo | null>(null);
+    const [urlModalOpen, setUrlModalOpen] = useState(false);
 
     useEffect(() => {
         fetchAdapters();
@@ -131,6 +136,15 @@ export function StorageClient({ canDownload, canRestore, canDelete }: StorageCli
         window.open(url, '_blank');
     }, [canDownload, selectedDestination]);
 
+    const handleGenerateUrl = useCallback((file: FileInfo) => {
+        if (!canDownload) {
+            toast.error("Permission denied");
+            return;
+        }
+        setUrlFile(file);
+        setUrlModalOpen(true);
+    }, [canDownload]);
+
     const handleRestoreClick = useCallback((file: FileInfo) => {
         if (!canRestore) {
             toast.error("Permission denied");
@@ -192,12 +206,13 @@ export function StorageClient({ canDownload, canRestore, canDelete }: StorageCli
     const columns = useMemo(() => getColumns({
         onRestore: handleRestoreClick,
         onDownload: handleDownload,
+        onGenerateUrl: handleGenerateUrl,
         onDelete: handleDeleteClick,
         onToggleLock: handleToggleLock,
         canDownload,
         canRestore,
         canDelete
-    }), [handleRestoreClick, handleDownload, handleDeleteClick, handleToggleLock, canDownload, canRestore, canDelete]);
+    }), [handleRestoreClick, handleDownload, handleGenerateUrl, handleDeleteClick, handleToggleLock, canDownload, canRestore, canDelete]);
 
     const filterableColumns = useMemo(() => {
         const jobs = Array.from(new Set(files.map(f => f.jobName).filter(Boolean).filter(n => n !== "Unknown"))) as string[];
@@ -310,6 +325,13 @@ export function StorageClient({ canDownload, canRestore, canDelete }: StorageCli
                 onSuccess={() => {
                     setRestoreFile(null);
                 }}
+            />
+
+            <DownloadLinkModal
+                open={urlModalOpen}
+                onOpenChange={setUrlModalOpen}
+                file={urlFile}
+                storageId={selectedDestination}
             />
 
             {/* Delete Confirmation Modal */}

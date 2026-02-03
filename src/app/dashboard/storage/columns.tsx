@@ -30,6 +30,7 @@ export type FileInfo = {
 interface ColumnsProps {
     onRestore: (file: FileInfo) => void;
     onDownload: (file: FileInfo, decrypt?: boolean) => void;
+    onGenerateUrl: (file: FileInfo) => void;
     onDelete: (file: FileInfo) => void;
     onToggleLock: (file: FileInfo) => void;
     canDownload: boolean;
@@ -37,7 +38,7 @@ interface ColumnsProps {
     canDelete: boolean;
 }
 
-export const getColumns = ({ onRestore, onDownload, onDelete, onToggleLock, canDownload, canRestore, canDelete }: ColumnsProps): ColumnDef<FileInfo>[] => [
+export const getColumns = ({ onRestore, onDownload, onGenerateUrl, onDelete, onToggleLock, canDownload, canRestore, canDelete }: ColumnsProps): ColumnDef<FileInfo>[] => [
     {
         accessorKey: "name",
         header: ({ column }) => {
@@ -170,6 +171,7 @@ export const getColumns = ({ onRestore, onDownload, onDelete, onToggleLock, canD
             <ActionsCell
                 file={row.original}
                 onDownload={onDownload}
+                onGenerateUrl={onGenerateUrl}
                 onRestore={onRestore}
                 onDelete={onDelete}
                 onToggleLock={onToggleLock}
