@@ -4,11 +4,6 @@ This page outlines planned features and improvements for DBackup. Features are s
 
 ## 🎯 In Progress
 
-### PostgreSQL Restore Improvements
-- Enhanced error detection (parse stderr for critical errors, stop on failures)
-- DB properties preservation (extract ENCODING, LC_COLLATE, TEMPLATE from CREATE DATABASE)
-- Post-restore validation (optional row count comparison, integrity verification)
-
 ### Dashboard Enhancements
 - Backup statistics graphs and visualizations
 
@@ -83,6 +78,7 @@ Allow users to edit their own profile regardless of strict RBAC permissions.
 For a full list of completed features, see the [Changelog](/changelog).
 
 ### Highlights
+- ✅ PostgreSQL restore improvements (v0.9.1 - TAR architecture with per-DB custom format dumps)
 - ✅ Multi-database support (MySQL, PostgreSQL, MongoDB, SQLite, MSSQL)
 - ✅ AES-256-GCM backup encryption with Vault
 - ✅ GZIP and Brotli compression

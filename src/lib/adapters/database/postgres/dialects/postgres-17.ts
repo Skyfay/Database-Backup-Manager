@@ -14,11 +14,8 @@ export class Postgres17Dialect extends PostgresBaseDialect {
         const args = super.getDumpArgs(config, databases);
 
         // PG 17 specific optimizations
-        if (databases.length === 1) {
-            args.push('--no-sync');
-            // PG 17 has better incremental backup support
-            args.push('--encoding=UTF8'); // Explicit UTF8
-        }
+        args.push('--no-sync');
+        args.push('--encoding=UTF8'); // Explicit UTF8 for PG 17
 
         return args;
     }

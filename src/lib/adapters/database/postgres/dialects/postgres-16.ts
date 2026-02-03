@@ -13,9 +13,7 @@ export class Postgres16Dialect extends PostgresBaseDialect {
         const args = super.getDumpArgs(config, databases);
 
         // Add --no-sync for better performance
-        if (databases.length === 1) {
-            args.push('--no-sync');
-        }
+        args.push('--no-sync');
 
         return args;
     }
