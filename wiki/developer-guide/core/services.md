@@ -74,28 +74,26 @@ export const JobService = {
 
 ### BackupService
 
-Triggers backup execution.
+Triggers backup execution via the queue system.
 
 ```typescript
 // src/services/backup-service.ts
-export const BackupService = {
-  async runJob(jobId: string) {
-    // Create pending execution
-    const execution = await prisma.execution.create({
-      data: {
-        jobId,
-        status: "Pending",
-        type: "Backup"
-      }
-    });
+import { runJob } from "@/lib/runner";
 
-    // Add to queue
-    await queueManager.enqueue(execution.id);
-
-    return execution;
+export class BackupService {
+  async executeJob(jobId: string) {
+    // runJob creates a Pending execution and triggers processQueue()
+    return runJob(jobId);
   }
-};
+}
+
+export const backupService = new BackupService();
 ```
+
+The `runJob` function in [src/lib/runner.ts](src/lib/runner.ts):
+1. Creates an `Execution` record with status `"Pending"`
+2. Triggers `processQueue()` from `src/lib/queue-manager.ts`
+3. Returns immediately with the `executionId`
 
 ### RestoreService
 
@@ -127,34 +125,40 @@ export const RestoreService = {
 
 ### RetentionService
 
-Implements the Grandfather-Father-Son (GVS) retention algorithm.
+Implements retention with SIMPLE and SMART (GFS) modes.
 
 ```typescript
 // src/services/retention-service.ts
-export const RetentionService = {
-  async applyRetention(
+export class RetentionService {
+  static calculateRetention(
     files: FileInfo[],
-    config: RetentionConfig
-  ): Promise<RetentionResult> {
-    const toKeep = new Set<string>();
+    policy: RetentionConfiguration
+  ): { keep: FileInfo[]; delete: FileInfo[] } {
+    if (!policy || policy.mode === 'NONE') {
+      return { keep: files, delete: [] };
+    }
 
-    // Keep daily backups (last N days)
-    this.selectDaily(files, config.daily, toKeep);
+    // Locked files are always kept (not counted in policy)
+    const lockedFiles = files.filter(f => f.locked);
+    const processingFiles = files.filter(f => !f.locked);
 
-    // Keep weekly backups (last N weeks)
-    this.selectWeekly(files, config.weekly, toKeep);
+    if (policy.mode === 'SIMPLE' && policy.simple) {
+      // Keep the N most recent backups
+      this.applySimplePolicy(processingFiles, policy.simple.keepCount);
+    } else if (policy.mode === 'SMART' && policy.smart) {
+      // GFS algorithm: daily, weekly, monthly, yearly
+      this.applySmartPolicy(processingFiles, policy.smart);
+    }
 
-    // Keep monthly backups (last N months)
-    this.selectMonthly(files, config.monthly, toKeep);
-
-    // Everything not in toKeep is marked for deletion
-    return {
-      keep: files.filter(f => toKeep.has(f.name)),
-      delete: files.filter(f => !toKeep.has(f.name))
-    };
+    return { keep: [...keptFiles, ...lockedFiles], delete: deletedFiles };
   }
-};
+}
 ```
+
+**Retention Modes:**
+- `NONE`: Keep all backups
+- `SIMPLE`: Keep the last N backups
+- `SMART`: GFS algorithm with daily/weekly/monthly/yearly buckets
 
 ### EncryptionService
 

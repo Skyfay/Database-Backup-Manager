@@ -38,18 +38,19 @@ export const AUDIT_ACTIONS = {
   UPDATE: 'UPDATE',
   DELETE: 'DELETE',
   EXECUTE: 'EXECUTE',
-  RESTORE: 'RESTORE',
+  EXPORT: 'EXPORT',   // For sensitive data exports (e.g., recovery kit)
 } as const;
 
 export const AUDIT_RESOURCES = {
+  AUTH: 'AUTH',
   USER: 'USER',
   GROUP: 'GROUP',
-  JOB: 'JOB',
   SOURCE: 'SOURCE',
   DESTINATION: 'DESTINATION',
-  EXECUTION: 'EXECUTION',
+  JOB: 'JOB',
   SYSTEM: 'SYSTEM',
-  SSO_PROVIDER: 'SSO_PROVIDER',
+  ADAPTER: 'ADAPTER',
+  VAULT: 'VAULT',     // Encryption profiles / recovery kits
 } as const;
 ```
 

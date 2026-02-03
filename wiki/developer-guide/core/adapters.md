@@ -9,9 +9,10 @@ src/lib/adapters/
 ├── definitions.ts      # Zod schemas for all adapters
 ├── index.ts           # Registration
 ├── database/          # MySQL, PostgreSQL, MongoDB, etc.
+│   └── common/        # Shared utilities (tar-utils.ts)
 ├── storage/           # Local, S3, SFTP, etc.
 ├── notification/      # Discord, Email, etc.
-└── oidc/              # SSO providers
+└── oidc/              # SSO providers (Authentik, PocketID, Generic)
 ```
 
 ## Adapter Types
@@ -25,13 +26,26 @@ interface DatabaseAdapter {
   id: string;                    // Unique identifier
   type: "database";
   name: string;                  // Display name
-  icon?: string;                 // Icon identifier
   configSchema: ZodSchema;       // Configuration schema
 
-  dump(config: unknown, destinationPath: string): Promise<BackupResult>;
-  restore(config: unknown, sourcePath: string): Promise<BackupResult>;
+  dump(
+    config: unknown,
+    destinationPath: string,
+    onLog?: (msg: string, level?: LogLevel, type?: LogType, details?: string) => void,
+    onProgress?: (percentage: number) => void
+  ): Promise<BackupResult>;
+
+  restore(
+    config: unknown,
+    sourcePath: string,
+    onLog?: (msg: string, level?: LogLevel, type?: LogType, details?: string) => void,
+    onProgress?: (percentage: number) => void
+  ): Promise<BackupResult>;
+
   test(config: unknown): Promise<TestResult>;
   getDatabases?(config: unknown): Promise<string[]>;
+  prepareRestore?(config: unknown, databases: string[]): Promise<void>;
+  analyzeDump?(sourcePath: string): Promise<string[]>;
 }
 ```
 
@@ -46,12 +60,26 @@ interface StorageAdapter {
   name: string;
   configSchema: ZodSchema;
 
-  upload(config: unknown, localPath: string, remotePath: string): Promise<void>;
-  download(config: unknown, remotePath: string, localPath: string): Promise<void>;
+  upload(
+    config: unknown,
+    localPath: string,
+    remotePath: string,
+    onProgress?: (percent: number) => void,
+    onLog?: (msg: string, level?: LogLevel, type?: LogType, details?: string) => void
+  ): Promise<boolean>;
+
+  download(
+    config: unknown,
+    remotePath: string,
+    localPath: string,
+    onProgress?: (processed: number, total: number) => void,
+    onLog?: (msg: string, level?: LogLevel, type?: LogType, details?: string) => void
+  ): Promise<boolean>;
+
   list(config: unknown, path: string): Promise<FileInfo[]>;
-  delete(config: unknown, path: string): Promise<void>;
+  delete(config: unknown, path: string): Promise<boolean>;
   test(config: unknown): Promise<TestResult>;
-  read?(config: unknown, path: string): Promise<string>;
+  read?(config: unknown, path: string): Promise<string | null>;
 }
 ```
 
@@ -69,8 +97,8 @@ interface NotificationAdapter {
   send(
     config: unknown,
     message: string,
-    context: NotificationContext
-  ): Promise<void>;
+    context?: any
+  ): Promise<boolean>;
   test(config: unknown): Promise<TestResult>;
 }
 ```

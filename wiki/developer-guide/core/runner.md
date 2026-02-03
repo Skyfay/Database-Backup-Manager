@@ -42,31 +42,29 @@ State flows through the pipeline via `RunnerContext`:
 ```typescript
 // src/lib/runner/types.ts
 interface RunnerContext {
-  // Job configuration
-  job: Job & { source: AdapterConfig; destination: AdapterConfig };
-  execution: Execution;
+  jobId: string;
+  job?: JobWithRelations;      // Job with source, destination, notifications
+  execution?: Execution;
+
+  // Logging
+  logs: LogEntry[];
+  log: (msg: string, level?: LogLevel, type?: LogType, details?: string) => void;
+  updateProgress: (percent: number, stage?: string) => void;
 
   // Resolved adapters
-  sourceAdapter: DatabaseAdapter;
-  destinationAdapter: StorageAdapter;
+  sourceAdapter?: DatabaseAdapter;
+  destAdapter?: StorageAdapter;
 
-  // Runtime state
-  tempFile?: string;        // Local temporary file path
-  remotePath?: string;      // Final storage path
-  logs: string[];           // Execution logs
-  status: "Running" | "Success" | "Failed";
+  // File paths
+  tempFile?: string;           // Local temporary dump file
+  finalRemotePath?: string;    // Final storage path
 
-  // Metadata
-  metadata: {
-    databases?: string[];
-    size?: number;
-    compressionRatio?: number;
-  };
+  // Result data
+  dumpSize?: number;
+  metadata?: any;
 
-  // Encryption (if enabled)
-  encryptionKey?: Buffer;
-  iv?: Buffer;
-  authTag?: Buffer;
+  status: "Success" | "Failed" | "Running";
+  startedAt: Date;
 }
 ```
 

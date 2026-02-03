@@ -7,7 +7,7 @@ This document lists the database engines and versions supported by DBackup.
 | Database | Supported Versions | Client Tool | Notes |
 | :--- | :--- | :--- | :--- |
 | **PostgreSQL** | 12, 13, 14, 15, 16, 17, 18 | `pg_dump` | Backward compatible |
-| **MySQL** | 5.7, 8.0, 8.4, 9.0 | `mysqldump` | Via mariadb-client |
+| **MySQL** | 5.7, 8.0, 9.1 | `mysqldump` | Via mariadb-client |
 | **MariaDB** | 10.x, 11.x | `mysqldump` | Native support |
 | **MongoDB** | 4.x, 5.x, 6.x, 7.x, 8.x | `mongodump` | Standard operations |
 | **SQLite** | 3.x | `sqlite3` | File-based |
@@ -58,8 +58,7 @@ pg_dump \
 
 - MySQL 5.7 (Legacy)
 - MySQL 8.0 (LTS)
-- MySQL 8.4 (Innovation)
-- MySQL 9.0 (Latest)
+- MySQL 9.1 (Latest)
 
 ### MariaDB Compatibility
 

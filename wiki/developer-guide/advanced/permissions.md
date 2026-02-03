@@ -32,7 +32,7 @@ DBackup implements Role-Based Access Control (RBAC) to control feature access th
 
 ```prisma
 model User {
-  id        String   @id @default(uuid())
+  id        String   @id  // Set by auth system
   name      String
   email     String   @unique
   // ...
@@ -45,6 +45,7 @@ model Group {
   name        String   @unique
   permissions String   // JSON array: ["users:read", "jobs:write"]
   createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
   users       User[]
 }
 ```

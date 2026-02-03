@@ -21,19 +21,10 @@ interface NotificationAdapter {
   send(
     config: unknown,
     message: string,
-    context: NotificationContext
-  ): Promise<void>;
+    context?: any
+  ): Promise<boolean>;
 
   test(config: unknown): Promise<TestResult>;
-}
-
-interface NotificationContext {
-  jobName: string;
-  status: "Success" | "Failed";
-  duration: number;      // Milliseconds
-  size?: number;         // Bytes
-  error?: string;        // Error message if failed
-  databases?: string[];  // Affected databases
 }
 ```
 
@@ -113,14 +104,9 @@ const DiscordAdapter: NotificationAdapter = {
 
 ```typescript
 const DiscordSchema = z.object({
-  webhookUrl: z.string()
-    .url()
-    .refine(
-      url => url.includes("discord.com/api/webhooks"),
-      "Must be a Discord webhook URL"
-    ),
-  mentionOnFailure: z.boolean().default(false),
-  mentionRoleId: z.string().optional(),
+  webhookUrl: z.string().url("Valid Webhook URL is required"),
+  username: z.string().optional().default("Backup Manager"),
+  avatarUrl: z.string().url().optional(),
 });
 ```
 
@@ -223,13 +209,13 @@ function buildEmailHtml(context: NotificationContext): string {
 
 ```typescript
 const EmailSchema = z.object({
-  host: z.string().min(1, "SMTP host required"),
+  host: z.string().min(1, "SMTP Host is required"),
   port: z.coerce.number().default(587),
-  secure: z.boolean().default(false),
-  username: z.string().min(1),
-  password: z.string().min(1),
-  from: z.string().email("Valid sender email required"),
-  to: z.string().min(1, "Recipients required"),
+  secure: z.enum(["none", "ssl", "starttls"]).default("starttls"),
+  user: z.string().optional(),
+  password: z.string().optional(),
+  from: z.string().min(1, "From email is required"),
+  to: z.string().email("Valid To email is required"),
 });
 ```
 

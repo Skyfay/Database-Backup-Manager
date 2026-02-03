@@ -7,19 +7,26 @@ Comprehensive guide to testing DBackup, including unit tests, integration tests,
 ### Test Stack
 
 ```yaml
-# docker-compose.test.yml
+# docker-compose.test.yml (simplified example)
 services:
-  mysql:
-    image: mysql:8.0
+  mysql-57:
+    image: mysql:5.7
     ports:
-      - "3306:3306"
+      - "33357:3306"
     environment:
       MYSQL_ROOT_PASSWORD: rootpassword
 
-  postgres:
-    image: postgres:15
+  mysql-8:
+    image: mysql:8.0
     ports:
-      - "5432:5432"
+      - "33380:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+
+  postgres-15:
+    image: postgres:15-alpine
+    ports:
+      - "54415:5432"
     environment:
       POSTGRES_USER: testuser
       POSTGRES_PASSWORD: testpassword
@@ -40,8 +47,12 @@ docker-compose -f docker-compose.test.yml up -d
 
 | Database | Host | Port | User | Password |
 | :--- | :--- | :--- | :--- | :--- |
-| MySQL | localhost | 3306 | root | rootpassword |
-| PostgreSQL | localhost | 5432 | testuser | testpassword |
+| MySQL 5.7 | localhost | 33357 | root | rootpassword |
+| MySQL 8.0 | localhost | 33380 | root | rootpassword |
+| MySQL 9.1 | localhost | 33390 | root | rootpassword |
+| MariaDB 10 | localhost | 33310 | root | rootpassword |
+| MariaDB 11 | localhost | 33311 | root | rootpassword |
+| PostgreSQL 12-17 | localhost | 54412-54417 | testuser | testpassword |
 | MongoDB | localhost | 27017 | - | - |
 
 ## Test Categories

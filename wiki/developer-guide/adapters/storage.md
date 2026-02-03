@@ -6,8 +6,8 @@ Storage adapters handle file operations: upload, download, list, and delete.
 
 | Adapter | ID | Description |
 | :--- | :--- | :--- |
-| Local | `local` | Local filesystem |
-| S3 Generic | `s3` | Any S3-compatible storage |
+| Local | `local-filesystem` | Local filesystem |
+| S3 Generic | `s3-generic` | Any S3-compatible storage |
 | AWS S3 | `s3-aws` | Amazon S3 |
 | Cloudflare R2 | `s3-r2` | Cloudflare R2 |
 | Hetzner | `s3-hetzner` | Hetzner Object Storage |
@@ -23,20 +23,30 @@ interface StorageAdapter {
   configSchema: ZodSchema;
 
   // Core operations
-  upload(config: unknown, localPath: string, remotePath: string): Promise<void>;
-  download(config: unknown, remotePath: string, localPath: string): Promise<void>;
+  upload(
+    config: unknown,
+    localPath: string,
+    remotePath: string,
+    onProgress?: (percent: number) => void,
+    onLog?: (msg: string, level?: LogLevel, type?: LogType, details?: string) => void
+  ): Promise<boolean>;
+
+  download(
+    config: unknown,
+    remotePath: string,
+    localPath: string,
+    onProgress?: (processed: number, total: number) => void,
+    onLog?: (msg: string, level?: LogLevel, type?: LogType, details?: string) => void
+  ): Promise<boolean>;
+
   list(config: unknown, path: string): Promise<FileInfo[]>;
-  delete(config: unknown, path: string): Promise<void>;
+  delete(config: unknown, path: string): Promise<boolean>;
 
   // Connection test
   test(config: unknown): Promise<TestResult>;
 
   // Optional: Read small files (for metadata)
-  read?(config: unknown, path: string): Promise<string>;
-
-  // Optional: Streaming upload/download
-  createUploadStream?(config: unknown, remotePath: string): Writable;
-  createDownloadStream?(config: unknown, remotePath: string): Readable;
+  read?(config: unknown, path: string): Promise<string | null>;
 }
 ```
 
@@ -47,9 +57,8 @@ interface FileInfo {
   name: string;           // Filename only
   path: string;           // Full path
   size: number;           // Size in bytes
-  modifiedAt: Date;       // Last modified
-  isDirectory: boolean;
-  metadata?: BackupMetadata;  // Parsed .meta.json if available
+  lastModified: Date;     // Last modified
+  locked?: boolean;       // Locked from deletion
 }
 ```
 
@@ -59,10 +68,10 @@ Simple filesystem operations:
 
 ```typescript
 const LocalAdapter: StorageAdapter = {
-  id: "local",
+  id: "local-filesystem",
   type: "storage",
   name: "Local Storage",
-  configSchema: LocalSchema,
+  configSchema: LocalStorageSchema,
 
   async upload(config, localPath, remotePath) {
     const validated = LocalSchema.parse(config);
@@ -135,10 +144,10 @@ import { S3Client, PutObjectCommand, GetObjectCommand, ListObjectsV2Command, Del
 import { Upload } from "@aws-sdk/lib-storage";
 
 const S3Adapter: StorageAdapter = {
-  id: "s3",
+  id: "s3-generic",
   type: "storage",
   name: "S3 Compatible",
-  configSchema: S3Schema,
+  configSchema: S3GenericSchema,
 
   async upload(config, localPath, remotePath) {
     const validated = S3Schema.parse(config);

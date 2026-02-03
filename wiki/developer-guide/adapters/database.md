@@ -8,7 +8,7 @@ Database adapters handle the dump and restore operations for different database 
 | :--- | :--- | :--- | :--- |
 | MySQL | `mysql` | `mysql`, `mysqldump` | `.sql` |
 | MariaDB | `mariadb` | `mysql`, `mysqldump` | `.sql` |
-| PostgreSQL | `postgresql` | `psql`, `pg_dump`, `pg_restore` | `.sql` |
+| PostgreSQL | `postgres` | `psql`, `pg_dump`, `pg_restore` | `.sql` |
 | MongoDB | `mongodb` | `mongodump`, `mongorestore` | `.archive` |
 | SQLite | `sqlite` | None (file copy) | `.db` |
 | MSSQL | `mssql` | `sqlcmd` | `.bak` |
@@ -54,12 +54,22 @@ interface DatabaseAdapter {
   id: string;
   type: "database";
   name: string;
-  icon?: string;
   configSchema: ZodSchema;
 
   // Core operations
-  dump(config: unknown, destinationPath: string, streams?: Transform[]): Promise<BackupResult>;
-  restore(config: unknown, sourcePath: string): Promise<BackupResult>;
+  dump(
+    config: unknown,
+    destinationPath: string,
+    onLog?: (msg: string, level?: LogLevel, type?: LogType, details?: string) => void,
+    onProgress?: (percentage: number) => void
+  ): Promise<BackupResult>;
+
+  restore(
+    config: unknown,
+    sourcePath: string,
+    onLog?: (msg: string, level?: LogLevel, type?: LogType, details?: string) => void,
+    onProgress?: (percentage: number) => void
+  ): Promise<BackupResult>;
 
   // Connection test
   test(config: unknown): Promise<TestResult>;
@@ -67,8 +77,11 @@ interface DatabaseAdapter {
   // Optional: List databases
   getDatabases?(config: unknown): Promise<string[]>;
 
-  // Optional: Version detection
-  getVersion?(config: unknown): Promise<string>;
+  // Optional: Pre-flight check for restore
+  prepareRestore?(config: unknown, databases: string[]): Promise<void>;
+
+  // Optional: Analyze dump file
+  analyzeDump?(sourcePath: string): Promise<string[]>;
 }
 ```
 
@@ -80,12 +93,11 @@ interface DatabaseAdapter {
 const MySQLSchema = z.object({
   host: z.string().default("localhost"),
   port: z.coerce.number().default(3306),
-  username: z.string().min(1),
-  password: z.string().min(1),
-  database: z.string().optional(),
-  databases: z.array(z.string()).optional(),
-  sslMode: z.enum(["disabled", "required", "verify-ca"]).default("disabled"),
-  sslCa: z.string().optional(),
+  user: z.string().min(1, "User is required"),
+  password: z.string().optional(),
+  database: z.union([z.string(), z.array(z.string())]).default(""),
+  options: z.string().optional().describe("Additional mysqldump options"),
+  disableSsl: z.boolean().default(false).describe("Disable SSL"),
 });
 ```
 
@@ -168,14 +180,13 @@ async restore(config, sourcePath) {
 ### Configuration Schema
 
 ```typescript
-const PostgreSQLSchema = z.object({
+const PostgresSchema = z.object({
   host: z.string().default("localhost"),
   port: z.coerce.number().default(5432),
-  username: z.string().min(1),
-  password: z.string().min(1),
-  database: z.string().optional(),
-  databases: z.array(z.string()).optional(),
-  sslMode: z.enum(["disable", "require", "verify-ca", "verify-full"]).default("disable"),
+  user: z.string().min(1, "User is required"),
+  password: z.string().optional(),
+  database: z.union([z.string(), z.array(z.string())]).default(""),
+  options: z.string().optional().describe("Additional pg_dump options"),
 });
 ```
 
@@ -221,13 +232,14 @@ async dump(config, destinationPath) {
 
 ```typescript
 const MongoDBSchema = z.object({
-  connectionString: z.string().optional(),
+  uri: z.string().optional().describe("Connection URI (overrides other settings)"),
   host: z.string().default("localhost"),
   port: z.coerce.number().default(27017),
-  username: z.string().optional(),
+  user: z.string().optional(),
   password: z.string().optional(),
-  database: z.string().optional(),
-  authSource: z.string().default("admin"),
+  authenticationDatabase: z.string().default("admin").optional(),
+  database: z.union([z.string(), z.array(z.string())]).default(""),
+  options: z.string().optional().describe("Additional mongodump options"),
 });
 ```
 
