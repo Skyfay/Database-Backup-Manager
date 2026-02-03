@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { registerAdapters } from "@/lib/adapters";
 import { storageService } from "@/services/storage-service";
-import { consumeDownloadToken } from "@/lib/download-tokens";
+import { consumeDownloadToken, markTokenUsed } from "@/lib/download-tokens";
 import path from "path";
 import os from "os";
 import fs from "fs";
@@ -24,18 +24,24 @@ export async function GET(req: NextRequest) {
         const { searchParams } = new URL(req.url);
         const token = searchParams.get("token");
 
+        console.log(`[PublicDownload] Request received. Token: ${token?.substring(0, 16)}...`);
+
         if (!token) {
+            console.log("[PublicDownload] Error: Missing token");
             return NextResponse.json({ error: "Missing token" }, { status: 400 });
         }
 
-        // Validate and consume the token
+        // Validate the token (does NOT mark as used yet)
         const tokenData = consumeDownloadToken(token);
 
         if (!tokenData) {
+            console.log("[PublicDownload] Error: Token invalid or expired");
             return NextResponse.json({
                 error: "Invalid or expired token. Please generate a new download link."
             }, { status: 401 });
         }
+
+        console.log(`[PublicDownload] Token valid. StorageId: ${tokenData.storageId}, File: ${tokenData.file}, Decrypt: ${tokenData.decrypt}`);
 
         const { storageId, file, decrypt } = tokenData;
 
@@ -56,6 +62,10 @@ export async function GET(req: NextRequest) {
 
         // Cleanup temp file
         fs.unlinkSync(tempFile);
+
+        // Mark token as used ONLY after successful download
+        markTokenUsed(token);
+        console.log(`[PublicDownload] Success! File size: ${fileBuffer.length} bytes. Token marked as used.`);
 
         // Determine filename
         let downloadFilename = path.basename(file);

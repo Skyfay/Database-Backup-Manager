@@ -16,14 +16,24 @@ interface DownloadToken {
     used: boolean;
 }
 
-// In-memory store (resets on server restart - this is fine for temp downloads)
-const tokenStore = new Map<string, DownloadToken>();
-
 // Token validity: 5 minutes
 const TOKEN_TTL_MS = 5 * 60 * 1000;
 
 // Cleanup interval: 1 minute
 const CLEANUP_INTERVAL_MS = 60 * 1000;
+
+// Use globalThis to persist store across hot reloads in development
+const globalForTokens = globalThis as unknown as {
+    downloadTokenStore: Map<string, DownloadToken> | undefined;
+    downloadTokenCleanupStarted: boolean | undefined;
+};
+
+// Initialize store if not exists (survives hot reloads)
+if (!globalForTokens.downloadTokenStore) {
+    globalForTokens.downloadTokenStore = new Map<string, DownloadToken>();
+}
+
+const tokenStore = globalForTokens.downloadTokenStore;
 
 /**
  * Generate a new download token
@@ -67,10 +77,20 @@ export function consumeDownloadToken(token: string): DownloadToken | null {
         return null;
     }
 
-    // Mark as used (but keep for a bit to prevent replay attacks)
-    data.used = true;
+    // Note: Token is NOT marked as used here anymore
+    // Call markTokenUsed() after successful download
 
     return data;
+}
+
+/**
+ * Mark a token as used (call after successful download)
+ */
+export function markTokenUsed(token: string): void {
+    const data = tokenStore.get(token);
+    if (data) {
+        data.used = true;
+    }
 }
 
 /**
@@ -86,8 +106,9 @@ function cleanupExpiredTokens(): void {
     }
 }
 
-// Start cleanup interval
-if (typeof setInterval !== "undefined") {
+// Start cleanup interval (only once, survives hot reloads)
+if (typeof setInterval !== "undefined" && !globalForTokens.downloadTokenCleanupStarted) {
+    globalForTokens.downloadTokenCleanupStarted = true;
     setInterval(cleanupExpiredTokens, CLEANUP_INTERVAL_MS);
 }
 
