@@ -9,6 +9,7 @@ import { revalidatePath } from "next/cache";
 import { auditService } from "@/services/audit-service";
 import { AUDIT_ACTIONS, AUDIT_RESOURCES } from "@/lib/core/audit-types";
 import { getErrorMessage } from "@/lib/errors";
+import { assertNotDemoMode } from "@/lib/demo-mode";
 
 /**
  * Returns all encryption profiles.
@@ -150,6 +151,9 @@ export async function deleteEncryptionProfile(id: string) {
     if (!permissions.includes(PERMISSIONS.VAULT.WRITE) && !permissions.includes(PERMISSIONS.SETTINGS.WRITE)) {
         return { success: false, error: "Insufficient permissions" };
     }
+
+    // Block deletion in demo mode - could brick demo backups
+    assertNotDemoMode("encryption-key-delete");
 
     try {
         // Warning: This action is destructive and might brick backups.

@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { LoginForm } from "@/components/auth/login-form";
 import { getPublicSsoProviders } from "@/app/actions/oidc";
+import { getDemoCredentials } from "@/lib/demo-mode";
 import Image from "next/image";
 
 interface HomeProps {
@@ -50,6 +51,7 @@ export default async function Home({ searchParams }: HomeProps) {
                 ssoProviders={ssoProviders}
                 errorCode={params.error}
                 disablePasskeyLogin={disablePasskeyLogin}
+                demoCredentials={getDemoCredentials()}
             />
         </div>
     );

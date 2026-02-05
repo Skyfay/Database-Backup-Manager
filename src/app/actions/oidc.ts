@@ -8,6 +8,7 @@ import { getOIDCAdapter } from "@/services/oidc-registry";
 import { revalidatePath } from "next/cache";
 import { logger } from "@/lib/logger";
 import { wrapError, getErrorMessage } from "@/lib/errors";
+import { assertNotDemoMode } from "@/lib/demo-mode";
 
 const log = logger.child({ action: "oidc" });
 
@@ -44,6 +45,7 @@ export async function getSsoProviders() {
 
 export async function createSsoProvider(input: z.infer<typeof createProviderSchema>) {
     await checkPermission(PERMISSIONS.SETTINGS.WRITE);
+    assertNotDemoMode("sso-provider-create");
 
     const validation = createProviderSchema.safeParse(input);
     if (!validation.success) {
@@ -129,6 +131,7 @@ export async function createSsoProvider(input: z.infer<typeof createProviderSche
 
 export async function updateSsoProvider(input: z.infer<typeof updateProviderSchema>) {
     await checkPermission(PERMISSIONS.SETTINGS.WRITE);
+    assertNotDemoMode("sso-provider-update");
 
     const validation = updateProviderSchema.safeParse(input);
     if (!validation.success) {
@@ -210,6 +213,7 @@ export async function updateSsoProvider(input: z.infer<typeof updateProviderSche
 
 export async function deleteSsoProvider(id: string) {
     await checkPermission(PERMISSIONS.SETTINGS.WRITE);
+    assertNotDemoMode("sso-provider-delete");
     try {
         await OidcProviderService.deleteProvider(id);
         revalidatePath("/admin/settings");

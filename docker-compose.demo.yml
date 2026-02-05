@@ -1,0 +1,198 @@
+# DBackup Demo Environment
+# =========================
+# This docker-compose file sets up a complete demo environment for DBackup.
+# It includes the main application, sample databases, and a reset mechanism.
+#
+# Usage:
+#   docker-compose -f docker-compose.demo.yml up -d
+#
+# The demo instance:
+# - Resets every 10 minutes (configurable)
+# - Has pre-seeded database sources and backup jobs
+# - Blocks sensitive operations (password change, user management, etc.)
+#
+# Default credentials:
+#   Email: demo@dbackup.app
+#   Password: demo123456
+
+services:
+  # ==========================================
+  # Main Application
+  # ==========================================
+  dbackup:
+    image: skyfay/dbackup:beta
+    container_name: dbackup-demo
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      # Required secrets (generate new ones for production!)
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY:-a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2}
+      - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET:-demo-secret-change-in-production-abc123}
+      - BETTER_AUTH_URL=${BETTER_AUTH_URL:-http://localhost:3000}
+
+      # Demo Mode Configuration
+      - DEMO_MODE=true
+      - NEXT_PUBLIC_DEMO_MODE=true
+      - DEMO_USER=demo@dbackup.app
+      - DEMO_PASSWORD=demo123456
+
+      # Logging
+      - LOG_LEVEL=info
+    volumes:
+      - demo-db:/app/db
+      - demo-backups:/backups
+      - demo-storage:/app/storage
+    depends_on:
+      mysql-demo:
+        condition: service_healthy
+      postgres-demo:
+        condition: service_healthy
+      mongo-demo:
+        condition: service_healthy
+    networks:
+      - demo-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ==========================================
+  # Demo Databases
+  # ==========================================
+
+  # MySQL 8.0
+  mysql-demo:
+    image: mysql:8.0
+    container_name: dbackup-demo-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: demorootpassword
+      MYSQL_DATABASE: demo_app
+      MYSQL_USER: demouser
+      MYSQL_PASSWORD: demopassword
+    ports:
+      - "33306:3306"
+    volumes:
+      - mysql-demo-data:/var/lib/mysql
+      - ./scripts/demo/mysql-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - demo-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # PostgreSQL 16
+  postgres-demo:
+    image: postgres:16-alpine
+    container_name: dbackup-demo-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: demo_app
+      POSTGRES_USER: demouser
+      POSTGRES_PASSWORD: demopassword
+    ports:
+      - "54321:5432"
+    volumes:
+      - postgres-demo-data:/var/lib/postgresql/data
+      - ./scripts/demo/postgres-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - demo-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U demouser -d demo_app"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MongoDB 7.0
+  mongo-demo:
+    image: mongo:7.0
+    container_name: dbackup-demo-mongo
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: demorootpassword
+      MONGO_INITDB_DATABASE: demo_app
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-demo-data:/data/db
+      - ./scripts/demo/mongo-init.js:/docker-entrypoint-initdb.d/init.js:ro
+    networks:
+      - demo-network
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ==========================================
+  # Demo Reset Service
+  # ==========================================
+  # This service resets the demo environment periodically.
+  # It copies a pre-seeded database and clears backup files.
+
+  demo-reset:
+    image: alpine:latest
+    container_name: dbackup-demo-reset
+    restart: always
+    volumes:
+      - demo-db:/app/db
+      - demo-backups:/backups
+      - ./scripts/demo/seed.db:/seed/dbackup.db:ro
+    entrypoint: |
+      sh -c '
+        echo "Demo Reset Service Started"
+        echo "Reset interval: 10 minutes"
+
+        while true; do
+          sleep 600
+
+          echo "[$(date)] Resetting demo environment..."
+
+          # Reset SQLite database
+          rm -f /app/db/dbackup.db
+          rm -f /app/db/dbackup.db-journal
+          rm -f /app/db/dbackup.db-wal
+          rm -f /app/db/dbackup.db-shm
+          cp /seed/dbackup.db /app/db/dbackup.db
+          chmod 644 /app/db/dbackup.db
+
+          # Clear backup files (keep directory structure)
+          find /backups -type f -name "*.sql*" -delete 2>/dev/null || true
+          find /backups -type f -name "*.tar*" -delete 2>/dev/null || true
+          find /backups -type f -name "*.meta.json" -delete 2>/dev/null || true
+
+          echo "[$(date)] Reset complete"
+        done
+      '
+    networks:
+      - demo-network
+
+# ==========================================
+# Networks
+# ==========================================
+networks:
+  demo-network:
+    driver: bridge
+
+# ==========================================
+# Volumes
+# ==========================================
+volumes:
+  demo-db:
+    name: dbackup-demo-db
+  demo-backups:
+    name: dbackup-demo-backups
+  demo-storage:
+    name: dbackup-demo-storage
+  mysql-demo-data:
+    name: dbackup-demo-mysql-data
+  postgres-demo-data:
+    name: dbackup-demo-postgres-data
+  mongo-demo-data:
+    name: dbackup-demo-mongo-data

@@ -9,6 +9,7 @@ import { auditService } from "@/services/audit-service";
 import { AUDIT_ACTIONS, AUDIT_RESOURCES } from "@/lib/core/audit-types";
 import { logger } from "@/lib/logger";
 import { wrapError, getErrorMessage } from "@/lib/errors";
+import { assertNotDemoMode, getDemoModeMessage } from "@/lib/demo-mode";
 
 const log = logger.child({ action: "user" });
 
@@ -17,6 +18,7 @@ export async function createUser(data: { name: string; email: string; password: 
     const currentUser = await getCurrentUserWithGroup();
 
     try {
+        assertNotDemoMode("user-create");
         const result = await authService.createUser(data);
         revalidatePath("/dashboard/users");
 
@@ -70,6 +72,7 @@ export async function resetUserTwoFactor(userId: string) {
     await checkPermission(PERMISSIONS.USERS.WRITE);
 
     try {
+        assertNotDemoMode("two-factor-reset");
         await userService.resetTwoFactor(userId);
         return { success: true };
     } catch (error: unknown) {
@@ -83,6 +86,7 @@ export async function deleteUser(userId: string) {
     const currentUser = await getCurrentUserWithGroup();
 
     try {
+        assertNotDemoMode("user-delete");
         await userService.deleteUser(userId);
         revalidatePath("/dashboard/users");
         revalidatePath("/dashboard/settings");
@@ -113,6 +117,7 @@ export async function togglePasskeyTwoFactor(userId: string, enabled: boolean) {
     }
 
     try {
+        assertNotDemoMode("passkey-toggle");
         await userService.togglePasskeyTwoFactor(userId, enabled);
         revalidatePath("/dashboard/settings");
         return { success: true };
@@ -130,6 +135,13 @@ import prisma from "@/lib/prisma";
 export async function updateOwnPassword(currentPassword: string, newPassword: string) {
     const currentUser = await getCurrentUserWithGroup();
     if (!currentUser) throw new Error("Unauthorized");
+
+    // Demo mode guard - password changes are blocked
+    try {
+        assertNotDemoMode("password-change");
+    } catch {
+        return { success: false, error: getDemoModeMessage() };
+    }
 
     // 1. Verify user has a credential account
     const account = await prisma.account.findFirst({
@@ -207,6 +219,10 @@ export async function updateUser(userId: string, data: { name?: string; email?: 
     }
 
     try {
+        // Block email changes in demo mode (name/timezone changes are allowed)
+        if (data.email) {
+            assertNotDemoMode("email-change");
+        }
         await userService.updateUser(userId, data);
         revalidatePath("/dashboard/users");
         revalidatePath("/dashboard/settings");

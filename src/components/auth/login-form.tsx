@@ -20,6 +20,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { Loader2, Fingerprint, AlertCircle } from "lucide-react"
+import { Play } from "lucide-react"
 import { formatTwoFactorCode } from "@/lib/utils"
 import { ShieldCheck, Box, Settings2, Globe } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -36,6 +37,8 @@ interface LoginFormProps {
     ssoProviders?: { id: string; name: string; type: string; providerId: string; adapterId: string; domain: string | null; allowProvisioning: boolean }[];
     errorCode?: string;
     disablePasskeyLogin?: boolean;
+    /** Demo mode credentials - when provided, shows a "Demo Login" button */
+    demoCredentials?: { email: string; password: string } | null;
 }
 
 // Error messages for SSO errors
@@ -58,7 +61,7 @@ const ERROR_MESSAGES: Record<string, { title: string; description: string }> = {
     }
 };
 
-export function LoginForm({ allowSignUp = true, ssoProviders = [], errorCode, disablePasskeyLogin = false }: LoginFormProps) {
+export function LoginForm({ allowSignUp = true, ssoProviders = [], errorCode, disablePasskeyLogin = false, demoCredentials }: LoginFormProps) {
   const router = useRouter()
   const [isLogin, setIsLogin] = useState(true)
   const [isEmailStep, setIsEmailStep] = useState(true) // New state for 2-step login
@@ -446,6 +449,36 @@ export function LoginForm({ allowSignUp = true, ssoProviders = [], errorCode, di
         </Form>
         {isLogin && (
             <div className="mt-4 space-y-4">
+                {/* Demo Mode Quick Login */}
+                {demoCredentials && (
+                    <>
+                        <div className="relative">
+                            <div className="absolute inset-0 flex items-center">
+                                <span className="w-full border-t" />
+                            </div>
+                            <div className="relative flex justify-center text-xs uppercase">
+                                <span className="bg-background px-2 text-muted-foreground">
+                                    Demo Mode
+                                </span>
+                            </div>
+                        </div>
+                        <Button
+                            variant="default"
+                            type="button"
+                            className="w-full bg-emerald-600 hover:bg-emerald-700"
+                            onClick={() => {
+                                form.setValue("email", demoCredentials.email);
+                                form.setValue("password", demoCredentials.password);
+                                setIsEmailStep(false);
+                            }}
+                            disabled={loading}
+                        >
+                            <Play className="mr-2 h-4 w-4" />
+                            Use Demo Credentials
+                        </Button>
+                    </>
+                )}
+
                 {ssoProviders.length > 0 && (
                     <div className="space-y-2">
                         {ssoProviders.map((provider) => {
