@@ -4,6 +4,10 @@ import Client from "ssh2-sftp-client";
 import { createReadStream } from "fs";
 import path from "path";
 import { LogLevel, LogType } from "@/lib/core/logs";
+import { logger } from "@/lib/logger";
+import { wrapError } from "@/lib/errors";
+
+const log = logger.child({ adapter: "sftp" });
 
 interface SFTPConfig {
     host: string;
@@ -79,9 +83,9 @@ export const SFTPStorageAdapter: StorageAdapter = {
 
             if (onLog) onLog(`SFTP upload completed successfully`, 'info', 'storage');
             return true;
-        } catch (error: any) {
-            console.error("SFTP upload failed:", error);
-            if (onLog) onLog(`SFTP upload failed: ${error.message}`, 'error', 'storage', error.stack);
+        } catch (error: unknown) {
+            log.error("SFTP upload failed", { host: config.host, remotePath }, wrapError(error));
+            if (onLog && error instanceof Error) onLog(`SFTP upload failed: ${error.message}`, 'error', 'storage', error.stack);
             return false;
         } finally {
             if (sftp) await sftp.end();
@@ -145,7 +149,7 @@ export const SFTPStorageAdapter: StorageAdapter = {
             return files;
 
         } catch (error) {
-            console.error("SFTP list failed:", error);
+            log.error("SFTP list failed", { host: config.host, dir }, wrapError(error));
             return [];
         } finally {
             if (sftp) await sftp.end();
@@ -164,7 +168,7 @@ export const SFTPStorageAdapter: StorageAdapter = {
             await sftp.get(source, localPath);
             return true;
         } catch (error) {
-            console.error("SFTP download failed:", error);
+            log.error("SFTP download failed", { host: config.host, remotePath }, wrapError(error));
             return false;
         } finally {
             if (sftp) await sftp.end();
@@ -207,7 +211,7 @@ export const SFTPStorageAdapter: StorageAdapter = {
             await sftp.delete(source);
             return true;
         } catch (error) {
-            console.error("SFTP delete failed:", error);
+            log.error("SFTP delete failed", { host: config.host, remotePath }, wrapError(error));
             return false;
         } finally {
             if (sftp) await sftp.end();

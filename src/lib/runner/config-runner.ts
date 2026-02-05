@@ -12,19 +12,22 @@ import prisma from "@/lib/prisma";
 import { registry } from "@/lib/core/registry";
 import { StorageAdapter } from "@/lib/core/interfaces";
 import { decryptConfig } from "@/lib/crypto";
+import { logger } from "@/lib/logger";
+import { wrapError, EncryptionError, ConfigurationError } from "@/lib/errors";
 
 const pipelineAsync = promisify(pipeline);
+const log = logger.child({ runner: "ConfigRunner" });
 
 /**
  * Executes a Configuration Backup.
  */
 export async function runConfigBackup() {
-    console.log("[ConfigRunner] Starting Configuration Backup...");
+    log.info("Starting Configuration Backup");
 
     // 1. Fetch Configuration Settings
     const enabled = await prisma.systemSetting.findUnique({ where: { key: "config.backup.enabled" } });
     if (enabled?.value !== "true") {
-        console.log("[ConfigRunner] Aborted. Feature disabled.");
+        log.info("Aborted - feature disabled");
         return;
     }
 
@@ -35,26 +38,28 @@ export async function runConfigBackup() {
     const retentionCount = retentionCountSetting ? parseInt(retentionCountSetting.value) : 10;
 
     if (!storageId?.value) {
-        console.error("[ConfigRunner] No storage destination configured.");
+        log.error("No storage destination configured");
         return;
     }
 
     // 2. Resolve Storage Adapter
     const storageConfig = await prisma.adapterConfig.findUnique({ where: { id: storageId.value } });
     if (!storageConfig) {
-        throw new Error(`Storage adapter ${storageId.value} not found`);
+        throw new ConfigurationError(`Storage adapter ${storageId.value} not found`);
     }
 
     const storageAdapter = registry.get(storageConfig.adapterId) as StorageAdapter;
     if (!storageAdapter) {
-        throw new Error(`Adapter class ${storageConfig.adapterId} not registered`);
+        throw new ConfigurationError(`Adapter class ${storageConfig.adapterId} not registered`);
     }
 
     // Decrypt adapter config before instantiation
     let decryptedConfig = {};
     try {
         decryptedConfig = decryptConfig(JSON.parse(storageConfig.config));
-    } catch (e) { console.error("Config parse error", e); }
+    } catch (e) {
+        log.error("Config parse error", {}, wrapError(e));
+    }
 
 
     // 3. Resolve Encryption Key (if profile selected)
@@ -72,18 +77,18 @@ export async function runConfigBackup() {
                 const decryptedKeyHex = decrypt(profile.secretKey);
                 encryptionKey = Buffer.from(decryptedKeyHex, 'hex');
             } catch (e) {
-                console.error("Failed to decrypt profile key", e);
-                throw new Error("Failed to unlock encryption profile");
+                log.error("Failed to decrypt profile key", {}, wrapError(e));
+                throw new EncryptionError("Failed to unlock encryption profile");
             }
 
         } else {
-             console.warn(`[ConfigRunner] Encryption Profile ${profileId.value} not found.`);
+             log.warn("Encryption Profile not found", { profileId: profileId.value });
              if (includeSecrets?.value === 'true') {
-                 throw new Error("Encryption Profile missing but secrets are included. Aborting backup for security.");
+                 throw new ConfigurationError("Encryption Profile missing but secrets are included. Aborting backup for security.");
              }
         }
     } else if (includeSecrets?.value === 'true') {
-        throw new Error("Cannot include secrets without encryption profile.");
+        throw new ConfigurationError("Cannot include secrets without encryption profile.");
     }
 
     // 4. Generate JSON Data
@@ -120,7 +125,7 @@ export async function runConfigBackup() {
     const fileWriteStream = fs.createWriteStream(tempFilePath);
     streams.push(fileWriteStream);
 
-    console.log(`[ConfigRunner] Streaming config export to ${tempFilePath}...`);
+    log.debug("Streaming config export to temp file", { tempFilePath });
 
     // Execute Pipeline
     // @ts-expect-error Pipeline types are tricky
@@ -135,7 +140,7 @@ export async function runConfigBackup() {
     const fileStats = await fs.promises.stat(tempFilePath);
 
     // 7. Upload
-    console.log(`[ConfigRunner] Uploading to ${storageConfig.name}...`);
+    log.info("Uploading config backup to storage", { storageName: storageConfig.name });
     // Store in a dedicated folder 'system/config' or similar to keep root clean
     // But user asked for folder based on Job name. This is a system task, not a job.
     // Let's use 'config-backups/' as a standard folder.
@@ -175,13 +180,15 @@ export async function runConfigBackup() {
 
     await storageAdapter.upload(decryptedConfig, metaTempPath, remoteMetaFilename);
 
-    console.log("[ConfigRunner] Backup complete.");
+    log.info("Configuration Backup complete");
 
     // 9. Cleanup Temp
     try {
         await fs.promises.unlink(tempFilePath);
         await fs.promises.unlink(metaTempPath);
-    } catch(e) { console.warn("Temp cleanup failed", e); }
+    } catch(e) {
+        log.warn("Temp cleanup failed", {}, wrapError(e));
+    }
 
     // 10. Retention (Simple cleanup of THIS type of files)
     if (retentionCount > 0) {
@@ -191,7 +198,7 @@ export async function runConfigBackup() {
 
 async function applyConfigRetention(adapter: StorageAdapter, config: any, keepParams: number) {
     try {
-        console.log("[ConfigRunner] Checking retention policy for config backups...");
+        log.debug("Checking retention policy for config backups");
         // List in the subfolder
         const files = await adapter.list(config, "config-backups");
 
@@ -203,18 +210,20 @@ async function applyConfigRetention(adapter: StorageAdapter, config: any, keepPa
 
         if (configFiles.length > keepParams) {
              const toDelete = configFiles.slice(keepParams);
-             console.log(`[ConfigRunner] Deleting ${toDelete.length} old config backups...`);
+             log.info("Deleting old config backups", { count: toDelete.length });
 
              for (const file of toDelete) {
                  try {
                      await adapter.delete(config, file.name);
-                 } catch(e) { console.error(`Failed to delete ${file.name}`, e); }
+                 } catch(e) {
+                     log.error("Failed to delete config backup", { fileName: file.name }, wrapError(e));
+                 }
 
                  // Try delete meta
                  try { await adapter.delete(config, file.name + ".meta.json"); } catch {}
              }
         }
     } catch (e) {
-        console.error("Config Retention failed", e);
+        log.error("Config Retention failed", {}, wrapError(e));
     }
 }

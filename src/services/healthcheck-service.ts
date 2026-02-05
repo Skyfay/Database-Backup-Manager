@@ -1,10 +1,14 @@
 import prisma from "@/lib/prisma";
 import { registry } from "@/lib/core/registry";
 import { decryptConfig } from "@/lib/crypto";
+import { logger } from "@/lib/logger";
+import { wrapError, getErrorMessage } from "@/lib/errors";
+
+const log = logger.child({ service: "HealthCheckService" });
 
 export class HealthCheckService {
     async performHealthCheck() {
-        console.log("[HealthCheck] Starting health check cycle...");
+        log.debug("Starting health check cycle");
         const configs = await prisma.adapterConfig.findMany({
             where: {
                 OR: [
@@ -31,13 +35,13 @@ export class HealthCheckService {
                 }
             });
             if (deleted.count > 0) {
-                console.log(`[HealthCheck] Cleanup: Deleted ${deleted.count} old logs.`);
+                log.info("Cleaned up old health check logs", { deletedCount: deleted.count });
             }
         } catch (e) {
-            console.error("[HealthCheck] Failed to run log retention:", e);
+            log.error("Failed to run log retention", {}, wrapError(e));
         }
 
-        console.log("[HealthCheck] Cycle completed.");
+        log.debug("Health check cycle completed");
     }
 
     private async checkAdapter(configRow: any) {
@@ -53,7 +57,6 @@ export class HealthCheckService {
 
             if (!adapter.test) {
                 // If ping/test not supported, we skip
-                // console.warn(`[HealthCheck] Adapter ${configRow.adapterId} does not support test()`);
                 return;
             }
 
@@ -61,8 +64,8 @@ export class HealthCheckService {
             let config;
             try {
                 config = decryptConfig(JSON.parse(configRow.config));
-            } catch(e: any) {
-                throw new Error(`Config decrypt failed: ${e.message}`);
+            } catch(e: unknown) {
+                throw new Error(`Config decrypt failed: ${getErrorMessage(e)}`);
             }
 
             const start = Date.now();
@@ -75,9 +78,9 @@ export class HealthCheckService {
                 errorMsg = result.message;
             }
 
-        } catch (e: any) {
+        } catch (e: unknown) {
             success = false;
-            errorMsg = e.message;
+            errorMsg = getErrorMessage(e);
         }
 
         // Status Logic
@@ -113,7 +116,7 @@ export class HealthCheckService {
                 })
             ]);
         } catch (e) {
-            console.error(`[HealthCheck] Failed to update status for ${configRow.name}:`, e);
+            log.error("Failed to update health check status", { configName: configRow.name }, wrapError(e));
         }
     }
 }

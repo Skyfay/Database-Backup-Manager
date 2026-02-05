@@ -11,6 +11,9 @@ import { S3GenericAdapter, S3AWSAdapter, S3R2Adapter, S3HetznerAdapter } from ".
 import { SFTPStorageAdapter } from "./storage/sftp";
 import { DiscordAdapter } from "./notification/discord";
 import { EmailAdapter } from "./notification/email";
+import { logger } from "@/lib/logger";
+
+const log = logger.child({ module: "Adapters" });
 
 let initialized = false;
 
@@ -37,5 +40,5 @@ export function registerAdapters() {
     registry.register(EmailAdapter);
 
     initialized = true;
-    console.log("Adapters registered:", registry.getAll().map(a => a.id));
+    log.debug("Adapters registered", { adapters: registry.getAll().map(a => a.id) });
 }

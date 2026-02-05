@@ -1,6 +1,10 @@
 import { NotificationAdapter } from "@/lib/core/interfaces";
 import { DiscordSchema } from "@/lib/adapters/definitions";
 import { formatBytes } from "@/lib/utils";
+import { logger } from "@/lib/logger";
+import { wrapError } from "@/lib/errors";
+
+const log = logger.child({ adapter: "discord" });
 
 export const DiscordAdapter: NotificationAdapter = {
     id: "discord",
@@ -73,13 +77,13 @@ export const DiscordAdapter: NotificationAdapter = {
             });
 
             if (!response.ok) {
-                console.error(`Discord notification failed: ${response.status} ${response.statusText}`);
+                log.warn("Discord notification failed", { status: response.status, statusText: response.statusText });
                 return false;
             }
 
             return true;
         } catch (error) {
-            console.error("Discord notification error:", error);
+            log.error("Discord notification error", {}, wrapError(error));
             return false;
         }
     }

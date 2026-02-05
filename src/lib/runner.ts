@@ -7,13 +7,17 @@ import { stepCleanup, stepFinalize } from "@/lib/runner/steps/04-completion";
 import prisma from "@/lib/prisma";
 import { processQueue } from "@/lib/queue-manager";
 import { LogEntry, LogLevel, LogType } from "@/lib/core/logs";
+import { logger } from "@/lib/logger";
+import { BackupError, wrapError } from "@/lib/errors";
+
+const log = logger.child({ module: "Runner" });
 
 /**
  * Entry point for scheduling/running a job.
  * It now enqueues the job instead of running immediately.
  */
 export async function runJob(jobId: string) {
-    console.log(`[Runner] Enqueuing Job ID: ${jobId}`);
+    log.info("Enqueuing job", { jobId });
 
     try {
         const initialLog: LogEntry = {
@@ -35,13 +39,14 @@ export async function runJob(jobId: string) {
 
         // Trigger queue processing
         // We don't await this because we want to return the execution ID immediately to the UI
-        processQueue().catch(e => console.error("Queue trigger failed", e));
+        processQueue().catch((e) => log.error("Queue trigger failed", {}, wrapError(e)));
 
         return { success: true, executionId: execution.id, message: "Job queued successfully" };
 
-    } catch (e: any) {
-        console.error("Failed to enqueue job", e);
-        throw e;
+    } catch (error) {
+        const wrapped = wrapError(error);
+        log.error("Failed to enqueue job", { jobId }, wrapped);
+        throw wrapped;
     }
 }
 
@@ -49,7 +54,8 @@ export async function runJob(jobId: string) {
  * The actual execution logic (called by the Queue Manager).
  */
 export async function performExecution(executionId: string, jobId: string) {
-    console.log(`[Runner] Starting execution ${executionId}`);
+    const jobLog = logger.child({ module: "Runner", jobId, executionId });
+    jobLog.info("Starting execution");
 
     // 1. Mark as RUNNING
     const initialExe = await prisma.execution.update({
@@ -130,8 +136,8 @@ export async function performExecution(executionId: string, jobId: string) {
                         metadata: JSON.stringify({ progress: currentProgress, stage: currentStage })
                     }
                 });
-            } catch (e) {
-                console.error("Failed to flush logs", e);
+            } catch (error) {
+                jobLog.error("Failed to flush logs", {}, wrapError(error));
             }
         };
 
@@ -146,7 +152,7 @@ export async function performExecution(executionId: string, jobId: string) {
         }
     };
 
-    const log = (message: string, level: LogLevel = 'info', type: LogType = 'general', details?: string) => {
+    const logEntry = (message: string, level: LogLevel = 'info', type: LogType = 'general', details?: string) => {
         const entry: LogEntry = {
             timestamp: new Date().toISOString(),
             level,
@@ -156,7 +162,7 @@ export async function performExecution(executionId: string, jobId: string) {
             details
         };
 
-        console.log(`[Job ${jobId}] [${currentStage}] [${level}] ${message}`);
+        jobLog.debug(message, { stage: currentStage, level });
         logs.push(entry);
 
         flushLogs(executionId);
@@ -175,7 +181,7 @@ export async function performExecution(executionId: string, jobId: string) {
     ctx = {
         jobId,
         logs,
-        log,
+        log: logEntry,
         updateProgress,
         status: "Running",
         startedAt: new Date(),
@@ -183,7 +189,7 @@ export async function performExecution(executionId: string, jobId: string) {
     };
 
     try {
-        log("Taking job from queue...");
+        logEntry("Taking job from queue...");
 
         // 1. Initialize (Loads Job Data, Adapters)
         // This will update ctx.job and refresh ctx.execution
@@ -202,15 +208,16 @@ export async function performExecution(executionId: string, jobId: string) {
 
         updateProgress(100, "Completed");
         ctx.status = "Success";
-        log("Job completed successfully");
+        logEntry("Job completed successfully");
 
         // Final flush
         await flushLogs(executionId, true);
 
-    } catch (error: any) {
+    } catch (error) {
+        const wrapped = wrapError(error);
         ctx.status = "Failed";
-        log(`ERROR: ${error.message}`);
-        console.error(`[Job ${jobId}] Execution failed:`, error);
+        logEntry(`ERROR: ${wrapped.message}`);
+        jobLog.error("Execution failed", {}, wrapped);
         await flushLogs(executionId, true);
     } finally {
         // 4. Cleanup & Final Update (sets EndTime, Status in DB)
@@ -218,6 +225,6 @@ export async function performExecution(executionId: string, jobId: string) {
         await stepFinalize(ctx);
 
         // TRIGGER NEXT JOB
-        processQueue().catch(e => console.error("Post-job queue trigger failed", e));
+        processQueue().catch((e) => log.error("Post-job queue trigger failed", {}, wrapError(e)));
     }
 }

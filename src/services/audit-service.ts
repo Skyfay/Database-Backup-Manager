@@ -1,5 +1,9 @@
 import prisma from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
+import { logger } from "@/lib/logger";
+import { wrapError } from "@/lib/errors";
+
+const log = logger.child({ service: "AuditService" });
 
 export interface AuditLogFilter {
   page?: number;
@@ -41,7 +45,7 @@ export class AuditService {
       });
     } catch (error) {
       // We don't want audit logging to crash the application, but we should log the error
-      console.error("Failed to create audit log:", error);
+      log.error("Failed to create audit log", { action, resource, userId }, wrapError(error));
     }
   }
 

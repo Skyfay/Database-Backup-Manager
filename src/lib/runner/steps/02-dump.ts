@@ -4,6 +4,10 @@ import { getTempDir } from "@/lib/temp-dir";
 import path from "path";
 import fs from "fs/promises";
 import { isMultiDbTar, readTarManifest } from "@/lib/adapters/database/common/tar-utils";
+import { logger } from "@/lib/logger";
+import { wrapError } from "@/lib/errors";
+
+const log = logger.child({ step: "02-dump" });
 
 export async function stepExecuteDump(ctx: RunnerContext) {
     if (!ctx.job || !ctx.sourceAdapter) throw new Error("Context not initialized");
@@ -102,7 +106,7 @@ export async function stepExecuteDump(ctx: RunnerContext) {
 
         ctx.log(`Metadata calculated: ${label}`);
     } catch (e) {
-        console.error(`[Job ${job.name}] Failed to calculate metadata:`, e);
+        log.error("Failed to calculate metadata", { jobName: job.name }, wrapError(e));
     }
 
     // 3. Execute Dump

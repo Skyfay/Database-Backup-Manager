@@ -1,14 +1,13 @@
 import prisma from "@/lib/prisma";
-// import { stepExecuteDump } from "@/lib/runner/steps/02-dump";
-// import { stepUpload } from "@/lib/runner/steps/03-upload";
-// import { stepCleanup, stepFinalize } from "@/lib/runner/steps/04-completion";
-// import { stepInitialize } from "@/lib/runner/steps/01-initialize";
+import { logger } from "@/lib/logger";
+
+const log = logger.child({ module: "Queue" });
 
 /**
  * Checks the queue and starts jobs if slots are available.
  */
 export async function processQueue() {
-    console.log("[Queue] Processing queue...");
+    log.debug("Processing queue...");
 
     // 1. Get concurrency limit
     const setting = await prisma.systemSetting.findUnique({ where: { key: "maxConcurrentJobs" } });
@@ -20,7 +19,7 @@ export async function processQueue() {
     });
 
     if (runningCount >= maxJobs) {
-        console.log(`[Queue] Saturation reached (${runningCount}/${maxJobs} running).`);
+        log.debug("Saturation reached", { runningCount, maxJobs });
         return;
     }
 
@@ -36,11 +35,11 @@ export async function processQueue() {
     });
 
     if (pendingJobs.length === 0) {
-        console.log("[Queue] No pending jobs.");
+        log.debug("No pending jobs");
         return;
     }
 
-    console.log(`[Queue] Starting ${pendingJobs.length} jobs.`);
+    log.info("Starting jobs", { count: pendingJobs.length });
 
     // 4. Start them
     const promises = [];
@@ -56,7 +55,7 @@ export async function processQueue() {
 }
 
 async function executeQueuedJob(executionId: string, jobId: string) {
-    console.log(`[Queue] Executing ${executionId} (Job ${jobId})`);
+    log.debug("Executing queued job", { executionId, jobId });
 
     // Dynamic import is fine, but for testing we need to ensure the mocked module is used if possible
     // When using vitest, import() should use the mock registry.

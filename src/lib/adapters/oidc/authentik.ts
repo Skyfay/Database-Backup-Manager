@@ -1,5 +1,9 @@
 import { OIDCAdapter } from "@/lib/core/oidc-adapter";
 import { z } from "zod";
+import { logger } from "@/lib/logger";
+import { wrapError } from "@/lib/errors";
+
+const log = logger.child({ adapter: "authentik" });
 
 export const AuthentikAdapter: OIDCAdapter = {
   id: "authentik",
@@ -58,7 +62,7 @@ export const AuthentikAdapter: OIDCAdapter = {
         discoveryEndpoint: discoveryUrl
       };
     } catch (error) {
-       console.error("Authentik discovery failed:", error);
+       log.error("Authentik discovery failed", { discoveryUrl }, wrapError(error));
        // Fallback or re-throw? Re-throwing ensures the admin sees the error during setup.
        throw error;
     }

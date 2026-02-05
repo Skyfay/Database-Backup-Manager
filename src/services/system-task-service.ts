@@ -7,6 +7,10 @@ import { updateService } from "./update-service";
 import { healthCheckService } from "./healthcheck-service";
 import { auditService } from "./audit-service";
 import { PERMISSIONS } from "@/lib/permissions";
+import { logger } from "@/lib/logger";
+import { wrapError, getErrorMessage } from "@/lib/errors";
+
+const log = logger.child({ service: "SystemTaskService" });
 
 // Ensure adapters are registered for worker context
 registerAdapters();
@@ -161,7 +165,7 @@ export class SystemTaskService {
     }
 
     async runTask(taskId: string) {
-        console.log(`[SystemTask] Running ${taskId}...`);
+        log.info("Running system task", { taskId });
 
         switch (taskId) {
             case SYSTEM_TASKS.UPDATE_DB_VERSIONS:
@@ -186,7 +190,7 @@ export class SystemTaskService {
                 break;
             }
             default:
-                console.warn(`[SystemTask] Unknown task: ${taskId}`);
+                log.warn("Unknown system task", { taskId });
         }
     }
 
@@ -197,16 +201,16 @@ export class SystemTaskService {
             const setting = await prisma.systemSetting.findUnique({ where: { key: retentionKey } });
             const retentionDays = setting ? parseInt(setting.value) : 90; // Default 90 days
 
-            console.log(`[SystemTask] Cleaning audit logs older than ${retentionDays} days...`);
+            log.info("Cleaning old audit logs", { retentionDays });
             const deleted = await auditService.cleanOldLogs(retentionDays);
-            console.log(`[SystemTask] Deleted ${deleted.count} old audit logs.`);
-        } catch (error: any) {
-            console.error(`[SystemTask] Failed to clean audit logs: ${error.message}`);
+            log.info("Audit log cleanup completed", { deletedCount: deleted.count });
+        } catch (error: unknown) {
+            log.error("Failed to clean audit logs", {}, wrapError(error));
         }
     }
 
     private async runCheckForUpdates() {
-        console.log(`[SystemTask] Checking for updates...`);
+        log.debug("Checking for updates");
         try {
             // The update service handles the "checkForUpdates" setting check internally in recent changes,
             // but we might want to skip logic if not needed. However, since this is a system task,
@@ -220,13 +224,16 @@ export class SystemTaskService {
             const result = await updateService.checkForUpdates();
 
             if (result.updateAvailable) {
-                console.log(`[SystemTask] New version available: ${result.latestVersion} (Current: ${result.currentVersion})`);
+                log.info("New version available", {
+                    latestVersion: result.latestVersion,
+                    currentVersion: result.currentVersion
+                });
                 // Future: Send notification?
             } else {
-                console.log(`[SystemTask] Up to date (v${result.currentVersion}).`);
+                log.debug("Application is up to date", { currentVersion: result.currentVersion });
             }
-        } catch (error: any) {
-             console.error(`[SystemTask] Update check failed: ${error.message}`);
+        } catch (error: unknown) {
+            log.error("Update check failed", {}, wrapError(error));
         }
     }
 
@@ -239,11 +246,11 @@ export class SystemTaskService {
             try {
                 const adapter = registry.get(source.adapterId) as DatabaseAdapter;
                 if (!adapter) {
-                    console.warn(`[SystemTask] Adapter implementation not found: ${source.adapterId}`);
+                    log.warn("Adapter implementation not found", { adapterId: source.adapterId });
                     continue;
                 }
                 if (!adapter.test) {
-                    console.log(`[SystemTask] Adapter ${source.adapterId} does not support test/version check.`);
+                    log.debug("Adapter does not support test/version check", { adapterId: source.adapterId });
                     continue;
                 }
 
@@ -251,14 +258,14 @@ export class SystemTaskService {
                 let config;
                 try {
                     config = decryptConfig(JSON.parse(source.config));
-                } catch(e: any) {
-                    console.error(`[SystemTask] Config decrypt failed for ${source.name}: ${e.message}`);
+                } catch(e: unknown) {
+                    log.error("Config decrypt failed", { sourceName: source.name }, wrapError(e));
                     continue;
                 }
 
-                console.log(`[SystemTask] Testing connection for ${source.name} (${source.adapterId})...`);
+                log.debug("Testing connection", { sourceName: source.name, adapterId: source.adapterId });
                 const result = await adapter.test(config);
-                console.log(`[SystemTask] Result for ${source.name}: success=${result.success} version=${result.version}`);
+                log.debug("Connection test result", { sourceName: source.name, success: result.success, version: result.version });
 
                 if (result.success && result.version) {
                     // Update Metadata
@@ -274,7 +281,7 @@ export class SystemTaskService {
                         where: { id: source.id },
                         data: { metadata: JSON.stringify(newMeta) }
                     });
-                    console.log(`[SystemTask] Updated version for ${source.name}: ${result.version}`);
+                    log.info("Updated database version", { sourceName: source.name, version: result.version });
                 } else {
                     // Mark as offline or warning?
                      const currentMeta = source.metadata ? JSON.parse(source.metadata) : {};
@@ -289,15 +296,15 @@ export class SystemTaskService {
                     });
                 }
 
-            } catch (e: any) {
-                console.error(`[SystemTask] Failed check for ${source.name}:`, e);
+            } catch (e: unknown) {
+                log.error("Failed health check for source", { sourceName: source.name }, wrapError(e));
             }
         }
     }
 
     private async runSyncPermissions() {
         try {
-            console.log("[SystemTask] Syncing permissions for SuperAdmin group...");
+            log.debug("Syncing permissions for SuperAdmin group");
 
             // Flatten all permissions from the source of truth
             const allPerms = Object.values(PERMISSIONS).flatMap(group => Object.values(group));
@@ -310,13 +317,13 @@ export class SystemTaskService {
             });
 
             if (result.count > 0) {
-                console.log(`[SystemTask] Successfully updated permissions for ${result.count} SuperAdmin group(s).`);
+                log.info("Updated permissions for SuperAdmin groups", { count: result.count });
             } else {
-                console.log("[SystemTask] No 'SuperAdmin' group found. Skipping permission sync.");
+                log.debug("No SuperAdmin group found, skipping permission sync");
             }
 
-        } catch (error: any) {
-            console.error(`[SystemTask] Failed to sync permissions: ${error.message}`);
+        } catch (error: unknown) {
+            log.error("Failed to sync permissions", {}, wrapError(error));
         }
     }
 }

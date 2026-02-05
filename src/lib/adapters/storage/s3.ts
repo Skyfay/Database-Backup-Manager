@@ -6,6 +6,10 @@ import { createReadStream, createWriteStream } from "fs";
 import { pipeline } from "stream/promises";
 import path from "path";
 import { LogLevel, LogType } from "@/lib/core/logs";
+import { logger } from "@/lib/logger";
+import { wrapError } from "@/lib/errors";
+
+const log = logger.child({ adapter: "s3" });
 
 interface S3InternalConfig {
     endpoint?: string;
@@ -64,9 +68,9 @@ async function s3Upload(internalConfig: S3InternalConfig, localPath: string, rem
         await parallelUploads3.done();
         if (onLog) onLog(`S3 upload completed successfully`, 'info', 'storage');
         return true;
-    } catch (error: any) {
-        console.error("S3 upload failed:", error);
-        if (onLog) onLog(`S3 upload failed: ${error.message}`, 'error', 'storage', error.stack);
+    } catch (error: unknown) {
+        log.error("S3 upload failed", { bucket: internalConfig.bucket, targetKey }, wrapError(error));
+        if (onLog && error instanceof Error) onLog(`S3 upload failed: ${error.message}`, 'error', 'storage', error instanceof Error ? error.stack : undefined);
         return false;
     }
 }
@@ -95,7 +99,7 @@ async function s3List(internalConfig: S3InternalConfig, dir: string = ""): Promi
             lastModified: obj.LastModified || new Date(),
         })).filter(f => f.name && f.size > 0); // Filter folders or empty keys
     } catch (error) {
-        console.error("S3 list failed:", error);
+        log.error("S3 list failed", { bucket: internalConfig.bucket, prefix: listPrefix }, wrapError(error));
         return [];
     }
 }
@@ -124,7 +128,7 @@ async function s3Download(
         await pipeline(webStream, createWriteStream(localPath));
         return true;
     } catch (error) {
-        console.error("S3 download failed:", error);
+        log.error("S3 download failed", { bucket: internalConfig.bucket, targetKey }, wrapError(error));
         return false;
     }
 }
@@ -167,7 +171,7 @@ async function s3Delete(
         await client.send(command);
         return true;
     } catch (error) {
-        console.error("S3 delete failed:", error);
+        log.error("S3 delete failed", { bucket: internalConfig.bucket, remotePath }, wrapError(error));
         return false;
     }
 }

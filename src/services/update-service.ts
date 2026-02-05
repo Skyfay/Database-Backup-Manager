@@ -1,5 +1,9 @@
 import prisma from "@/lib/prisma";
 import packageJson from "../../package.json";
+import { logger } from "@/lib/logger";
+import { wrapError } from "@/lib/errors";
+
+const log = logger.child({ service: "UpdateService" });
 
 interface UpdateInfo {
   updateAvailable: boolean;
@@ -58,7 +62,7 @@ export const updateService = {
       // Parse current version
       const current = parseVersion(currentVersion);
       if (!current) {
-          console.error(`Invalid current version in package.json: ${currentVersion}`);
+          log.error("Invalid current version in package.json", { currentVersion });
           return { updateAvailable: false, latestVersion: currentVersion, currentVersion };
       }
 
@@ -105,7 +109,7 @@ export const updateService = {
       };
 
     } catch (error) {
-      console.error("Update check failed:", error);
+      log.error("Update check failed", {}, wrapError(error));
       return {
         updateAvailable: false,
         latestVersion: currentVersion,

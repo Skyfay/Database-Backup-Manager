@@ -1,5 +1,9 @@
 import { OIDCAdapter } from "@/lib/core/oidc-adapter";
 import { z } from "zod";
+import { logger } from "@/lib/logger";
+import { wrapError } from "@/lib/errors";
+
+const log = logger.child({ adapter: "keycloak" });
 
 export const KeycloakAdapter: OIDCAdapter = {
   id: "keycloak",
@@ -61,7 +65,7 @@ export const KeycloakAdapter: OIDCAdapter = {
         discoveryEndpoint: discoveryUrl
       };
     } catch (error) {
-       console.error("Keycloak discovery failed:", error);
+       log.error("Keycloak discovery failed", { discoveryUrl }, wrapError(error));
        throw error;
     }
   }

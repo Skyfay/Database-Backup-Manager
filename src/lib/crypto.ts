@@ -1,5 +1,6 @@
 
 import { randomBytes, createCipheriv, createDecipheriv } from 'node:crypto';
+import { EncryptionError } from '@/lib/errors';
 
 const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 16;
@@ -10,12 +11,12 @@ const IV_LENGTH = 16;
 function getEncryptionKey(): Buffer {
   const keyHex = process.env.ENCRYPTION_KEY;
   if (!keyHex) {
-    throw new Error('ENCRYPTION_KEY environment variable is not set');
+    throw new EncryptionError('encrypt', 'ENCRYPTION_KEY environment variable is not set');
   }
 
   // The key should be a 32-byte (64 char) hex string for AES-256
   if (keyHex.length !== 64) {
-    throw new Error('ENCRYPTION_KEY must be a 64-character hex string (32 bytes)');
+    throw new EncryptionError('encrypt', 'ENCRYPTION_KEY must be a 64-character hex string (32 bytes)');
   }
 
   return Buffer.from(keyHex, 'hex');
@@ -40,8 +41,8 @@ export function encrypt(text: string): string {
 
     return `${iv.toString('hex')}:${authTag.toString('hex')}:${encrypted}`;
   } catch (error) {
-    console.error('Encryption failed:', error);
-    throw new Error('Failed to encrypt data');
+    if (error instanceof EncryptionError) throw error;
+    throw new EncryptionError('encrypt', 'Failed to encrypt data', { cause: error instanceof Error ? error : undefined });
   }
 }
 
@@ -61,7 +62,7 @@ export function decrypt(text: string): string {
     const parts = text.split(':');
 
     if (parts.length !== 3) {
-      throw new Error('Invalid encrypted text format');
+      throw new EncryptionError('decrypt', 'Invalid encrypted text format');
     }
 
     const iv = Buffer.from(parts[0], 'hex');
@@ -80,8 +81,8 @@ export function decrypt(text: string): string {
     // currently we might want to return the original text if it wasn't encrypted?
     // But for security, if it *looked* encrypted but failed, we should probably throw.
     // Use case: migrating existing unencrypted data vs failed decryption.
-    console.error('Decryption failed:', error);
-    throw new Error('Failed to decrypt data');
+    if (error instanceof EncryptionError) throw error;
+    throw new EncryptionError('decrypt', 'Failed to decrypt data', { cause: error instanceof Error ? error : undefined });
   }
 }
 

@@ -3,6 +3,10 @@ import type { ScheduledTask } from "node-cron";
 import prisma from "@/lib/prisma";
 import { runJob } from "@/lib/runner";
 import { systemTaskService, SYSTEM_TASKS } from "@/services/system-task-service";
+import { logger } from "@/lib/logger";
+import { wrapError } from "@/lib/errors";
+
+const log = logger.child({ module: "Scheduler" });
 
 export class BackupScheduler {
     private tasks: Map<string, ScheduledTask> = new Map();
@@ -12,12 +16,12 @@ export class BackupScheduler {
     }
 
     async init() {
-        console.log("[Scheduler] Initializing...");
+        log.info("Initializing scheduler");
         await this.refresh();
     }
 
     async refresh() {
-        console.log("[Scheduler] Refreshing jobs...");
+        log.info("Refreshing jobs");
 
         // Stop all existing tasks to avoid duplicates
         this.stopAll();
@@ -28,20 +32,20 @@ export class BackupScheduler {
                 where: { enabled: true }
             });
 
-            console.log(`[Scheduler] Found ${jobs.length} enabled jobs.`);
+            log.info("Found enabled jobs", { count: jobs.length });
 
             for (const job of jobs) {
                 if (cron.validate(job.schedule)) {
-                    console.log(`[Scheduler] Scheduling job '${job.name}' (${job.id}) with '${job.schedule}'`);
+                    log.debug("Scheduling job", { jobName: job.name, jobId: job.id, schedule: job.schedule });
 
                     const task = cron.schedule(job.schedule, () => {
-                        console.log(`[Scheduler] Triggering job '${job.name}'`);
-                        runJob(job.id).catch(e => console.error(`[Scheduler] Job ${job.id} failed:`, e));
+                        log.debug("Triggering job", { jobName: job.name });
+                        runJob(job.id).catch((e) => log.error("Job failed", { jobId: job.id }, wrapError(e)));
                     });
 
                     this.tasks.set(job.id, task);
                 } else {
-                    console.error(`[Scheduler] Invalid cron schedule for job ${job.id}: ${job.schedule}`);
+                    log.error("Invalid cron schedule for job", { jobId: job.id, schedule: job.schedule });
                 }
             }
 
@@ -50,15 +54,15 @@ export class BackupScheduler {
                 try {
                     const enabled = await systemTaskService.getTaskEnabled(taskId);
                     if (!enabled) {
-                        console.log(`[Scheduler] System Task '${taskId}' is disabled.`);
+                        log.debug("System task disabled", { taskId });
                         continue;
                     }
 
                     const schedule = await systemTaskService.getTaskConfig(taskId);
                     if (schedule && cron.validate(schedule)) {
-                        console.log(`[Scheduler] Scheduling system task '${taskId}' with '${schedule}'`);
+                        log.debug("Scheduling system task", { taskId, schedule });
                         const task = cron.schedule(schedule, () => {
-                            systemTaskService.runTask(taskId).catch(e => console.error(`[Scheduler] System Task ${taskId} failed:`, e));
+                            systemTaskService.runTask(taskId).catch((e) => log.error("System task failed", { taskId }, wrapError(e)));
                         });
                         this.tasks.set(taskId, task);
                     }
@@ -66,16 +70,18 @@ export class BackupScheduler {
                     // Check for Run on Startup
                     const runOnStartup = await systemTaskService.getTaskRunOnStartup(taskId);
                     if (runOnStartup) {
-                        console.log(`[Scheduler] Scheduling startup run for system task '${taskId}' in 10s`);
+                        log.debug("Scheduling startup run for system task", { taskId, delayMs: 10000 });
                         setTimeout(() => {
-                            console.log(`[Scheduler] Running startup task '${taskId}'`);
-                            systemTaskService.runTask(taskId).catch(e => console.error(`[Scheduler] Startup Task ${taskId} failed:`, e));
+                            log.debug("Running startup task", { taskId });
+                            systemTaskService.runTask(taskId).catch((e) => log.error("Startup task failed", { taskId }, wrapError(e)));
                         }, 10000);
                     }
-                } catch(e) { console.error(`[Scheduler] Failed to schedule task ${taskId}`, e); }
+                } catch (error) {
+                    log.error("Failed to schedule task", { taskId }, wrapError(error));
+                }
             }
         } catch (error) {
-            console.error("[Scheduler] Failed to load jobs from DB", error);
+            log.error("Failed to load jobs from DB", {}, wrapError(error));
         }
     }
 

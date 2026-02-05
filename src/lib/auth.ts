@@ -72,10 +72,9 @@ export async function loadTrustedProviders(): Promise<void> {
         // Clear and repopulate the SAME array (mutate, don't reassign!)
         trustedProvidersCache.splice(0, trustedProvidersCache.length);
         trustedProvidersCache.push(...providers.map(p => p.providerId));
-        console.log("[Auth] Loaded trusted SSO providers:", trustedProvidersCache);
+        // Note: We use debug level here as this runs on every auth request
     } catch (error) {
-        console.warn("[Auth] Could not load trusted providers:", error);
-        // Don't reassign, just clear
+        // Don't reassign, just clear - SSO will still work but without dynamic providers
         trustedProvidersCache.splice(0, trustedProvidersCache.length);
     }
 }

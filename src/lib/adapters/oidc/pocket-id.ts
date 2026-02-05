@@ -1,5 +1,9 @@
 import { OIDCAdapter } from "@/lib/core/oidc-adapter";
 import { z } from "zod";
+import { logger } from "@/lib/logger";
+import { wrapError } from "@/lib/errors";
+
+const log = logger.child({ adapter: "pocket-id" });
 
 export const PocketIDAdapter: OIDCAdapter = {
   id: "pocket-id",
@@ -41,7 +45,7 @@ export const PocketIDAdapter: OIDCAdapter = {
         discoveryEndpoint: discoveryUrl
       };
     } catch (error) {
-       console.error("PocketID discovery failed:", error);
+       log.error("PocketID discovery failed", { discoveryUrl }, wrapError(error));
        throw error;
     }
   }

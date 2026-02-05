@@ -1,13 +1,16 @@
 import { BaseAdapter, DatabaseAdapter, StorageAdapter, NotificationAdapter } from "./interfaces";
+import { logger } from "@/lib/logger";
 
 type AdapterType = 'database' | 'storage' | 'notification';
+
+const log = logger.child({ module: "AdapterRegistry" });
 
 class AdapterRegistry {
     private adapters: Map<string, BaseAdapter> = new Map();
 
     register(adapter: BaseAdapter) {
         if (this.adapters.has(adapter.id)) {
-            console.warn(`Adapter with id ${adapter.id} is already registered. Overwriting.`);
+            log.warn("Adapter already registered, overwriting", { adapterId: adapter.id });
         }
         this.adapters.set(adapter.id, adapter);
     }

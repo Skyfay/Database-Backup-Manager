@@ -4,6 +4,10 @@ import fs from "fs";
 import { registry } from "@/lib/core/registry";
 import { NotificationAdapter } from "@/lib/core/interfaces";
 import { decryptConfig } from "@/lib/crypto";
+import { logger } from "@/lib/logger";
+import { wrapError } from "@/lib/errors";
+
+const log = logger.child({ step: "04-completion" });
 
 export async function stepCleanup(ctx: RunnerContext) {
     // 1. Filesystem Cleanup
@@ -65,7 +69,7 @@ export async function stepFinalize(ctx: RunnerContext) {
                         });
                     }
                 } catch (e) {
-                    console.error("Failed to send notification", e);
+                    log.error("Failed to send notification", { channelName: channel.name }, wrapError(e));
                     ctx.log(`Failed to send notification to channel ${channel.name}`);
                 }
             }

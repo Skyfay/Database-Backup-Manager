@@ -1,4 +1,8 @@
 import sql from "mssql";
+import { logger } from "@/lib/logger";
+import { wrapError } from "@/lib/errors";
+
+const log = logger.child({ adapter: "mssql" });
 
 /**
  * Build connection configuration for mssql package
@@ -121,8 +125,8 @@ export async function getDatabases(config: any): Promise<string[]> {
         `);
 
         return result.recordset.map((row: any) => row.name);
-    } catch (error: any) {
-        console.error("Failed to get databases:", error.message);
+    } catch (error: unknown) {
+        log.error("Failed to get databases", {}, wrapError(error));
         return [];
     } finally {
         if (pool) {

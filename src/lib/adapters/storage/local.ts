@@ -5,6 +5,10 @@ import fs from "fs/promises";
 import path from "path";
 import { existsSync, statSync, createReadStream, createWriteStream } from "fs";
 import { pipeline } from "stream/promises";
+import { logger } from "@/lib/logger";
+import { wrapError, AdapterError } from "@/lib/errors";
+
+const log = logger.child({ adapter: "local-filesystem" });
 
 // Helper to prevent path traversal
 function resolveSafePath(basePath: string, relativePath: string): string {
@@ -12,7 +16,7 @@ function resolveSafePath(basePath: string, relativePath: string): string {
     const resolvedTarget = path.resolve(resolvedBase, relativePath);
 
     if (!resolvedTarget.startsWith(resolvedBase)) {
-        throw new Error(`Access denied: Illegal path traversal detected. Base: ${resolvedBase}, Target: ${resolvedTarget}`);
+        throw new AdapterError("local-filesystem", `Access denied: Illegal path traversal detected. Base: ${resolvedBase}, Target: ${resolvedTarget}`);
     }
     return resolvedTarget;
 }
@@ -27,9 +31,9 @@ export const LocalFileSystemAdapter: StorageAdapter = {
         let destPath: string;
         try {
             destPath = resolveSafePath(config.basePath, remotePath);
-        } catch (error: any) {
-            console.error("Local upload security check failed:", error);
-            if (onLog) onLog(error.message, 'error', 'security');
+        } catch (error: unknown) {
+            log.error("Local upload security check failed", { basePath: config.basePath, remotePath }, wrapError(error));
+            if (onLog && error instanceof Error) onLog(error.message, 'error', 'security');
             throw error; // Rethrow to fail explicitly
         }
 
@@ -59,9 +63,9 @@ export const LocalFileSystemAdapter: StorageAdapter = {
 
             await pipeline(sourceStream, destStream);
             return true;
-        } catch (error: any) {
-            console.error("Local upload failed:", error);
-            if (onLog) onLog(`Local upload failed: ${error.message}`, 'error', 'general', error.stack);
+        } catch (error: unknown) {
+            log.error("Local upload failed", { localPath, remotePath }, wrapError(error));
+            if (onLog && error instanceof Error) onLog(`Local upload failed: ${error.message}`, 'error', 'general', error.stack);
             return false;
         }
     },
@@ -77,13 +81,13 @@ export const LocalFileSystemAdapter: StorageAdapter = {
         try {
             sourcePath = resolveSafePath(config.basePath, remotePath);
         } catch (error) {
-             console.error("Local download security check failed:", error);
+             log.error("Local download security check failed", { basePath: config.basePath, remotePath }, wrapError(error));
              throw error;
         }
 
         try {
             if (!existsSync(sourcePath)) {
-                console.error("File not found:", sourcePath);
+                log.warn("File not found for download", { sourcePath });
                 return false;
             }
 
@@ -109,7 +113,7 @@ export const LocalFileSystemAdapter: StorageAdapter = {
             await pipeline(sourceStream, destStream);
             return true;
         } catch (error) {
-            console.error("Local download failed:", error);
+            log.error("Local download failed", { remotePath, localPath }, wrapError(error));
             return false;
         }
     },
@@ -122,7 +126,7 @@ export const LocalFileSystemAdapter: StorageAdapter = {
         } catch (error) {
             // Rethrow security errors
             if (error instanceof Error && error.message.includes("Access denied")) throw error;
-            console.error("Local read failed:", error);
+            log.error("Local read failed", { remotePath }, wrapError(error));
             return null;
         }
     },
@@ -156,7 +160,7 @@ export const LocalFileSystemAdapter: StorageAdapter = {
             return files;
         } catch (error) {
              if (error instanceof Error && error.message.includes("Access denied")) throw error;
-            console.error("Local list failed:", error);
+            log.error("Local list failed", { remotePath }, wrapError(error));
             return [];
         }
     },
@@ -170,7 +174,7 @@ export const LocalFileSystemAdapter: StorageAdapter = {
             return true;
         } catch (error) {
              if (error instanceof Error && error.message.includes("Access denied")) throw error;
-             console.error("Local delete failed:", error);
+             log.error("Local delete failed", { remotePath }, wrapError(error));
              return false;
         }
     },
