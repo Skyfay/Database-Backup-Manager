@@ -3,7 +3,7 @@
 All notable changes to DBackup are documented here.
 
 ## v0.9.4-beta - Universal Download Links & Logging System
-*Release: In Progress*
+*Released: February 6, 2026*
 
 This release extends the token-based download link feature (introduced for Redis restore) to all backup downloads in Storage Explorer. Additionally, it introduces a centralized logging and error handling system for better maintainability and debugging.
 
