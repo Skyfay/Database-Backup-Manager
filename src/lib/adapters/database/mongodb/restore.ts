@@ -1,6 +1,6 @@
 import { BackupResult } from "@/lib/core/interfaces";
 import { LogLevel, LogType } from "@/lib/core/logs";
-import { execFileAsync } from "./connection";
+import { MongoClient } from "mongodb";
 import { getDialect } from "./dialects";
 import { spawn } from "child_process";
 import { createReadStream } from "fs";
@@ -15,6 +15,23 @@ import {
     getTargetDatabaseName,
 } from "../common/tar-utils";
 
+/**
+ * Build MongoDB connection URI from config
+ */
+function buildConnectionUri(config: any): string {
+    if (config.uri) {
+        return config.uri;
+    }
+
+    const auth = config.user && config.password
+        ? `${encodeURIComponent(config.user)}:${encodeURIComponent(config.password)}@`
+        : "";
+    const authDb = config.authenticationDatabase || "admin";
+    const authParam = config.user ? `?authSource=${authDb}` : "";
+
+    return `mongodb://${auth}${config.host}:${config.port}/${authParam}`;
+}
+
 export async function prepareRestore(config: any, databases: string[]): Promise<void> {
     // Determine credentials (privileged or standard)
     const usageConfig = { ...config };
@@ -23,36 +40,35 @@ export async function prepareRestore(config: any, databases: string[]): Promise<
         usageConfig.password = config.privilegedAuth.password;
     }
 
-    const dialect = getDialect('mongodb', config.detectedVersion);
-    // getConnectionArgs returns generic host/port/auth args suitable for tools like mongosh
-    const args = dialect.getConnectionArgs(usageConfig);
+    let client: MongoClient | null = null;
 
-    // Check if --quiet is needed or already in args
-    if (!args.includes('--quiet')) args.unshift('--quiet');
+    try {
+        const uri = buildConnectionUri(usageConfig);
+        client = new MongoClient(uri, {
+            connectTimeoutMS: 10000,
+            serverSelectionTimeoutMS: 10000,
+        });
 
-    for (const dbName of databases) {
-        // Permission check script
-        const evalScript = `
-        try {
-            var target = db.getSiblingDB('${dbName.replace(/'/g, "\\'")}');
-            target.createCollection('__perm_check_tmp');
-            target.getCollection('__perm_check_tmp').drop();
-        } catch(e) {
-            print('ERROR: ' + e.message);
-            quit(1);
-        }
-        `;
+        await client.connect();
 
-        try {
-            // We use mongosh for eval execution
-            await execFileAsync('mongosh', [...args, '--eval', evalScript]);
-        } catch (e: unknown) {
-            const err = e as { stdout?: string; stderr?: string; message?: string };
-            const msg = err.stdout || err.stderr || err.message || "";
-            if (msg.includes("not authorized") || msg.includes("Authorization") || msg.includes("requires authentication") || msg.includes("command create requires")) {
-                throw new Error(`Access denied to database '${dbName}'. Permissions?`);
+        for (const dbName of databases) {
+            try {
+                // Test write permission by creating and dropping a temporary collection
+                const targetDb = client.db(dbName);
+                await targetDb.createCollection("__perm_check_tmp");
+                await targetDb.collection("__perm_check_tmp").drop();
+            } catch (e: unknown) {
+                const err = e as { message?: string; codeName?: string };
+                const msg = err.message || err.codeName || "";
+                if (msg.includes("not authorized") || msg.includes("Authorization") || msg.includes("requires authentication") || msg.includes("command create requires")) {
+                    throw new Error(`Access denied to database '${dbName}'. Permissions?`);
+                }
+                throw e;
             }
-            throw e;
+        }
+    } finally {
+        if (client) {
+            await client.close().catch(() => {});
         }
     }
 }

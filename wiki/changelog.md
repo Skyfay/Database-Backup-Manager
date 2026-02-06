@@ -65,6 +65,13 @@ Removed legacy code that became obsolete after the v0.9.1 TAR architecture migra
 - Migrated core services and adapters to use the new logging system
 - Added lint-guard tests to detect `console.*` usage in source files
 
+### 🍃 MongoDB Docker Compatibility
+Replaced `mongosh` CLI dependency with native `mongodb` npm package for connection testing:
+- **No CLI Dependency**: Connection test and database listing now use the native MongoDB driver instead of `mongosh`
+- **Docker Compatible**: The `mongosh` shell is not available in Alpine-based Docker images, but the npm package works everywhere
+- **Backup/Restore Unchanged**: `mongodump` and `mongorestore` (from `mongodb-tools`) are still used for actual backup operations
+- **Cleaner Code**: Removed shell command parsing in favor of proper MongoDB client API calls
+
 ## v0.9.3-beta - Redis Support, Restore UX & Smart File Extensions
 *Released: February 2, 2026*
 

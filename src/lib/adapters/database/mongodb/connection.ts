@@ -1,69 +1,78 @@
-import { execFile } from "child_process";
-import util from "util";
+import { MongoClient } from "mongodb";
 
-export const execFileAsync = util.promisify(execFile);
+/**
+ * Build MongoDB connection URI from config
+ */
+function buildConnectionUri(config: any): string {
+    if (config.uri) {
+        return config.uri;
+    }
+
+    const auth = config.user && config.password
+        ? `${encodeURIComponent(config.user)}:${encodeURIComponent(config.password)}@`
+        : "";
+    const authDb = config.authenticationDatabase || "admin";
+    const authParam = config.user ? `?authSource=${authDb}` : "";
+
+    return `mongodb://${auth}${config.host}:${config.port}/${authParam}`;
+}
 
 export async function test(config: any): Promise<{ success: boolean; message: string; version?: string }> {
+    let client: MongoClient | null = null;
+
     try {
-        const args = ['--eval', 'db.runCommand({ ping: 1 })', '--quiet'];
+        const uri = buildConnectionUri(config);
+        client = new MongoClient(uri, {
+            connectTimeoutMS: 10000,
+            serverSelectionTimeoutMS: 10000,
+        });
 
-        // Construct args helper
-        // Since we don't have the dialect available cleanly here without circle dependency if dialect imports connection utils?
-        // Actually dialect is safe to import. But dialect uses this file? No.
-        // But for now, let's keep the args construction here or duplicate logic slightly to avoid heavy coupling.
+        await client.connect();
 
-        if (config.uri) {
-            args.push(config.uri);
-        } else {
-            args.push('--host', config.host);
-            args.push('--port', String(config.port));
-            if (config.user && config.password) {
-                    args.push('--username', config.user);
-                    args.push('--password', config.password);
-                    if (config.authenticationDatabase) {
-                    args.push('--authenticationDatabase', config.authenticationDatabase);
-                    } else {
-                    args.push('--authenticationDatabase', 'admin');
-                    }
-            }
-        }
+        // Ping the database
+        const adminDb = client.db("admin");
+        await adminDb.command({ ping: 1 });
 
-        await execFileAsync('mongosh', args);
-
-        // Fetch Version
-        const versionArgs = [...args];
-        versionArgs[1] = 'db.version()'; // Replace ping command
-
-        const { stdout } = await execFileAsync('mongosh', versionArgs);
-        const version = stdout.trim();
+        // Get server version
+        const serverInfo = await adminDb.command({ buildInfo: 1 });
+        const version = serverInfo.version || "Unknown";
 
         return { success: true, message: "Connection successful", version };
     } catch (error: unknown) {
-            const err = error as { stderr?: string; message?: string };
-            return { success: false, message: "Connection failed: " + (err.stderr || err.message) };
+        const err = error as { message?: string };
+        return { success: false, message: "Connection failed: " + (err.message || "Unknown error") };
+    } finally {
+        if (client) {
+            await client.close().catch(() => {});
+        }
     }
 }
 
 export async function getDatabases(config: any): Promise<string[]> {
-    const args = ['--eval', "db.adminCommand('listDatabases').databases.map(d => d.name).join(',')", '--quiet'];
+    let client: MongoClient | null = null;
 
-    if (config.uri) {
-        args.push(config.uri);
-    } else {
-        args.push('--host', config.host);
-        args.push('--port', config.port.toString());
-        if (config.user && config.password) {
-            args.push('--username', config.user);
-            args.push('--password', config.password);
-            if (config.authenticationDatabase) {
-                args.push('--authenticationDatabase', config.authenticationDatabase);
-            } else {
-                args.push('--authenticationDatabase', 'admin');
-            }
+    try {
+        const uri = buildConnectionUri(config);
+        client = new MongoClient(uri, {
+            connectTimeoutMS: 10000,
+            serverSelectionTimeoutMS: 10000,
+        });
+
+        await client.connect();
+
+        const adminDb = client.db("admin");
+        const result = await adminDb.command({ listDatabases: 1 });
+
+        const sysDbs = ["admin", "config", "local"];
+        return result.databases
+            .map((db: { name: string }) => db.name)
+            .filter((name: string) => !sysDbs.includes(name));
+    } catch (error: unknown) {
+        const err = error as { message?: string };
+        throw new Error("Failed to list databases: " + (err.message || "Unknown error"));
+    } finally {
+        if (client) {
+            await client.close().catch(() => {});
         }
     }
-
-    const { stdout } = await execFileAsync('mongosh', args);
-    const sysDbs = ['admin', 'config', 'local'];
-    return stdout.trim().split(',').map(s => s.trim()).filter(s => s && !sysDbs.includes(s));
 }
