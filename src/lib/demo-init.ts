@@ -214,10 +214,21 @@ async function createDemoJobs(
   prisma: import("@prisma/client").PrismaClient,
   randomUUID: () => string
 ): Promise<void> {
+  // Correct retention format: { mode: "SIMPLE"|"SMART"|"NONE", simple?: { keepCount }, smart?: { daily, weekly, monthly, yearly } }
+  const simpleRetention = JSON.stringify({
+    mode: "SIMPLE",
+    simple: { keepCount: 10 },
+  });
+
+  const smartRetention = JSON.stringify({
+    mode: "SMART",
+    smart: { daily: 7, weekly: 4, monthly: 3, yearly: 1 },
+  });
+
   // MySQL Daily Backup Job
   await prisma.job.upsert({
     where: { id: "demo-job-mysql-daily" },
-    update: {},
+    update: { retention: simpleRetention },
     create: {
       id: "demo-job-mysql-daily",
       name: "MySQL Daily Backup",
@@ -226,10 +237,7 @@ async function createDemoJobs(
       sourceId: "demo-mysql-source",
       destinationId: "demo-local-storage",
       compression: "GZIP",
-      retention: JSON.stringify({
-        type: "simple",
-        keepLast: 7,
-      }),
+      retention: simpleRetention,
     },
   });
   log.info("Created MySQL daily backup job");
@@ -237,7 +245,7 @@ async function createDemoJobs(
   // PostgreSQL Hourly Backup Job
   await prisma.job.upsert({
     where: { id: "demo-job-postgres-hourly" },
-    update: {},
+    update: { retention: simpleRetention },
     create: {
       id: "demo-job-postgres-hourly",
       name: "PostgreSQL Hourly Backup",
@@ -246,18 +254,15 @@ async function createDemoJobs(
       sourceId: "demo-postgres-source",
       destinationId: "demo-local-storage",
       compression: "GZIP",
-      retention: JSON.stringify({
-        type: "simple",
-        keepLast: 24,
-      }),
+      retention: simpleRetention,
     },
   });
   log.info("Created PostgreSQL hourly backup job");
 
-  // MongoDB Weekly Backup Job
+  // MongoDB Weekly Backup Job (using Smart Rotation for demo variety)
   await prisma.job.upsert({
     where: { id: "demo-job-mongo-weekly" },
-    update: {},
+    update: { retention: smartRetention },
     create: {
       id: "demo-job-mongo-weekly",
       name: "MongoDB Weekly Backup",
@@ -266,12 +271,7 @@ async function createDemoJobs(
       sourceId: "demo-mongo-source",
       destinationId: "demo-local-storage",
       compression: "GZIP",
-      retention: JSON.stringify({
-        type: "gvs",
-        daily: 7,
-        weekly: 4,
-        monthly: 3,
-      }),
+      retention: smartRetention,
     },
   });
   log.info("Created MongoDB weekly backup job");
