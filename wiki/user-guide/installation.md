@@ -47,7 +47,7 @@ docker run -d \
   -v "$(pwd)/backups:/backups" \
   -v "$(pwd)/db:/app/db" \
   -v "$(pwd)/storage:/app/storage" \
-  registry.gitlab.com/skyfay/dbackup:beta
+  skyfay/dbackup:beta
 ```
 
 :::
