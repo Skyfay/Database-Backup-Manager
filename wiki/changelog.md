@@ -81,6 +81,14 @@ Exported TypeScript types from Zod schemas for better developer experience:
 - **Extended Types**: Dump/restore functions use extended types with runtime fields (e.g., `MySQLDumpConfig`, `PostgresRestoreConfig`)
 - **Better DX**: IDE autocomplete and compile-time error checking for adapter configurations
 
+### 🎯 Interface Type Improvements
+Further type safety improvements in the core interfaces:
+- **AdapterConfigSchema**: `input` field now uses `z.ZodObject<z.ZodRawShape>` instead of `z.ZodObject<any>`
+- **BackupMetadata**: Made extensible with index signature `[key: string]: unknown` for adapter-specific properties
+- **BackupResult.metadata**: Changed to `Partial<BackupMetadata>` since adapters often return partial metadata
+- **NotificationContext**: New typed interface for notification adapter context with fields like `success`, `duration`, `size`, `status`, `logs`, etc.
+- **Documentation**: Added JSDoc comments explaining the type design decisions
+
 ## v0.9.3-beta - Redis Support, Restore UX & Smart File Extensions
 *Released: February 2, 2026*
 

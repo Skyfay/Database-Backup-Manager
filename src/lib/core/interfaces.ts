@@ -1,11 +1,20 @@
 import { z } from "zod";
 import { LogLevel, LogType } from "./logs";
 
+/**
+ * Base configuration type for adapters.
+ * Individual adapters use more specific types from @/lib/adapters/definitions.
+ * The interfaces use 'any' for compatibility with TypeScript's contravariant
+ * function parameters, but implementations use their specific config types.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type AdapterConfig = any;
+
 export interface AdapterConfigSchema {
     name: string;
     label: string;
     description?: string;
-    input: z.ZodObject<any>;
+    input: z.ZodObject<z.ZodRawShape>;
 }
 
 export interface BackupMetadata {
@@ -35,21 +44,23 @@ export interface BackupMetadata {
         /** Database names contained in the archive */
         databases: string[];
     };
+    /** Allow additional adapter-specific properties */
+    [key: string]: unknown;
 }
 
 export interface BaseAdapter {
     id: string; // Unique identifier (e.g., 'mysql', 's3')
     name: string; // Display name
-    configSchema: z.ZodObject<any>; // Schema for configuration
+    configSchema: z.ZodObject<z.ZodRawShape>; // Schema for configuration
     /**
      * Optional method to test the connection configuration
      */
-    test?: (config: any) => Promise<{ success: boolean; message: string; version?: string }>;
+    test?: (config: AdapterConfig) => Promise<{ success: boolean; message: string; version?: string }>;
 
     /**
      * Optional method to list available databases (for Source adapters)
      */
-    getDatabases?: (config: any) => Promise<string[]>;
+    getDatabases?: (config: AdapterConfig) => Promise<string[]>;
 }
 
 export type BackupResult = {
@@ -58,7 +69,8 @@ export type BackupResult = {
     size?: number;
     error?: string;
     logs: string[];
-    metadata?: any;
+    /** Partial metadata from adapter - will be merged with full metadata in runner */
+    metadata?: Partial<BackupMetadata>;
     startedAt: Date;
     completedAt: Date;
 };
@@ -70,7 +82,7 @@ export interface DatabaseAdapter extends BaseAdapter {
      * Useful for permission checks (e.g. Can I create the database?).
      * If this fails, the promise should reject (or return error status).
      */
-    prepareRestore?(config: any, databases: string[]): Promise<void>;
+    prepareRestore?(config: AdapterConfig, databases: string[]): Promise<void>;
 
     /**
      * Dumps the database to a local file path
@@ -79,7 +91,7 @@ export interface DatabaseAdapter extends BaseAdapter {
      * @param onLog Optional callback for live logs
      * @param onProgress Optional callback for progress (0-100)
      */
-    dump(config: any, destinationPath: string, onLog?: (msg: string, level?: LogLevel, type?: LogType, details?: string) => void, onProgress?: (percentage: number) => void): Promise<BackupResult>;
+    dump(config: AdapterConfig, destinationPath: string, onLog?: (msg: string, level?: LogLevel, type?: LogType, details?: string) => void, onProgress?: (percentage: number) => void): Promise<BackupResult>;
 
     /**
      * Restores the database from a local file path
@@ -88,7 +100,7 @@ export interface DatabaseAdapter extends BaseAdapter {
      * @param onLog Optional callback for live logs
      * @param onProgress Optional callback for progress (0-100)
      */
-    restore(config: any, sourcePath: string, onLog?: (msg: string, level?: LogLevel, type?: LogType, details?: string) => void, onProgress?: (percentage: number) => void): Promise<BackupResult>;
+    restore(config: AdapterConfig, sourcePath: string, onLog?: (msg: string, level?: LogLevel, type?: LogType, details?: string) => void, onProgress?: (percentage: number) => void): Promise<BackupResult>;
 
     /**
      * Optional method to analyze a dump file and return contained databases
@@ -109,13 +121,13 @@ export interface StorageAdapter extends BaseAdapter {
     /**
      * Uploads a local file to the storage destination
      */
-    upload(config: any, localPath: string, remotePath: string, onProgress?: (percent: number) => void, onLog?: (msg: string, level?: LogLevel, type?: LogType, details?: string) => void): Promise<boolean>;
+    upload(config: AdapterConfig, localPath: string, remotePath: string, onProgress?: (percent: number) => void, onLog?: (msg: string, level?: LogLevel, type?: LogType, details?: string) => void): Promise<boolean>;
 
     /**
      * Downloads a file from storage to local path
      */
     download(
-        config: any,
+        config: AdapterConfig,
         remotePath: string,
         localPath: string,
         onProgress?: (processed: number, total: number) => void,
@@ -125,20 +137,42 @@ export interface StorageAdapter extends BaseAdapter {
     /**
      * Reads the content of a file as a string
      */
-    read?(config: any, remotePath: string): Promise<string | null>;
+    read?(config: AdapterConfig, remotePath: string): Promise<string | null>;
 
     /**
      * Lists files in a directory
      */
-    list(config: any, remotePath: string): Promise<FileInfo[]>;
+    list(config: AdapterConfig, remotePath: string): Promise<FileInfo[]>;
 
     /**
      * Deletes a file
      */
-    delete(config: any, remotePath: string): Promise<boolean>;
+    delete(config: AdapterConfig, remotePath: string): Promise<boolean>;
+}
+
+/**
+ * Context passed to notification adapters with backup/restore result details
+ */
+export interface NotificationContext {
+    success: boolean;
+    adapterName?: string;
+    duration?: number;
+    size?: number;
+    error?: string;
+    jobName?: string;
+    executionId?: string;
+    status?: string;
+    logs?: Array<{
+        timestamp: string;
+        level: string;
+        type: string;
+        message: string;
+        stage?: string;
+        details?: string;
+    }>;
 }
 
 export interface NotificationAdapter extends BaseAdapter {
     type: 'notification';
-    send(config: any, message: string, context?: any): Promise<boolean>;
+    send(config: AdapterConfig, message: string, context?: NotificationContext): Promise<boolean>;
 }
