@@ -1,13 +1,14 @@
 import sql from "mssql";
 import { logger } from "@/lib/logger";
 import { wrapError } from "@/lib/errors";
+import { MSSQLConfig } from "@/lib/adapters/definitions";
 
 const log = logger.child({ adapter: "mssql" });
 
 /**
  * Build connection configuration for mssql package
  */
-export function buildConnectionConfig(config: any): sql.config {
+export function buildConnectionConfig(config: MSSQLConfig): sql.config {
     return {
         server: config.host,
         port: config.port || 1433,
@@ -27,7 +28,7 @@ export function buildConnectionConfig(config: any): sql.config {
 /**
  * Test connection and retrieve version
  */
-export async function test(config: any): Promise<{ success: boolean; message: string; version?: string; edition?: string }> {
+export async function test(config: MSSQLConfig): Promise<{ success: boolean; message: string; version?: string; edition?: string }> {
     let pool: sql.ConnectionPool | null = null;
 
     try {
@@ -108,7 +109,7 @@ export async function test(config: any): Promise<{ success: boolean; message: st
 /**
  * Get list of user databases (exclude system databases)
  */
-export async function getDatabases(config: any): Promise<string[]> {
+export async function getDatabases(config: MSSQLConfig): Promise<string[]> {
     let pool: sql.ConnectionPool | null = null;
 
     try {
@@ -139,7 +140,7 @@ export async function getDatabases(config: any): Promise<string[]> {
  * Execute a SQL query and return raw results
  * Used internally by dump/restore operations
  */
-export async function executeQuery(config: any, query: string, database?: string): Promise<sql.IResult<any>> {
+export async function executeQuery(config: MSSQLConfig, query: string, database?: string): Promise<sql.IResult<any>> {
     let pool: sql.ConnectionPool | null = null;
 
     try {
@@ -162,7 +163,7 @@ export async function executeQuery(config: any, query: string, database?: string
  * Used for queries with user-provided values
  */
 export async function executeParameterizedQuery(
-    config: any,
+    config: MSSQLConfig,
     query: string,
     params: Record<string, string | number | boolean>,
     database?: string
@@ -196,7 +197,7 @@ export async function executeParameterizedQuery(
  * Supported in: Enterprise, Standard (SQL 2008 R2+), Business Intelligence, Developer
  * NOT supported in: Express, Web
  */
-export async function supportsCompression(config: any): Promise<boolean> {
+export async function supportsCompression(config: MSSQLConfig): Promise<boolean> {
     try {
         const result = await executeQuery(
             config,

@@ -1,5 +1,6 @@
 // import { DatabaseDialect } from "../../common/dialect";
 import { PostgresBaseDialect } from "./postgres-base";
+import { PostgresConfig } from "@/lib/adapters/definitions";
 
 /**
  * PostgreSQL 16.x Dialect
@@ -9,7 +10,7 @@ import { PostgresBaseDialect } from "./postgres-base";
  * - Compatible with PG 14 dumps (if created with correct pg_dump version)
  */
 export class Postgres16Dialect extends PostgresBaseDialect {
-    override getDumpArgs(config: any, databases: string[]): string[] {
+    override getDumpArgs(config: PostgresConfig, databases: string[]): string[] {
         const args = super.getDumpArgs(config, databases);
 
         // Add --no-sync for better performance

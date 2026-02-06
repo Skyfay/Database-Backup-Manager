@@ -1,9 +1,10 @@
 import { MongoClient } from "mongodb";
+import { MongoDBConfig } from "@/lib/adapters/definitions";
 
 /**
  * Build MongoDB connection URI from config
  */
-function buildConnectionUri(config: any): string {
+function buildConnectionUri(config: MongoDBConfig): string {
     if (config.uri) {
         return config.uri;
     }
@@ -17,7 +18,7 @@ function buildConnectionUri(config: any): string {
     return `mongodb://${auth}${config.host}:${config.port}/${authParam}`;
 }
 
-export async function test(config: any): Promise<{ success: boolean; message: string; version?: string }> {
+export async function test(config: MongoDBConfig): Promise<{ success: boolean; message: string; version?: string }> {
     let client: MongoClient | null = null;
 
     try {
@@ -48,7 +49,7 @@ export async function test(config: any): Promise<{ success: boolean; message: st
     }
 }
 
-export async function getDatabases(config: any): Promise<string[]> {
+export async function getDatabases(config: MongoDBConfig): Promise<string[]> {
     let client: MongoClient | null = null;
 
     try {

@@ -2,6 +2,7 @@ import { DatabaseAdapter } from "@/lib/core/interfaces";
 import { spawn } from "child_process";
 import fs from "fs";
 import { SshClient } from "./ssh-client";
+import { SQLiteConfig } from "@/lib/adapters/definitions";
 
 export const prepareRestore: DatabaseAdapter["prepareRestore"] = async (_config, _databases) => {
      // No major prep needed for SQLite mostly, but could check write permissions here
@@ -21,14 +22,14 @@ export const restore: DatabaseAdapter["restore"] = async (config, sourcePath, on
         log(`Starting SQLite restore in ${mode} mode...`);
 
         if (mode === "local") {
-            return await restoreLocal(config, sourcePath, log, onProgress).then(res => ({
+            return await restoreLocal(config as SQLiteConfig, sourcePath, log, onProgress).then(res => ({
                 ...res,
                 startedAt,
                 completedAt: new Date(),
                 logs
             }));
         } else if (mode === "ssh") {
-            return await restoreSsh(config, sourcePath, log, onProgress).then(res => ({
+            return await restoreSsh(config as SQLiteConfig, sourcePath, log, onProgress).then(res => ({
                 ...res,
                 startedAt,
                 completedAt: new Date(),
@@ -51,7 +52,7 @@ export const restore: DatabaseAdapter["restore"] = async (config, sourcePath, on
     }
 };
 
-async function restoreLocal(config: any, sourcePath: string, log: (msg: string) => void, onProgress?: (percent: number) => void): Promise<any> {
+async function restoreLocal(config: SQLiteConfig, sourcePath: string, log: (msg: string) => void, onProgress?: (percent: number) => void): Promise<any> {
     const binaryPath = config.sqliteBinaryPath || "sqlite3";
     const dbPath = config.path;
 
@@ -105,7 +106,7 @@ async function restoreLocal(config: any, sourcePath: string, log: (msg: string) 
     });
 }
 
-async function restoreSsh(config: any, sourcePath: string, log: (msg: string) => void, onProgress?: (percent: number) => void): Promise<any> {
+async function restoreSsh(config: SQLiteConfig, sourcePath: string, log: (msg: string) => void, onProgress?: (percent: number) => void): Promise<any> {
     const client = new SshClient();
     const binaryPath = config.sqliteBinaryPath || "sqlite3";
     const dbPath = config.path;

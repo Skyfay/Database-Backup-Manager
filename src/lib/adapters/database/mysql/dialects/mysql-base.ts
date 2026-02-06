@@ -1,7 +1,8 @@
 import { BaseDialect } from "../../common/dialect";
+import { MySQLConfig } from "@/lib/adapters/definitions";
 
 export class MySQLBaseDialect extends BaseDialect {
-    getDumpArgs(config: any, databases: string[]): string[] {
+    getDumpArgs(config: MySQLConfig, databases: string[]): string[] {
         const args = [
             '-h', config.host,
             '-P', String(config.port),
@@ -23,7 +24,7 @@ export class MySQLBaseDialect extends BaseDialect {
         return args;
     }
 
-    getRestoreArgs(config: any, targetDatabase?: string): string[] {
+    getRestoreArgs(config: MySQLConfig, targetDatabase?: string): string[] {
         const args = [
             '-h', config.host,
             '-P', String(config.port),
@@ -43,7 +44,7 @@ export class MySQLBaseDialect extends BaseDialect {
         return args;
     }
 
-    getConnectionArgs(config: any): string[] {
+    getConnectionArgs(config: MySQLConfig): string[] {
         const args = [
             '-h', config.host,
             '-P', String(config.port),
@@ -54,7 +55,7 @@ export class MySQLBaseDialect extends BaseDialect {
         return args;
     }
 
-    protected appendAuthArgs(args: string[], config: any) {
+    protected appendAuthArgs(args: string[], config: MySQLConfig) {
         // Password is usually passed via env var, but some contexts might use -p
         // We generally rely on MYSQL_PWD env var for security, so we don't append -p here.
 

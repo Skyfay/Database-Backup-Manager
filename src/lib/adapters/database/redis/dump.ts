@@ -3,6 +3,7 @@ import { LogLevel, LogType } from "@/lib/core/logs";
 import { spawn } from "child_process";
 import fs from "fs/promises";
 import { buildConnectionArgs } from "./connection";
+import { RedisConfig } from "@/lib/adapters/definitions";
 
 /**
  * Dump Redis database using RDB snapshot
@@ -13,7 +14,7 @@ import { buildConnectionArgs } from "./connection";
  * Note: RDB contains ALL databases (0-15), not just the selected one.
  */
 export async function dump(
-    config: any,
+    config: RedisConfig,
     destinationPath: string,
     onLog?: (msg: string, level?: LogLevel, type?: LogType, details?: string) => void,
     _onProgress?: (percentage: number) => void

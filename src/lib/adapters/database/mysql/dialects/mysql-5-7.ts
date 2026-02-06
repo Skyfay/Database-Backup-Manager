@@ -1,11 +1,12 @@
 import { MySQLBaseDialect } from "./mysql-base";
+import { MySQLConfig } from "@/lib/adapters/definitions";
 
 export class MySQL57Dialect extends MySQLBaseDialect {
     supportsVersion(version: string): boolean {
         return version.includes('5.7.') || (parseFloat(version) >= 5.7 && parseFloat(version) < 8.0);
     }
 
-    getDumpArgs(config: any, databases: string[]): string[] {
+    getDumpArgs(config: MySQLConfig, databases: string[]): string[] {
         const args = super.getDumpArgs(config, databases);
 
         // MySQL 5.7 specific handling for utf8mb4 (if needed)
@@ -17,7 +18,7 @@ export class MySQL57Dialect extends MySQLBaseDialect {
         return args;
     }
 
-    protected appendAuthArgs(args: string[], config: any) {
+    protected appendAuthArgs(args: string[], config: MySQLConfig) {
         if (config.disableSsl) {
              // OLD MySQL clients might use --skip-ssl instead of --ssl-mode
              // If our container uses a new client, this might fail, but this logic

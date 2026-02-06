@@ -1,14 +1,15 @@
 import { execFile } from "child_process";
 import util from "util";
+import { PostgresConfig } from "@/lib/adapters/definitions";
 
 export const execFileAsync = util.promisify(execFile);
 
-export async function test(config: any): Promise<{ success: boolean; message: string; version?: string }> {
+export async function test(config: PostgresConfig): Promise<{ success: boolean; message: string; version?: string }> {
     const dbsToTry = ['postgres', 'template1'];
     if (typeof config.database === 'string' && config.database) dbsToTry.push(config.database);
 
     const env = { ...process.env, PGPASSWORD: config.password };
-    let lastError: any;
+    let lastError: unknown;
 
     for (const db of dbsToTry) {
         try {
@@ -31,12 +32,12 @@ export async function test(config: any): Promise<{ success: boolean; message: st
     return { success: false, message: "Connection failed: " + errMsg };
 }
 
-export async function getDatabases(config: any): Promise<string[]> {
+export async function getDatabases(config: PostgresConfig): Promise<string[]> {
     const dbsToTry = ['postgres', 'template1'];
     if (typeof config.database === 'string' && config.database) dbsToTry.push(config.database);
 
     const env = { ...process.env, PGPASSWORD: config.password };
-    let lastError: any;
+    let lastError: unknown;
 
     for (const db of dbsToTry) {
         try {

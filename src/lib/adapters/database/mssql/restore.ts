@@ -6,11 +6,30 @@ import fs from "fs/promises";
 import { createReadStream, createWriteStream } from "fs";
 import path from "path";
 import { extract } from "tar-stream";
+import { MSSQLConfig } from "@/lib/adapters/definitions";
+
+/**
+ * Extended MSSQL config for restore operations with runtime fields
+ */
+type MSSQLRestoreConfig = MSSQLConfig & {
+    detectedVersion?: string;
+    backupPath?: string;
+    localBackupPath?: string;
+    privilegedAuth?: {
+        user: string;
+        password: string;
+    };
+    databaseMapping?: Array<{
+        originalName: string;
+        targetName: string;
+        selected: boolean;
+    }>;
+};
 
 /**
  * Prepare restore by validating target databases
  */
-export async function prepareRestore(config: any, databases: string[]): Promise<void> {
+export async function prepareRestore(config: MSSQLRestoreConfig, databases: string[]): Promise<void> {
     // Check if target databases can be created/overwritten
     for (const dbName of databases) {
         // Validate database name (only allow safe characters)
@@ -50,7 +69,7 @@ export async function prepareRestore(config: any, databases: string[]): Promise<
  * Restore MSSQL database from .bak file
  */
 export async function restore(
-    config: any,
+    config: MSSQLRestoreConfig,
     sourcePath: string,
     onLog?: (msg: string, level?: LogLevel, type?: LogType, details?: string) => void,
     _onProgress?: (percentage: number) => void

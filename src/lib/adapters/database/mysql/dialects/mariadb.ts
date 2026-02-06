@@ -1,18 +1,19 @@
 import { MySQLBaseDialect } from "./mysql-base";
+import { MariaDBConfig } from "@/lib/adapters/definitions";
 
 export class MariaDBDialect extends MySQLBaseDialect {
     supportsVersion(version: string): boolean {
         return version.toLowerCase().includes('mariadb') || parseFloat(version) >= 10.0;
     }
 
-    protected appendAuthArgs(args: string[], config: any) {
+    protected appendAuthArgs(args: string[], config: MariaDBConfig) {
         // MariaDB tools prefer --skip-ssl over --ssl-mode
         if (config.disableSsl) {
              args.push('--skip-ssl');
         }
     }
 
-    getDumpArgs(config: any, databases: string[]): string[] {
+    getDumpArgs(config: MariaDBConfig, databases: string[]): string[] {
         const args = super.getDumpArgs(config, databases);
 
         // MariaDB specific dump flags could be added here.

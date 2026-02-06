@@ -1,9 +1,17 @@
 
 import { describe, it, expect } from 'vitest';
 import { MongoDBBaseDialect } from '@/lib/adapters/database/mongodb/dialects/mongodb-base';
+import { MongoDBConfig } from '@/lib/adapters/definitions';
 
 describe('MongoDB Dialect', () => {
     const dialect = new MongoDBBaseDialect();
+
+    // Base config with required fields for testing
+    const baseConfig: MongoDBConfig = {
+        host: 'localhost',
+        port: 27017,
+        database: 'testdb',
+    };
 
     it('should support any version by default', () => {
         expect(dialect.supportsVersion('4.4')).toBe(true);
@@ -11,14 +19,14 @@ describe('MongoDB Dialect', () => {
     });
 
     it('should generate uri-based dump args', () => {
-        const config = { uri: 'mongodb://user:pass@host:27017' };
+        const config: MongoDBConfig = { ...baseConfig, uri: 'mongodb://user:pass@host:27017' };
         // Assuming dumpMongo passes empty array if ALL dbs, or specific list
         const args = dialect.getDumpArgs(config, []);
         expect(args).toContain('--uri=mongodb://user:pass@host:27017');
     });
 
     it('should generate host/port args', () => {
-        const config = { host: 'localhost', port: 27017 };
+        const config: MongoDBConfig = { ...baseConfig };
         const args = dialect.getDumpArgs(config, []);
         expect(args).toContain('--host');
         expect(args).toContain('localhost');
@@ -27,7 +35,7 @@ describe('MongoDB Dialect', () => {
     });
 
     it('should include authentication args', () => {
-        const config = { host: 'localhost', port: 27017, user: 'admin', password: 'password', authenticationDatabase: 'admin' };
+        const config: MongoDBConfig = { ...baseConfig, user: 'admin', password: 'password', authenticationDatabase: 'admin' };
         const args = dialect.getDumpArgs(config, []);
         expect(args).toContain('--username');
         expect(args).toContain('admin');

@@ -1,5 +1,6 @@
 import { BackupResult } from "@/lib/core/interfaces";
 import { LogLevel, LogType } from "@/lib/core/logs";
+import { MySQLConfig, MariaDBConfig } from "@/lib/adapters/definitions";
 import { getDialect } from "./dialects";
 import { getMysqldumpCommand } from "./tools";
 import fs from "fs/promises";
@@ -13,11 +14,17 @@ import {
 } from "../common/tar-utils";
 import { TarFileEntry } from "../common/types";
 
+/** Extended config with runtime fields */
+type MySQLDumpConfig = (MySQLConfig | MariaDBConfig) & {
+    type?: string;
+    detectedVersion?: string;
+};
+
 /**
  * Dump a single database to a file
  */
 async function dumpSingleDatabase(
-    config: any,
+    config: MySQLDumpConfig,
     dbName: string,
     destinationPath: string,
     onLog: (msg: string, level?: LogLevel, type?: LogType, details?: string) => void
@@ -51,7 +58,7 @@ async function dumpSingleDatabase(
             else reject(new Error(`${getMysqldumpCommand()} exited with code ${code}`));
         });
         dumpProcess.on('error', (err) => reject(err));
-        writeStream.on('error', (err: any) => reject(err));
+        writeStream.on('error', (err: Error) => reject(err));
     });
 
     const stats = await fs.stat(destinationPath);
@@ -62,7 +69,7 @@ async function dumpSingleDatabase(
     return { success: true, size: stats.size };
 }
 
-export async function dump(config: any, destinationPath: string, onLog?: (msg: string, level?: LogLevel, type?: LogType, details?: string) => void, _onProgress?: (percentage: number) => void): Promise<BackupResult> {
+export async function dump(config: MySQLDumpConfig, destinationPath: string, onLog?: (msg: string, level?: LogLevel, type?: LogType, details?: string) => void, _onProgress?: (percentage: number) => void): Promise<BackupResult> {
     const startedAt = new Date();
     const logs: string[] = [];
     const log = (msg: string, level: LogLevel = 'info', type: LogType = 'general', details?: string) => {

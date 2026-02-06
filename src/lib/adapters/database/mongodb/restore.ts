@@ -1,6 +1,7 @@
 import { BackupResult } from "@/lib/core/interfaces";
 import { LogLevel, LogType } from "@/lib/core/logs";
 import { MongoClient } from "mongodb";
+import { MongoDBConfig } from "@/lib/adapters/definitions";
 import { getDialect } from "./dialects";
 import { spawn } from "child_process";
 import { createReadStream } from "fs";
@@ -15,10 +16,25 @@ import {
     getTargetDatabaseName,
 } from "../common/tar-utils";
 
+/** Extended config with optional privileged auth for restore operations */
+type MongoDBRestoreConfig = MongoDBConfig & {
+    privilegedAuth?: { user: string; password: string };
+    detectedVersion?: string;
+    databaseMapping?: Array<{
+        originalName: string;
+        targetName: string;
+        selected: boolean;
+    }>;
+    selectedDatabases?: string[];
+    // Runtime fields set by restore-service
+    originalDatabase?: string | string[];
+    targetDatabaseName?: string;
+};
+
 /**
  * Build MongoDB connection URI from config
  */
-function buildConnectionUri(config: any): string {
+function buildConnectionUri(config: MongoDBConfig): string {
     if (config.uri) {
         return config.uri;
     }
@@ -32,9 +48,9 @@ function buildConnectionUri(config: any): string {
     return `mongodb://${auth}${config.host}:${config.port}/${authParam}`;
 }
 
-export async function prepareRestore(config: any, databases: string[]): Promise<void> {
+export async function prepareRestore(config: MongoDBRestoreConfig, databases: string[]): Promise<void> {
     // Determine credentials (privileged or standard)
-    const usageConfig = { ...config };
+    const usageConfig: MongoDBConfig = { ...config };
     if (config.privilegedAuth) {
         usageConfig.user = config.privilegedAuth.user;
         usageConfig.password = config.privilegedAuth.password;
@@ -80,7 +96,7 @@ async function restoreSingleDatabase(
     sourcePath: string,
     targetDb: string | undefined,
     sourceDb: string | undefined,
-    config: any,
+    config: MongoDBRestoreConfig,
     log: (msg: string, level?: LogLevel, type?: LogType, details?: string) => void,
     fromStdin: boolean = false
 ): Promise<void> {
@@ -147,7 +163,7 @@ async function restoreSingleDatabase(
 }
 
 export async function restore(
-    config: any,
+    config: MongoDBRestoreConfig,
     sourcePath: string,
     onLog?: (msg: string, level?: LogLevel, type?: LogType, details?: string) => void,
     onProgress?: (percentage: number) => void

@@ -4,9 +4,21 @@ import { buildConnectionArgs } from "./connection";
 import { execFile } from "child_process";
 import util from "util";
 import { logger } from "@/lib/logger";
+import { RedisConfig } from "@/lib/adapters/definitions";
 
 const execFileAsync = util.promisify(execFile);
 const log = logger.child({ adapter: "redis", module: "restore" });
+
+/**
+ * Extended Redis config for restore operations
+ */
+type RedisRestoreConfig = RedisConfig & {
+    detectedVersion?: string;
+    privilegedAuth?: {
+        user: string;
+        password: string;
+    };
+};
 
 /**
  * Prepare for Redis restore operation
@@ -19,7 +31,7 @@ const log = logger.child({ adapter: "redis", module: "restore" });
  * - RDB files must be placed in the Redis data directory
  * - Server restart is required to load the new RDB
  */
-export async function prepareRestore(config: any, _databases: string[]): Promise<void> {
+export async function prepareRestore(config: RedisRestoreConfig, _databases: string[]): Promise<void> {
     const args = buildConnectionArgs(config);
 
     // Test basic connectivity
@@ -67,7 +79,7 @@ export async function prepareRestore(config: any, _databases: string[]): Promise
  * - Using RESTORE command for individual keys (very slow)
  */
 export async function restore(
-    config: any,
+    config: RedisRestoreConfig,
     sourcePath: string,
     onLog?: (msg: string, level?: LogLevel, type?: LogType, details?: string) => void,
     _onProgress?: (percentage: number) => void

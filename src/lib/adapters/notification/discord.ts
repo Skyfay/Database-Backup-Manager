@@ -1,5 +1,5 @@
 import { NotificationAdapter } from "@/lib/core/interfaces";
-import { DiscordSchema } from "@/lib/adapters/definitions";
+import { DiscordSchema, DiscordConfig } from "@/lib/adapters/definitions";
 import { formatBytes } from "@/lib/utils";
 import { logger } from "@/lib/logger";
 import { wrapError } from "@/lib/errors";
@@ -12,7 +12,7 @@ export const DiscordAdapter: NotificationAdapter = {
     name: "Discord Webhook",
     configSchema: DiscordSchema,
 
-    async test(config: any): Promise<{ success: boolean; message: string }> {
+    async test(config: DiscordConfig): Promise<{ success: boolean; message: string }> {
         try {
             const response = await fetch(config.webhookUrl, {
                 method: "POST",
@@ -35,7 +35,7 @@ export const DiscordAdapter: NotificationAdapter = {
         }
     },
 
-    async send(config: any, message: string, context?: any): Promise<boolean> {
+    async send(config: DiscordConfig, message: string, context?: any): Promise<boolean> {
         try {
             const payload: any = {
                 content: message,

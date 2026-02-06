@@ -14,11 +14,28 @@ import {
     shouldRestoreDatabase,
     getTargetDatabaseName,
 } from "../common/tar-utils";
+import { PostgresConfig } from "@/lib/adapters/definitions";
 
-export async function prepareRestore(config: any, databases: string[]): Promise<void> {
+/**
+ * Extended PostgreSQL config for restore operations with runtime fields
+ */
+type PostgresRestoreConfig = PostgresConfig & {
+    detectedVersion?: string;
+    privilegedAuth?: {
+        user: string;
+        password: string;
+    };
+    databaseMapping?: Array<{
+        originalName: string;
+        targetName: string;
+        selected: boolean;
+    }>;
+};
+
+export async function prepareRestore(config: PostgresRestoreConfig, databases: string[]): Promise<void> {
     const usePrivileged = !!config.privilegedAuth;
-    const user = usePrivileged ? config.privilegedAuth.user : config.user;
-    const pass = usePrivileged ? config.privilegedAuth.password : config.password;
+    const user = usePrivileged ? config.privilegedAuth!.user : config.user;
+    const pass = usePrivileged ? config.privilegedAuth!.password : config.password;
 
     const env = { ...process.env };
     if (pass) env.PGPASSWORD = pass;
@@ -73,7 +90,7 @@ async function isCustomFormat(filePath: string): Promise<boolean> {
 async function restoreSingleDatabase(
     sourcePath: string,
     targetDb: string,
-    config: any,
+    config: PostgresRestoreConfig,
     env: NodeJS.ProcessEnv,
     log: (msg: string, level?: LogLevel, type?: LogType, details?: string) => void
 ): Promise<void> {
@@ -147,7 +164,7 @@ async function restoreSingleDatabase(
 }
 
 export async function restore(
-    config: any,
+    config: PostgresRestoreConfig,
     sourcePath: string,
     onLog?: (msg: string, level?: LogLevel, type?: LogType, details?: string) => void,
     onProgress?: (percentage: number) => void
@@ -243,7 +260,8 @@ export async function restore(
                 }
                 targetDb = selected[0].targetName || selected[0].originalName;
             } else {
-                targetDb = config.database || 'postgres';
+                const db = Array.isArray(config.database) ? config.database[0] : config.database;
+                targetDb = db || 'postgres';
             }
 
             log(`Restoring single database to: ${targetDb}`, 'info');

@@ -1,11 +1,12 @@
 import { DatabaseDialect } from "../../common/dialect";
+import { MongoDBConfig } from "@/lib/adapters/definitions";
 
 export class MongoDBBaseDialect implements DatabaseDialect {
     supportsVersion(_version: string): boolean {
         return true;
     }
 
-    getDumpArgs(config: any, databases: string[]): string[] {
+    getDumpArgs(config: MongoDBConfig, databases: string[]): string[] {
         const args: string[] = [];
 
         if (config.uri) {
@@ -56,13 +57,13 @@ export class MongoDBBaseDialect implements DatabaseDialect {
         return args;
     }
 
-    getRestoreArgs(_config: any, _targetDatabase?: string): string[] {
+    getRestoreArgs(_config: MongoDBConfig, _targetDatabase?: string): string[] {
         // Note: MongoDB restore uses mongorestore with args built directly in restore.ts
         // This method exists only to satisfy the DatabaseDialect interface
         return [];
     }
 
-    getConnectionArgs(config: any): string[] {
+    getConnectionArgs(config: MongoDBConfig): string[] {
         // Used for mongosh?
         const args: string[] = [];
         if (config.uri) {

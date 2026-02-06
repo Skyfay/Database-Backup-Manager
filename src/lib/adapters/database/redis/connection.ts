@@ -2,6 +2,7 @@ import { execFile } from "child_process";
 import util from "util";
 import { logger } from "@/lib/logger";
 import { wrapError } from "@/lib/errors";
+import { RedisConfig } from "@/lib/adapters/definitions";
 
 const execFileAsync = util.promisify(execFile);
 const log = logger.child({ adapter: "redis", module: "connection" });
@@ -9,7 +10,7 @@ const log = logger.child({ adapter: "redis", module: "connection" });
 /**
  * Build redis-cli connection arguments from config
  */
-function buildConnectionArgs(config: any): string[] {
+function buildConnectionArgs(config: RedisConfig): string[] {
     const args: string[] = [];
 
     args.push("-h", config.host);
@@ -39,7 +40,7 @@ function buildConnectionArgs(config: any): string[] {
 /**
  * Test connection to Redis server
  */
-export async function test(config: any): Promise<{ success: boolean; message: string; version?: string }> {
+export async function test(config: RedisConfig): Promise<{ success: boolean; message: string; version?: string }> {
     try {
         const args = buildConnectionArgs(config);
 
@@ -81,7 +82,7 @@ export async function test(config: any): Promise<{ success: boolean; message: st
  * This function returns all configured databases.
  * Note: Redis databases are always available, even if empty.
  */
-export async function getDatabases(config: any): Promise<string[]> {
+export async function getDatabases(config: RedisConfig): Promise<string[]> {
     try {
         const baseArgs = buildConnectionArgs({ ...config, database: 0 });
 

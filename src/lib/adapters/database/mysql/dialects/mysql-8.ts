@@ -1,11 +1,12 @@
 import { MySQLBaseDialect } from "./mysql-base";
+import { MySQLConfig } from "@/lib/adapters/definitions";
 
 export class MySQL80Dialect extends MySQLBaseDialect {
     supportsVersion(version: string): boolean {
         return version.includes('8.0.') || parseFloat(version) >= 8.0;
     }
 
-    getDumpArgs(config: any, databases: string[]): string[] {
+    getDumpArgs(config: MySQLConfig, databases: string[]): string[] {
         const args = super.getDumpArgs(config, databases);
 
         // MySQL 8 default encoding

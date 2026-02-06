@@ -12,6 +12,14 @@ import {
     cleanupTempDir,
 } from "../common/tar-utils";
 import { TarFileEntry, TarManifest } from "../common/types";
+import { PostgresConfig } from "@/lib/adapters/definitions";
+
+/**
+ * Extended PostgreSQL config for dump operations with runtime fields
+ */
+type PostgresDumpConfig = PostgresConfig & {
+    detectedVersion?: string;
+};
 
 /**
  * Dump a single PostgreSQL database using pg_dump with custom format (-Fc)
@@ -19,7 +27,7 @@ import { TarFileEntry, TarManifest } from "../common/types";
 async function dumpSingleDatabase(
     dbName: string,
     outputPath: string,
-    config: any,
+    config: PostgresDumpConfig,
     env: NodeJS.ProcessEnv,
     log: (msg: string, level?: LogLevel, type?: LogType, details?: string) => void
 ): Promise<void> {
@@ -73,7 +81,7 @@ async function dumpSingleDatabase(
 }
 
 export async function dump(
-    config: any,
+    config: PostgresDumpConfig,
     destinationPath: string,
     onLog?: (msg: string, level?: LogLevel, type?: LogType, details?: string) => void,
     _onProgress?: (percentage: number) => void
@@ -101,7 +109,11 @@ export async function dump(
         } else if (typeof config.database === 'string') {
             dbs = config.database.split(',').map((s: string) => s.trim()).filter(Boolean);
         }
-        if (dbs.length === 0 && config.database) dbs = [config.database];
+        // Fallback: if dbs is still empty but config.database exists
+        if (dbs.length === 0 && config.database) {
+            const db = Array.isArray(config.database) ? config.database[0] : config.database;
+            if (db) dbs = [db];
+        }
 
         const dialect = getDialect('postgres', config.detectedVersion);
         const pgDumpBinary = await getPostgresBinary('pg_dump', config.detectedVersion);

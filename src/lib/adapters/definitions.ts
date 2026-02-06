@@ -159,6 +159,40 @@ export const EmailSchema = z.object({
     to: z.string().email("Valid To email is required"),
 });
 
+// =============================================================================
+// Inferred TypeScript Types from Zod Schemas
+// =============================================================================
+// Use these types instead of `any` for type-safe adapter configs
+
+// Database Adapters
+export type MySQLConfig = z.infer<typeof MySQLSchema>;
+export type MariaDBConfig = z.infer<typeof MariaDBSchema>;
+export type PostgresConfig = z.infer<typeof PostgresSchema>;
+export type MongoDBConfig = z.infer<typeof MongoDBSchema>;
+export type SQLiteConfig = z.infer<typeof SQLiteSchema>;
+export type MSSQLConfig = z.infer<typeof MSSQLSchema>;
+export type RedisConfig = z.infer<typeof RedisSchema>;
+
+// Storage Adapters
+export type LocalStorageConfig = z.infer<typeof LocalStorageSchema>;
+export type S3GenericConfig = z.infer<typeof S3GenericSchema>;
+export type S3AWSConfig = z.infer<typeof S3AWSSchema>;
+export type S3R2Config = z.infer<typeof S3R2Schema>;
+export type S3HetznerConfig = z.infer<typeof S3HetznerSchema>;
+export type SFTPConfig = z.infer<typeof SFTPSchema>;
+
+// Notification Adapters
+export type DiscordConfig = z.infer<typeof DiscordSchema>;
+export type EmailConfig = z.infer<typeof EmailSchema>;
+
+// Union types for adapter categories
+export type DatabaseConfig = MySQLConfig | MariaDBConfig | PostgresConfig | MongoDBConfig | SQLiteConfig | MSSQLConfig | RedisConfig;
+export type StorageConfig = LocalStorageConfig | S3GenericConfig | S3AWSConfig | S3R2Config | S3HetznerConfig | SFTPConfig;
+export type NotificationConfig = DiscordConfig | EmailConfig;
+
+// Generic type alias for dialect base class (accepts any database config)
+export type AnyDatabaseConfig = DatabaseConfig;
+
 export const ADAPTER_DEFINITIONS: AdapterDefinition[] = [
     { id: "mysql", type: "database", name: "MySQL", configSchema: MySQLSchema },
     { id: "mariadb", type: "database", name: "MariaDB", configSchema: MariaDBSchema },

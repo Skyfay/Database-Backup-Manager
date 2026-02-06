@@ -12,6 +12,14 @@ import {
     cleanupTempDir,
 } from "../common/tar-utils";
 import { TarFileEntry, TarManifest } from "../common/types";
+import { MongoDBConfig } from "@/lib/adapters/definitions";
+
+/**
+ * Extended MongoDB config for dump operations with runtime fields
+ */
+type MongoDBDumpConfig = MongoDBConfig & {
+    detectedVersion?: string;
+};
 
 /**
  * Dump a single MongoDB database using mongodump --archive --gzip
@@ -19,7 +27,7 @@ import { TarFileEntry, TarManifest } from "../common/types";
 async function dumpSingleDatabase(
     dbName: string,
     outputPath: string,
-    config: any,
+    config: MongoDBDumpConfig,
     log: (msg: string, level?: LogLevel, type?: LogType, details?: string) => void
 ): Promise<void> {
     const args: string[] = [];
@@ -71,7 +79,7 @@ async function dumpSingleDatabase(
 }
 
 export async function dump(
-    config: any,
+    config: MongoDBDumpConfig,
     destinationPath: string,
     onLog?: (msg: string, level?: LogLevel, type?: LogType, details?: string) => void,
     _onProgress?: (percentage: number) => void
@@ -94,7 +102,11 @@ export async function dump(
         } else if (typeof config.database === 'string') {
             dbs = config.database.split(',').map((s: string) => s.trim()).filter(Boolean);
         }
-        if (dbs.length === 0 && config.database) dbs = [config.database];
+        // Fallback: if dbs is still empty but config.database exists
+        if (dbs.length === 0 && config.database) {
+            const db = Array.isArray(config.database) ? config.database[0] : config.database;
+            if (db) dbs = [db];
+        }
 
         const dialect = getDialect('mongodb', config.detectedVersion);
 

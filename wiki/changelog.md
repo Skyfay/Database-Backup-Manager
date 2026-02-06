@@ -72,6 +72,15 @@ Replaced `mongosh` CLI dependency with native `mongodb` npm package for connecti
 - **Backup/Restore Unchanged**: `mongodump` and `mongorestore` (from `mongodb-tools`) are still used for actual backup operations
 - **Cleaner Code**: Removed shell command parsing in favor of proper MongoDB client API calls
 
+### 🔧 Type-Safe Adapter Configs
+Exported TypeScript types from Zod schemas for better developer experience:
+- **Inferred Types**: All adapter configs now have exported TypeScript types (e.g., `MySQLConfig`, `PostgresConfig`, `MongoDBConfig`)
+- **100% Type-Safe**: All adapter functions (`dump()`, `restore()`, `test()`, `getDatabases()`) now use properly typed configs instead of `config: any`
+- **Lint Guard Enforced**: New lint-guard test ensures `config: any` cannot be introduced in adapter files
+- **Union Types**: Added `DatabaseConfig`, `StorageConfig`, `NotificationConfig`, `AnyDatabaseConfig` union types for generic handling
+- **Extended Types**: Dump/restore functions use extended types with runtime fields (e.g., `MySQLDumpConfig`, `PostgresRestoreConfig`)
+- **Better DX**: IDE autocomplete and compile-time error checking for adapter configurations
+
 ## v0.9.3-beta - Redis Support, Restore UX & Smart File Extensions
 *Released: February 2, 2026*
 

@@ -7,6 +7,16 @@ import { createReadStream, createWriteStream, existsSync } from "fs";
 import path from "path";
 import { pack } from "tar-stream";
 import { pipeline } from "stream/promises";
+import { MSSQLConfig } from "@/lib/adapters/definitions";
+
+/**
+ * Extended MSSQL config for dump operations with runtime fields
+ */
+type MSSQLDumpConfig = MSSQLConfig & {
+    detectedVersion?: string;
+    backupPath?: string;
+    localBackupPath?: string;
+};
 
 /**
  * Dump MSSQL database(s) using native T-SQL BACKUP DATABASE
@@ -21,7 +31,7 @@ import { pipeline } from "stream/promises";
  * - localBackupPath: Optional host-side path if different from backupPath (e.g., Docker volume mount)
  */
 export async function dump(
-    config: any,
+    config: MSSQLDumpConfig,
     destinationPath: string,
     onLog?: (msg: string, level?: LogLevel, type?: LogType, details?: string) => void,
     _onProgress?: (percentage: number) => void

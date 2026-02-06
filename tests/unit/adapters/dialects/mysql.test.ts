@@ -3,8 +3,18 @@ import { describe, it, expect } from 'vitest';
 import { MySQL80Dialect } from '@/lib/adapters/database/mysql/dialects/mysql-8';
 import { MySQL57Dialect } from '@/lib/adapters/database/mysql/dialects/mysql-5-7';
 import { MariaDBDialect } from '@/lib/adapters/database/mysql/dialects/mariadb';
+import { MySQLConfig } from '@/lib/adapters/definitions';
 
 describe('MySQL Dialects', () => {
+
+    // Base config with required fields for testing
+    const baseConfig: MySQLConfig = {
+        host: 'localhost',
+        port: 3306,
+        user: 'root',
+        database: 'testdb',
+        disableSsl: true,
+    };
 
     describe('MySQL 8.0+', () => {
         const dialect = new MySQL80Dialect();
@@ -14,7 +24,7 @@ describe('MySQL Dialects', () => {
         });
 
         it('should generate dump args', () => {
-            const config = { host: 'localhost', port: 3306, user: 'root', password: 'password' };
+            const config: MySQLConfig = { ...baseConfig, password: 'password' };
             const dbs = ['db1'];
             const args = dialect.getDumpArgs(config, dbs);
 

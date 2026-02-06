@@ -1,11 +1,12 @@
 import { DatabaseDialect } from "../../common/dialect";
+import { PostgresConfig } from "@/lib/adapters/definitions";
 
 export class PostgresBaseDialect implements DatabaseDialect {
     supportsVersion(_version: string): boolean {
         return true;
     }
 
-    getDumpArgs(config: any, databases: string[]): string[] {
+    getDumpArgs(config: PostgresConfig, databases: string[]): string[] {
         // Single DB dump using pg_dump with custom format (-Fc)
         // Multi-DB backups are handled separately in dump.ts using TAR archives
         const args: string[] = [
@@ -19,7 +20,7 @@ export class PostgresBaseDialect implements DatabaseDialect {
         // Single database
         if (databases.length === 1) {
             args.push('-d', databases[0]);
-        } else if (config.database) {
+        } else if (typeof config.database === 'string' && config.database) {
             args.push('-d', config.database);
         }
 
@@ -40,13 +41,13 @@ export class PostgresBaseDialect implements DatabaseDialect {
         return args;
     }
 
-    getRestoreArgs(_config: any, _targetDatabase?: string): string[] {
+    getRestoreArgs(_config: PostgresConfig, _targetDatabase?: string): string[] {
         // Note: PostgreSQL restore uses pg_restore with args built directly in restore.ts
         // This method exists only to satisfy the DatabaseDialect interface
         return [];
     }
 
-    getConnectionArgs(config: any): string[] {
+    getConnectionArgs(config: PostgresConfig): string[] {
         // Postgres auth is env based usually.
         return [
             '-h', config.host,

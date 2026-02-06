@@ -1,5 +1,6 @@
 // import { DatabaseDialect } from "../../common/dialect";
 import { PostgresBaseDialect } from "./postgres-base";
+import { PostgresConfig } from "@/lib/adapters/definitions";
 
 /**
  * PostgreSQL 17.x Dialect
@@ -10,7 +11,7 @@ import { PostgresBaseDialect } from "./postgres-base";
  * - New backup options
  */
 export class Postgres17Dialect extends PostgresBaseDialect {
-    override getDumpArgs(config: any, databases: string[]): string[] {
+    override getDumpArgs(config: PostgresConfig, databases: string[]): string[] {
         const args = super.getDumpArgs(config, databases);
 
         // PG 17 specific optimizations

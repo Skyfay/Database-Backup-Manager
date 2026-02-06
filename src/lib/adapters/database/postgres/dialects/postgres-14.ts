@@ -1,5 +1,6 @@
 // import { DatabaseDialect } from "../../common/dialect";
 import { PostgresBaseDialect } from "./postgres-base";
+import { PostgresConfig } from "@/lib/adapters/definitions";
 
 /**
  * PostgreSQL 14.x Dialect
@@ -9,7 +10,7 @@ import { PostgresBaseDialect } from "./postgres-base";
  * - Different SET commands in dumps
  */
 export class Postgres14Dialect extends PostgresBaseDialect {
-    override getDumpArgs(config: any, databases: string[]): string[] {
+    override getDumpArgs(config: PostgresConfig, databases: string[]): string[] {
         const args = super.getDumpArgs(config, databases);
 
         // Add --no-sync for compatibility across versions

@@ -1,5 +1,6 @@
 import { BackupResult } from "@/lib/core/interfaces";
 import { LogLevel, LogType } from "@/lib/core/logs";
+import { MySQLConfig, MariaDBConfig } from "@/lib/adapters/definitions";
 import { ensureDatabase } from "./connection";
 import { getDialect } from "./dialects";
 import { getMysqlCommand } from "./tools";
@@ -17,10 +18,19 @@ import {
     getTargetDatabaseName,
 } from "../common/tar-utils";
 
-export async function prepareRestore(config: any, databases: string[]): Promise<void> {
+/** Extended config with runtime fields for restore operations */
+type MySQLRestoreConfig = (MySQLConfig | MariaDBConfig) & {
+    type?: string;
+    detectedVersion?: string;
+    privilegedAuth?: { user: string; password: string };
+    databaseMapping?: { originalName: string; targetName: string; selected: boolean }[];
+    selectedDatabases?: string[];
+};
+
+export async function prepareRestore(config: MySQLRestoreConfig, databases: string[]): Promise<void> {
     const usePrivileged = !!config.privilegedAuth;
-    const user = usePrivileged ? config.privilegedAuth.user : config.user;
-    const pass = usePrivileged ? config.privilegedAuth.password : config.password;
+    const user = usePrivileged ? config.privilegedAuth!.user : config.user;
+    const pass = usePrivileged ? config.privilegedAuth!.password : config.password;
 
     for (const dbName of databases) {
         await ensureDatabase(config, dbName, user, pass, usePrivileged, []);
@@ -31,7 +41,7 @@ export async function prepareRestore(config: any, databases: string[]): Promise<
  * Restore a single SQL file to a specific database
  */
 async function restoreSingleFile(
-    config: any,
+    config: MySQLRestoreConfig,
     sourcePath: string,
     targetDb: string,
     onLog: (msg: string, level?: LogLevel, type?: LogType, details?: string) => void,
@@ -76,7 +86,7 @@ async function restoreSingleFile(
     });
 }
 
-export async function restore(config: any, sourcePath: string, onLog?: (msg: string, level?: LogLevel, type?: LogType, details?: string) => void, onProgress?: (percentage: number) => void): Promise<BackupResult> {
+export async function restore(config: MySQLRestoreConfig, sourcePath: string, onLog?: (msg: string, level?: LogLevel, type?: LogType, details?: string) => void, onProgress?: (percentage: number) => void): Promise<BackupResult> {
     const startedAt = new Date();
     const logs: string[] = [];
     const log = (msg: string, level: LogLevel = 'info', type: LogType = 'general', details?: string) => {
@@ -85,10 +95,10 @@ export async function restore(config: any, sourcePath: string, onLog?: (msg: str
     };
 
     try {
-        const dbMapping = config.databaseMapping as { originalName: string, targetName: string, selected: boolean }[] | undefined;
+        const dbMapping = config.databaseMapping;
         const usePrivileged = !!config.privilegedAuth;
-        const creationUser = usePrivileged ? config.privilegedAuth.user : config.user;
-        const creationPass = usePrivileged ? config.privilegedAuth.password : config.password;
+        const creationUser = usePrivileged ? config.privilegedAuth!.user : config.user;
+        const creationPass = usePrivileged ? config.privilegedAuth!.password : config.password;
 
         // Check if this is a Multi-DB TAR archive
         if (await isMultiDbTar(sourcePath)) {

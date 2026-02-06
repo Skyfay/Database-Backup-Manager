@@ -1,4 +1,5 @@
 import { Client, ConnectConfig } from "ssh2";
+import { SQLiteConfig } from "@/lib/adapters/definitions";
 
 export class SshClient {
     private client: Client;
@@ -7,7 +8,7 @@ export class SshClient {
         this.client = new Client();
     }
 
-    public connect(config: any): Promise<void> {
+    public connect(config: SQLiteConfig): Promise<void> {
         return new Promise((resolve, reject) => {
             const sshConfig: ConnectConfig = {
                 host: config.host,

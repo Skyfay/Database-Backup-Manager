@@ -1,10 +1,11 @@
 import { execFile } from "child_process";
 import util from "util";
 import { getMysqlCommand, getMysqladminCommand } from "./tools";
+import { MySQLConfig } from "@/lib/adapters/definitions";
 
 export const execFileAsync = util.promisify(execFile);
 
-export async function ensureDatabase(config: any, dbName: string, user: string, pass: string | undefined, privileged: boolean, logs: string[]) {
+export async function ensureDatabase(config: MySQLConfig, dbName: string, user: string, pass: string | undefined, privileged: boolean, logs: string[]) {
     const args = ['-h', config.host, '-P', String(config.port), '-u', user, '--protocol=tcp'];
     if (config.disableSsl) {
         args.push('--skip-ssl');
@@ -26,7 +27,7 @@ export async function ensureDatabase(config: any, dbName: string, user: string, 
     }
 }
 
-export async function test(config: any): Promise<{ success: boolean; message: string; version?: string }> {
+export async function test(config: MySQLConfig): Promise<{ success: boolean; message: string; version?: string }> {
     try {
         // 1. Basic Ping Test
         // Increased timeout to 10s to handle heavy load during integration tests
@@ -65,7 +66,7 @@ export async function test(config: any): Promise<{ success: boolean; message: st
     }
 }
 
-export async function getDatabases(config: any): Promise<string[]> {
+export async function getDatabases(config: MySQLConfig): Promise<string[]> {
     const args = ['-h', config.host, '-P', String(config.port), '-u', config.user, '--protocol=tcp'];
     if (config.disableSsl) {
         args.push('--skip-ssl');

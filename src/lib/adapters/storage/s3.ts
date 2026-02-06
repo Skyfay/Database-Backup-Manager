@@ -31,7 +31,7 @@ class S3ClientFactory {
         });
     }
 
-    static getTargetKey(config: any, remotePath: string): string {
+    static getTargetKey(config: S3InternalConfig, remotePath: string): string {
         const prefix = config.pathPrefix ? config.pathPrefix.replace(/^\/+|\/+$/g, '') : '';
         return prefix ? `${prefix}/${remotePath}` : remotePath;
     }

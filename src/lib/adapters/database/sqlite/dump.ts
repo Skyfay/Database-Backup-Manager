@@ -2,6 +2,7 @@ import { DatabaseAdapter } from "@/lib/core/interfaces";
 import { spawn } from "child_process";
 import fs from "fs";
 import { SshClient } from "./ssh-client";
+import { SQLiteConfig } from "@/lib/adapters/definitions";
 
 export const dump: DatabaseAdapter["dump"] = async (config, destinationPath, onLog, onProgress) => {
     const startedAt = new Date();
@@ -17,14 +18,14 @@ export const dump: DatabaseAdapter["dump"] = async (config, destinationPath, onL
         log(`Starting SQLite dump in ${mode} mode...`);
 
         if (mode === "local") {
-            return await dumpLocal(config, destinationPath, log, onProgress).then(res => ({
+            return await dumpLocal(config as SQLiteConfig, destinationPath, log, onProgress).then(res => ({
                 ...res,
                 startedAt,
                 completedAt: new Date(),
                 logs
             }));
         } else if (mode === "ssh") {
-            return await dumpSsh(config, destinationPath, log, onProgress).then(res => ({
+            return await dumpSsh(config as SQLiteConfig, destinationPath, log, onProgress).then(res => ({
                 ...res,
                 startedAt,
                 completedAt: new Date(),
@@ -47,7 +48,7 @@ export const dump: DatabaseAdapter["dump"] = async (config, destinationPath, onL
     }
 };
 
-async function dumpLocal(config: any, destinationPath: string, log: (msg: string) => void, _onProgress?: (percent: number) => void): Promise<any> {
+async function dumpLocal(config: SQLiteConfig, destinationPath: string, log: (msg: string) => void, _onProgress?: (percent: number) => void): Promise<any> {
     const binaryPath = config.sqliteBinaryPath || "sqlite3";
     const dbPath = config.path;
     const writeStream = fs.createWriteStream(destinationPath);
@@ -81,7 +82,7 @@ async function dumpLocal(config: any, destinationPath: string, log: (msg: string
     });
 }
 
-async function dumpSsh(config: any, destinationPath: string, log: (msg: string) => void, _onProgress?: (percent: number) => void): Promise<any> {
+async function dumpSsh(config: SQLiteConfig, destinationPath: string, log: (msg: string) => void, _onProgress?: (percent: number) => void): Promise<any> {
     const client = new SshClient();
     const writeStream = fs.createWriteStream(destinationPath);
     const binaryPath = config.sqliteBinaryPath || "sqlite3";

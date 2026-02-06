@@ -1,16 +1,21 @@
 
 import { describe, it, expect } from 'vitest';
 import { PostgresBaseDialect } from '@/lib/adapters/database/postgres/dialects/postgres-base';
+import { PostgresConfig } from '@/lib/adapters/definitions';
 
 describe('PostgreSQL Dialect (Base)', () => {
     const dialect = new PostgresBaseDialect();
 
+    // Base config with required fields for testing
+    const baseConfig: PostgresConfig = {
+        host: 'localhost',
+        port: 5432,
+        user: 'test_user',
+        database: 'testdb',
+    };
+
     it('should generate correct dump arguments', () => {
-        const config = {
-            host: 'localhost',
-            port: 5432,
-            user: 'test_user',
-        };
+        const config: PostgresConfig = { ...baseConfig };
         const databases = ['db1'];
         const args = dialect.getDumpArgs(config, databases);
 
