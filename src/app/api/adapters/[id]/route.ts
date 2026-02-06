@@ -9,6 +9,7 @@ import { checkPermission } from "@/lib/access-control";
 import { PERMISSIONS, Permission } from "@/lib/permissions";
 import { logger } from "@/lib/logger";
 import { wrapError, getErrorMessage } from "@/lib/errors";
+import { isDemoMode } from "@/lib/demo-mode";
 
 const log = logger.child({ route: "adapters/[id]" });
 
@@ -32,6 +33,14 @@ export async function DELETE(
 
     if (!session) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Block in demo mode
+    if (isDemoMode()) {
+        return NextResponse.json(
+            { success: false, error: "Deleting adapters is disabled in demo mode" },
+            { status: 403 }
+        );
     }
 
     const params = await props.params;
@@ -102,6 +111,14 @@ export async function PUT(
 
     if (!session) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Block in demo mode
+    if (isDemoMode()) {
+        return NextResponse.json(
+            { success: false, error: "Modifying adapters is disabled in demo mode" },
+            { status: 403 }
+        );
     }
 
     const params = await props.params;

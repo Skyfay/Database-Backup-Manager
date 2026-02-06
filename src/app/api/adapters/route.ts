@@ -9,6 +9,7 @@ import { auditService } from "@/services/audit-service";
 import { AUDIT_ACTIONS, AUDIT_RESOURCES } from "@/lib/core/audit-types";
 import { logger } from "@/lib/logger";
 import { wrapError, getErrorMessage } from "@/lib/errors";
+import { isDemoMode } from "@/lib/demo-mode";
 
 const log = logger.child({ route: "adapters" });
 
@@ -84,6 +85,14 @@ export async function POST(req: NextRequest) {
 
     if (!session) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Block in demo mode - prevent creating new sources/destinations that could probe internal network
+    if (isDemoMode()) {
+        return NextResponse.json(
+            { error: "Creating new adapters is disabled in demo mode" },
+            { status: 403 }
+        );
     }
 
     try {

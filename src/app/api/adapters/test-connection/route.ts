@@ -8,6 +8,7 @@ import { checkPermission } from "@/lib/access-control";
 import { PERMISSIONS, Permission } from "@/lib/permissions";
 import { logger } from "@/lib/logger";
 import { wrapError } from "@/lib/errors";
+import { isDemoMode } from "@/lib/demo-mode";
 
 const log = logger.child({ route: "adapters/test-connection" });
 
@@ -33,6 +34,14 @@ export async function POST(req: NextRequest) {
 
     if (!session) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Block in demo mode - prevent probing internal network
+    if (isDemoMode()) {
+        return NextResponse.json(
+            { success: false, message: "Connection testing is disabled in demo mode for security reasons" },
+            { status: 403 }
+        );
     }
 
     try {

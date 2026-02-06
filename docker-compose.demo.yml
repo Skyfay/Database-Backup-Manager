@@ -135,27 +135,75 @@ services:
   # Demo Reset Service
   # ==========================================
   # This service resets the demo environment periodically.
-  # It copies a pre-seeded database and clears backup files.
+  # It resets: SQLite app database, backup files, AND demo databases.
 
   demo-reset:
-    image: alpine:latest
+    image: docker:cli
     container_name: dbackup-demo-reset
     restart: always
     volumes:
       - demo-db:/app/db
       - demo-backups:/backups
       - ./scripts/demo/seed.db:/seed/dbackup.db:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Mount database volumes to clear data
+      - mysql-demo-data:/mysql-data
+      - postgres-demo-data:/postgres-data
+      - mongo-demo-data:/mongo-data
     entrypoint: |
       sh -c '
         echo "Demo Reset Service Started"
-        echo "Reset interval: 10 minutes"
+        echo "Reset interval: Every 10 minutes (aligned to clock)"
+        echo "Resets: App DB, Backups, MySQL, PostgreSQL, MongoDB"
+
+        # Function to wait until next 10-minute mark
+        wait_until_next_interval() {
+          current_minute=$(date +%M | sed "s/^0//")
+          current_second=$(date +%S | sed "s/^0//")
+
+          # Calculate minutes until next 10-minute mark (00, 10, 20, 30, 40, 50)
+          minutes_past=$((current_minute % 10))
+          if [ $minutes_past -eq 0 ] && [ $current_second -lt 5 ]; then
+            # We are at a 10-minute mark, wait for next one
+            wait_seconds=600
+          else
+            minutes_to_wait=$((10 - minutes_past))
+            wait_seconds=$(( (minutes_to_wait * 60) - current_second ))
+          fi
+
+          echo "[$(date)] Waiting ${wait_seconds} seconds until next reset..."
+          sleep $wait_seconds
+        }
+
+        # Initial wait to align with clock
+        echo "[$(date)] Aligning reset schedule with clock..."
+        wait_until_next_interval
 
         while true; do
-          sleep 600
+          echo "[$(date)] =========================================="
+          echo "[$(date)] Starting full demo environment reset..."
+          echo "[$(date)] =========================================="
 
-          echo "[$(date)] Resetting demo environment..."
+          # Step 1: Stop DBackup first (prevent DB connections during reset)
+          echo "[$(date)] Stopping DBackup..."
+          docker stop dbackup-demo || true
 
-          # Reset SQLite database
+          # Step 2: Stop all demo database containers
+          echo "[$(date)] Stopping database containers..."
+          docker stop dbackup-demo-mysql dbackup-demo-postgres dbackup-demo-mongo || true
+
+          # Step 3: Clear database data (so init scripts run again on start)
+          echo "[$(date)] Clearing MySQL data..."
+          rm -rf /mysql-data/* 2>/dev/null || true
+
+          echo "[$(date)] Clearing PostgreSQL data..."
+          rm -rf /postgres-data/* 2>/dev/null || true
+
+          echo "[$(date)] Clearing MongoDB data..."
+          rm -rf /mongo-data/* 2>/dev/null || true
+
+          # Step 4: Reset SQLite database
+          echo "[$(date)] Resetting SQLite database..."
           rm -f /app/db/dbackup.db
           rm -f /app/db/dbackup.db-journal
           rm -f /app/db/dbackup.db-wal
@@ -163,12 +211,32 @@ services:
           cp /seed/dbackup.db /app/db/dbackup.db
           chmod 644 /app/db/dbackup.db
 
-          # Clear backup files (keep directory structure)
+          # Step 5: Clear backup files
+          echo "[$(date)] Clearing backup files..."
           find /backups -type f -name "*.sql*" -delete 2>/dev/null || true
           find /backups -type f -name "*.tar*" -delete 2>/dev/null || true
+          find /backups -type f -name "*.gz*" -delete 2>/dev/null || true
+          find /backups -type f -name "*.enc*" -delete 2>/dev/null || true
           find /backups -type f -name "*.meta.json" -delete 2>/dev/null || true
 
-          echo "[$(date)] Reset complete"
+          # Step 6: Start database containers (init scripts will recreate data)
+          echo "[$(date)] Starting database containers..."
+          docker start dbackup-demo-mysql dbackup-demo-postgres dbackup-demo-mongo
+
+          # Step 7: Wait for databases to be ready
+          echo "[$(date)] Waiting for databases to initialize (45s)..."
+          sleep 45
+
+          # Step 8: Start DBackup
+          echo "[$(date)] Starting DBackup..."
+          docker start dbackup-demo
+
+          echo "[$(date)] =========================================="
+          echo "[$(date)] Demo reset complete!"
+          echo "[$(date)] =========================================="
+
+          # Wait until next 10-minute mark
+          wait_until_next_interval
         done
       '
     networks:

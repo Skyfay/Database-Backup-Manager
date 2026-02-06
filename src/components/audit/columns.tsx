@@ -7,9 +7,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Eye } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Eye, EyeOff } from "lucide-react";
 import { DateDisplay } from "@/components/utils/date-display";
 import { AUDIT_ACTIONS } from "@/lib/core/audit-types";
+import { isDemoModeEnabled } from "@/lib/demo-mode";
 
 // Type definition for Audit Log with included User
 export type AuditLogWithUser = AuditLog & {
@@ -84,9 +86,28 @@ export const columns: ColumnDef<AuditLogWithUser>[] = [
     header: "Details",
     cell: ({ row }) => {
       const details = row.getValue("details") as string | null;
+      const isDemo = isDemoModeEnabled();
+
       if (!details) {
         return <span className="text-muted-foreground text-xs">-</span>;
       }
+
+      // In demo mode, hide details to protect IP addresses of other users
+      if (isDemo) {
+        return (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0" disabled>
+                <EyeOff className="h-4 w-4 text-muted-foreground" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Details hidden in demo mode</p>
+            </TooltipContent>
+          </Tooltip>
+        );
+      }
+
       return (
         <Dialog>
           <DialogTrigger asChild>
