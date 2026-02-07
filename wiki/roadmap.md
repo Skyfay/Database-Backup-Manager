@@ -2,13 +2,6 @@
 
 This page outlines planned features and improvements for DBackup. Features are subject to change based on community feedback and priorities.
 
-## 🎯 In Progress
-
-### Dashboard Enhancements
-- Backup statistics graphs and visualizations
-
----
-
 ## 🚨 Release Blockers
 
 These items must be resolved before moving from beta to stable release.
@@ -39,7 +32,7 @@ These items must be resolved before moving from beta to stable release.
 - Check queue manager status
 - Monitor available disk space (critical for local storage backups)
 
----
+
 
 ## 🔐 Security & Stability (Pre-Release)
 
@@ -57,7 +50,7 @@ These items must be resolved before moving from beta to stable release.
 - Add database indices on frequently filtered columns
 - Implement log archival or auto-cleanup for old entries
 
----
+
 
 ## 🚀 Planned Features
 
@@ -86,17 +79,7 @@ Allow users to edit their own profile regardless of strict RBAC permissions.
 - Pin backups to protect them from automatic retention policy deletion
 - Filter and search by tags in Storage Explorer
 
-### Configuration Export/Import (CLI)
-- Headless export/import for migration between instances
-- `pnpm run config:export --output /path/to/config.json`
-- `pnpm run config:import --input /path/to/config.json`
 
-### Multi-Tenant / Project Isolation
-- Logical separation of jobs, sources, and storage into "Projects"
-- Project-level access control for teams
-- Per-project dashboards and statistics
-
----
 
 ## 📊 Dashboard & Monitoring
 
@@ -117,7 +100,7 @@ Allow users to edit their own profile regardless of strict RBAC permissions.
 - Metrics: backup count, duration, size, success rate, queue depth
 - Grafana dashboard template
 
----
+
 
 ## 📦 Planned Storage Adapters
 
@@ -138,7 +121,7 @@ Efficient incremental backups using rsync protocol.
 - **Dropbox** - Dropbox Business and personal accounts
 - **OneDrive** - Microsoft 365 and personal OneDrive
 
----
+
 
 ## 🔔 Planned Notification Adapters
 
@@ -153,7 +136,7 @@ Teams channel notifications for enterprise users.
 - Customizable payload templates
 - Supports PagerDuty, Ntfy, Gotify, Uptime Kuma, and more
 
----
+
 
 ## 🧪 Testing & Quality
 
@@ -166,7 +149,7 @@ Teams channel notifications for enterprise users.
 - Scripts to generate large test datasets (1GB+)
 - Performance benchmarking for backup/restore operations
 
----
+
 
 ## 📚 Documentation (Pre-Release)
 
@@ -182,7 +165,7 @@ Teams channel notifications for enterprise users.
 - Version-by-version migration instructions
 - Breaking change highlights per release
 
----
+
 
 ## 🛠 Database Management & Playground
 
@@ -198,7 +181,7 @@ Teams channel notifications for enterprise users.
   - Table maintenance
 - Quick-action buttons in the UI
 
----
+
 
 ## 🎨 Nice-to-Have (Post-Release)
 
@@ -218,7 +201,7 @@ Teams channel notifications for enterprise users.
 - Systematic review of all components for dark mode consistency
 - High-contrast accessibility mode
 
----
+
 
 ## ✅ Recently Completed
 
@@ -245,7 +228,7 @@ For a full list of completed features, see the [Changelog](/changelog).
 - ✅ Token-based public downloads (v0.9.3)
 - ✅ User preferences system (v0.9.3)
 
----
+
 
 ## 💡 Feature Requests
 
