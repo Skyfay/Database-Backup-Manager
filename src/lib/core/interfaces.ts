@@ -43,6 +43,8 @@ export interface BackupMetadata {
         /** Database names contained in the archive */
         databases: string[];
     };
+    /** SHA-256 checksum of the final backup file (after compression/encryption) */
+    checksum?: string;
     /** Allow additional adapter-specific properties */
     [key: string]: unknown;
 }

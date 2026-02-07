@@ -16,6 +16,7 @@ import { LogEntry, LogLevel, LogType } from "@/lib/core/logs";
 import { isMultiDbTar, readTarManifest } from "@/lib/adapters/database/common/tar-utils";
 import { logger } from "@/lib/logger";
 import { wrapError, getErrorMessage } from "@/lib/errors";
+import { verifyFileChecksum } from "@/lib/checksum";
 
 const svcLog = logger.child({ service: "RestoreService" });
 
@@ -247,6 +248,7 @@ export class RestoreService {
             let isEncrypted = false;
             let encryptionMeta: BackupMetadata['encryption'] = undefined;
             let compressionMeta: CompressionType | undefined = undefined;
+            let expectedChecksum: string | undefined = undefined;
 
             try {
                 const metaRemotePath = file + ".meta.json";
@@ -267,6 +269,10 @@ export class RestoreService {
                     if (metadata.compression && metadata.compression !== 'NONE') {
                         compressionMeta = metadata.compression;
                         log(`Detected ${compressionMeta} compression.`, 'info');
+                    }
+                    if (metadata.checksum) {
+                        expectedChecksum = metadata.checksum;
+                        log(`Checksum found in metadata (SHA-256).`, 'info');
                     }
 
                     // Version Check
@@ -322,6 +328,29 @@ export class RestoreService {
                 throw new Error("Failed to download file from storage");
             }
             log(`Download complete.`, 'success');
+
+            // --- CHECKSUM VERIFICATION ---
+            if (expectedChecksum) {
+                log("Verifying backup integrity (SHA-256)...", 'info');
+                try {
+                    const result = await verifyFileChecksum(tempFile, expectedChecksum);
+                    if (result.valid) {
+                        log("Integrity check passed ✓ (SHA-256 match)", 'success');
+                    } else {
+                        log(`CRITICAL: Integrity check FAILED! Expected: ${result.expected}, Got: ${result.actual}`, 'error');
+                        throw new Error("Backup file integrity check failed. The file may be corrupted or tampered with.");
+                    }
+                } catch (e: unknown) {
+                    if (e instanceof Error && e.message.includes('integrity check failed')) {
+                        throw e; // Re-throw integrity failures
+                    }
+                    const message = e instanceof Error ? e.message : String(e);
+                    log(`Warning: Could not verify checksum: ${message}`, 'warning');
+                }
+            } else {
+                log("No checksum in metadata, skipping integrity verification.", 'info');
+            }
+            // --- END CHECKSUM VERIFICATION ---
 
             // --- DECRYPTION EXECUTION ---
             if (isEncrypted && encryptionMeta) {

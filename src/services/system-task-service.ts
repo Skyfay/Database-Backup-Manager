@@ -21,7 +21,8 @@ export const SYSTEM_TASKS = {
     CLEAN_OLD_LOGS: "system.clean_audit_logs",
     CHECK_FOR_UPDATES: "system.check_for_updates",
     SYNC_PERMISSIONS: "system.sync_permissions",
-    CONFIG_BACKUP: "system.config_backup"
+    CONFIG_BACKUP: "system.config_backup",
+    INTEGRITY_CHECK: "system.integrity_check"
 };
 
 export const DEFAULT_TASK_CONFIG = {
@@ -66,6 +67,13 @@ export const DEFAULT_TASK_CONFIG = {
         enabled: false, // Default disabled until user enables it
         label: "Automated Configuration Backup",
         description: "Backs up the internal system configuration (Settings, Adapters, Jobs, Users) to the configured storage."
+    },
+    [SYSTEM_TASKS.INTEGRITY_CHECK]: {
+        interval: "0 4 * * 0", // Weekly on Sunday at 4 AM
+        runOnStartup: false,
+        enabled: false, // Default disabled - can be resource-intensive
+        label: "Backup Integrity Check",
+        description: "Verifies SHA-256 checksums of all backup files on storage to detect corruption or tampering. Downloads each file temporarily for verification."
     }
 };
 
@@ -187,6 +195,17 @@ export class SystemTaskService {
                 // Dynamic import to avoid circular dep if config-runner imports something that imports this.
                 const { runConfigBackup } = await import("@/lib/runner/config-runner");
                 await runConfigBackup();
+                break;
+            }
+            case SYSTEM_TASKS.INTEGRITY_CHECK: {
+                const { integrityService } = await import("@/services/integrity-service");
+                const result = await integrityService.runFullIntegrityCheck();
+                log.info("Integrity check results", {
+                    total: result.totalFiles,
+                    passed: result.passed,
+                    failed: result.failed,
+                    skipped: result.skipped
+                });
                 break;
             }
             default:

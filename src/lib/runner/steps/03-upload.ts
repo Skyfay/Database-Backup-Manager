@@ -10,6 +10,8 @@ import { createEncryptionStream } from "@/lib/crypto-stream";
 import { getCompressionStream, getCompressionExtension, CompressionType } from "@/lib/compression";
 import { ProgressMonitorStream } from "@/lib/streams/progress-monitor";
 import { formatBytes } from "@/lib/utils";
+import { calculateFileChecksum, verifyFileChecksum } from "@/lib/checksum";
+import { getTempDir } from "@/lib/temp-dir";
 
 export async function stepUpload(ctx: RunnerContext) {
     if (!ctx.job || !ctx.destAdapter || !ctx.tempFile) throw new Error("Context not ready for upload");
@@ -129,6 +131,12 @@ export async function stepUpload(ctx: RunnerContext) {
         }
     }
 
+    // --- CHECKSUM CALCULATION ---
+    ctx.log("Calculating SHA-256 checksum...");
+    const checksum = await calculateFileChecksum(ctx.tempFile);
+    ctx.log(`Checksum: ${checksum}`);
+    // --- END CHECKSUM ---
+
     const destConfig = decryptConfig(JSON.parse(job.destination.config));
 
     // Define remote path (Standard: JobName/FileName)
@@ -155,6 +163,7 @@ export async function stepUpload(ctx: RunnerContext) {
             originalFileName: path.basename(ctx.tempFile),
             compression: compressionMeta,
             encryption: encryptionMeta,
+            checksum,
             // Add Multi-DB TAR metadata if present
             multiDb: ctx.metadata?.multiDb
         };
@@ -196,4 +205,27 @@ export async function stepUpload(ctx: RunnerContext) {
     }
 
     ctx.log(`Upload complete: ${remotePath}`);
+
+    // --- POST-UPLOAD CHECKSUM VERIFICATION ---
+    try {
+        ctx.log("Verifying upload integrity...");
+        const verifyPath = path.join(getTempDir(), `verify_${Date.now()}_${path.basename(ctx.tempFile)}`);
+
+        const downloadOk = await destAdapter.download(destConfig, remotePath, verifyPath);
+        if (downloadOk) {
+            const result = await verifyFileChecksum(verifyPath, checksum);
+            if (result.valid) {
+                ctx.log("Integrity check passed ✓ (SHA-256 match)");
+            } else {
+                ctx.log(`WARNING: Integrity check FAILED! Expected: ${result.expected}, Got: ${result.actual}`, 'warning');
+            }
+            await fs.unlink(verifyPath).catch(() => {});
+        } else {
+            ctx.log("Skipped integrity verification (download failed)", 'warning');
+        }
+    } catch (e: unknown) {
+        const message = e instanceof Error ? e.message : String(e);
+        ctx.log(`Integrity verification skipped: ${message}`, 'warning');
+    }
+    // --- END VERIFICATION ---
 }
