@@ -2,6 +2,54 @@
 
 All notable changes to DBackup are documented here.
 
+## v0.9.5-beta - Dashboard Overhaul & Visual Analytics
+*Release: In progress*
+
+This release introduces a completely redesigned dashboard with interactive charts, real-time statistics, and auto-refresh capabilities. The dashboard now provides a comprehensive at-a-glance overview of backup health, job activity, and storage usage.
+
+### ✨ New Features
+
+#### 📊 Interactive Dashboard Charts
+- **Activity Chart**: New stacked bar chart showing backup and restore executions over the last 14 days, grouped by status (Completed, Failed, Running, Pending)
+- **Job Status Distribution**: Donut chart visualizing the status distribution of all executions in the last 30 days, with success rate percentage displayed in the center
+- **Recharts Integration**: Added Recharts via the official shadcn/ui Chart component for consistent, accessible chart rendering
+
+#### 📈 Expanded Stats Cards
+- **7 KPI Cards**: Dashboard now shows Total Jobs, Active Schedules, Backups, Total Storage, Success Rate, 24h Successful, and 24h Failed at a glance
+- **Visual Indicators**: Each card includes an icon and descriptive subtitle for quick orientation
+
+#### 🗂️ Latest Jobs Widget
+- **Live Activity Feed**: New widget showing recent backup and restore executions with status badges and relative timestamps
+- **Type Filter**: Dropdown filter to show All, Backup-only, or Restore-only executions
+- **Source Icons**: Database type icons (MySQL, PostgreSQL, MongoDB, etc.) displayed alongside job names
+
+#### 🔄 Auto-Refresh
+- **Smart Polling**: Dashboard automatically refreshes every 3 seconds while backup or restore jobs are running
+- **Auto-Stop**: Polling stops automatically when all jobs complete, with one final refresh to update the view
+- **Zero Config**: No user interaction needed — refresh activates and deactivates based on job state
+
+#### 💾 Storage Overview
+- **Per-Destination Breakdown**: Storage widget lists each configured storage destination with backup count and total size
+- **Live File Scanning**: Storage sizes are calculated from actual files via storage adapters (not just database records)
+- **Total Summary**: Aggregated total row shown when multiple storage destinations are configured
+
+### 🐛 Bug Fixes
+- **Accurate Backup Sizes**: Fixed backup file size tracking to reflect the actual compressed and encrypted file size instead of the raw database dump size
+- **DateDisplay Crash**: Fixed a crash when using relative date formatting by switching to `formatDistanceToNow` from date-fns
+
+### 🧹 Code Cleanup
+- Removed unused `getDialect` import from MongoDB restore adapter
+- Removed outdated ESLint disable directive from core interfaces
+
+### 🔧 Technical Changes
+- New `src/services/dashboard-service.ts` — Centralized server-side service for all dashboard data fetching
+- New `src/components/dashboard/widgets/activity-chart.tsx` — Stacked bar chart (Client Component)
+- New `src/components/dashboard/widgets/job-status-chart.tsx` — Donut chart with success rate (Client Component)
+- New `src/components/dashboard/widgets/storage-volume-chart.tsx` — Storage list per destination
+- New `src/components/dashboard/widgets/latest-jobs.tsx` — Filterable recent executions feed (Client Component)
+- New `src/components/dashboard/widgets/dashboard-refresh.tsx` — Auto-refresh wrapper with smart polling
+- Updated `src/lib/runner/steps/03-upload.ts` — File size now measured after compression/encryption pipeline
+
 ## v0.9.4-beta - Universal Download Links & Logging System
 *Released: February 6, 2026*
 
