@@ -68,7 +68,7 @@ Test pure functions and isolated logic.
 pnpm test
 ```
 
-**Example**:
+**Example** (Retention):
 ```typescript
 // tests/unit/retention-service.test.ts
 import { describe, it, expect } from "vitest";
@@ -104,7 +104,41 @@ describe("RetentionService", () => {
 });
 ```
 
-### Integration Tests
+**Example** (Checksum):
+```typescript
+// tests/unit/lib/checksum.test.ts
+import { describe, it, expect } from "vitest";
+import { calculateChecksum, calculateFileChecksum, verifyFileChecksum } from "@/lib/checksum";
+import fs from "fs/promises";
+
+describe("calculateChecksum", () => {
+  it("returns consistent SHA-256 hash", () => {
+    const hash1 = calculateChecksum("hello world");
+    const hash2 = calculateChecksum("hello world");
+    expect(hash1).toBe(hash2);
+    expect(hash1).toHaveLength(64); // SHA-256 = 64 hex chars
+  });
+
+  it("produces different hashes for different inputs", () => {
+    expect(calculateChecksum("hello")).not.toBe(calculateChecksum("world"));
+  });
+});
+
+describe("verifyFileChecksum", () => {
+  it("detects file modification", async () => {
+    const tmpPath = "/tmp/test-checksum-verify.txt";
+    await fs.writeFile(tmpPath, "original content");
+    const hash = await calculateFileChecksum(tmpPath);
+
+    // Modify file
+    await fs.writeFile(tmpPath, "modified content");
+    const result = await verifyFileChecksum(tmpPath, hash);
+
+    expect(result.valid).toBe(false);
+    await fs.unlink(tmpPath);
+  });
+});
+```
 
 Test adapters against real database instances.
 

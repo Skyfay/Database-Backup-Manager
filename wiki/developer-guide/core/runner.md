@@ -144,7 +144,7 @@ export async function stepDump(ctx: RunnerContext): Promise<void> {
 
 ### Step 3: Upload (`03-upload.ts`)
 
-Uploads the backup and metadata to storage.
+Uploads the backup and metadata to storage, including SHA-256 checksum calculation and post-upload verification.
 
 ```typescript
 export async function stepUpload(ctx: RunnerContext): Promise<void> {
@@ -153,6 +153,10 @@ export async function stepUpload(ctx: RunnerContext): Promise<void> {
   const extension = path.extname(ctx.tempFile!);
   ctx.remotePath = `${ctx.job.name}/${ctx.job.name}_${timestamp}${extension}`;
 
+  // Calculate SHA-256 checksum of final file
+  const checksum = await calculateFileChecksum(ctx.tempFile!);
+  ctx.logs.push(`Checksum (SHA-256): ${checksum}`);
+
   // Upload backup file
   await ctx.destinationAdapter.upload(
     ctx.job.destination.config,
@@ -160,7 +164,7 @@ export async function stepUpload(ctx: RunnerContext): Promise<void> {
     ctx.remotePath
   );
 
-  // Create and upload metadata
+  // Create and upload metadata (includes checksum)
   const metadata: BackupMetadata = {
     jobId: ctx.job.id,
     jobName: ctx.job.name,
@@ -173,6 +177,7 @@ export async function stepUpload(ctx: RunnerContext): Promise<void> {
     encryptionProfileId: ctx.job.encryptionProfileId,
     iv: ctx.iv?.toString("hex"),
     authTag: ctx.authTag?.toString("hex"),
+    checksum, // SHA-256 hash of final backup file
   };
 
   await ctx.destinationAdapter.upload(
@@ -180,6 +185,28 @@ export async function stepUpload(ctx: RunnerContext): Promise<void> {
     JSON.stringify(metadata, null, 2),
     `${ctx.remotePath}.meta.json`
   );
+
+  // Post-upload verification (local storage only)
+  // Remote storage (S3, SFTP) relies on transport-level integrity,
+  // so re-downloading multi-GB files is skipped to avoid performance impact.
+  if (job.destination.adapterId === "local-filesystem") {
+    const tempVerifyPath = path.join(getTempDir(), `verify-${Date.now()}`);
+    await ctx.destinationAdapter.download(
+      ctx.job.destination.config,
+      ctx.remotePath,
+      tempVerifyPath
+    );
+    const result = await verifyFileChecksum(tempVerifyPath, checksum);
+    await fs.unlink(tempVerifyPath).catch(() => {});
+
+    if (result.valid) {
+      ctx.logs.push("Post-upload checksum verification: PASSED");
+    } else {
+      ctx.logs.push(`Post-upload checksum verification: FAILED`);
+    }
+  } else {
+    ctx.logs.push("Post-upload verification skipped (remote storage uses transport-level integrity)");
+  }
 
   ctx.logs.push(`Uploaded to: ${ctx.remotePath}`);
 }
@@ -348,6 +375,43 @@ pipeline(
 );
 ```
 
+## Checksum Verification
+
+The runner pipeline includes SHA-256 checksum verification at multiple points to ensure data integrity:
+
+### Backup Flow
+
+1. **After pipeline**: SHA-256 checksum is calculated on the final backup file (after compression + encryption)
+2. **Metadata storage**: Checksum is stored in the `.meta.json` sidecar file
+3. **Post-upload verification (local storage only)**: For local filesystem destinations, the uploaded file is re-downloaded and its checksum verified. Remote storage (S3, SFTP) relies on transport-level integrity (e.g. S3 Content-MD5, SSH checksums) to avoid costly re-downloads of large files
+
+### Restore Flow
+
+The `RestoreService` verifies checksums before processing:
+
+1. **After download**: The downloaded backup file's checksum is compared against the stored value in metadata
+2. **Mismatch handling**: If the checksum doesn't match, the restore is immediately aborted with an error
+3. **Missing checksum**: If no checksum exists in metadata (older backups), verification is skipped with a log message
+
+### Utility Functions
+
+```typescript
+// src/lib/checksum.ts
+import { calculateFileChecksum, verifyFileChecksum } from "@/lib/checksum";
+
+// Calculate SHA-256 hash of a file (stream-based, memory-efficient)
+const hash = await calculateFileChecksum("/path/to/backup.sql.gz.enc");
+// Returns: "a1b2c3d4e5f6..."
+
+// Verify a file against an expected checksum
+const result = await verifyFileChecksum("/path/to/file", expectedHash);
+// Returns: { valid: boolean, actual: string, expected: string }
+```
+
+### Periodic Integrity Checks
+
+The `IntegrityService` provides a system task (`system.integrity_check`) that verifies all backups across all storage destinations. See [Service Layer](services.md) for details.
+
 ## Live Progress
 
 The runner broadcasts progress via polling:
@@ -384,3 +448,4 @@ useEffect(() => {
 - [Service Layer](/developer-guide/core/services)
 - [Retention System](/developer-guide/advanced/retention)
 - [Encryption Pipeline](/developer-guide/advanced/encryption)
+- Checksum Utility (`src/lib/checksum.ts`)

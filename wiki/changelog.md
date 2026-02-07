@@ -2,12 +2,19 @@
 
 All notable changes to DBackup are documented here.
 
-## v0.9.5-beta - Dashboard Overhaul & Visual Analytics
+## v0.9.5-beta - Dashboard Overhaul, Checksums & Visual Analytics
 *Release: In progress*
 
-This release introduces a completely redesigned dashboard with interactive charts, real-time statistics, and auto-refresh capabilities. The dashboard now provides a comprehensive at-a-glance overview of backup health, job activity, and storage usage.
+This release introduces a completely redesigned dashboard with interactive charts, real-time statistics, and auto-refresh capabilities. It also adds SHA-256 checksum verification throughout the backup lifecycle for end-to-end data integrity. The dashboard now provides a comprehensive at-a-glance overview of backup health, job activity, and storage usage.
 
 ### ✨ New Features
+
+#### 🔒 SHA-256 Checksum Verification
+- **Backup Pipeline Integration**: Every backup now calculates a SHA-256 checksum of the final file (after compression/encryption) and stores it in the `.meta.json` sidecar file
+- **Post-Upload Verification (Local Storage)**: For local filesystem storage, the backup is re-downloaded and its checksum verified after upload. Remote storage (S3, SFTP, etc.) relies on transport-level integrity checks to avoid costly re-downloads of large files
+- **Restore Verification**: Before decryption/decompression, the downloaded backup file's checksum is verified against the stored value — aborts restore if mismatch detected
+- **Integrity Check System Task**: New periodic system task (`system.integrity_check`) that verifies all backups across all storage destinations. Runs weekly (Sunday 4 AM), disabled by default
+- **IntegrityService**: New service that iterates all storage configs, downloads each backup, and verifies checksums — reports total files, verified, passed, failed, and skipped counts
 
 #### 📊 Interactive Dashboard Charts
 - **Activity Chart**: New stacked bar chart showing backup and restore executions over the last 14 days, grouped by status (Completed, Failed, Running, Pending)
@@ -42,13 +49,19 @@ This release introduces a completely redesigned dashboard with interactive chart
 - Removed outdated ESLint disable directive from core interfaces
 
 ### 🔧 Technical Changes
+- New `src/lib/checksum.ts` — SHA-256 checksum utility with `calculateFileChecksum()`, `calculateChecksum()`, and `verifyFileChecksum()`
+- New `src/services/integrity-service.ts` — Periodic integrity check service for all backups across all storage destinations
+- New `tests/unit/lib/checksum.test.ts` — 12 unit tests covering checksum calculation, file hashing, and verification
 - New `src/services/dashboard-service.ts` — Centralized server-side service for all dashboard data fetching
 - New `src/components/dashboard/widgets/activity-chart.tsx` — Stacked bar chart (Client Component)
 - New `src/components/dashboard/widgets/job-status-chart.tsx` — Donut chart with success rate (Client Component)
 - New `src/components/dashboard/widgets/storage-volume-chart.tsx` — Storage list per destination
 - New `src/components/dashboard/widgets/latest-jobs.tsx` — Filterable recent executions feed (Client Component)
 - New `src/components/dashboard/widgets/dashboard-refresh.tsx` — Auto-refresh wrapper with smart polling
-- Updated `src/lib/runner/steps/03-upload.ts` — File size now measured after compression/encryption pipeline
+- Updated `src/lib/runner/steps/03-upload.ts` — File size now measured after compression/encryption pipeline; SHA-256 checksum calculated and stored in metadata; post-upload checksum verification added
+- Updated `src/lib/core/interfaces.ts` — Added `checksum?: string` field to `BackupMetadata` interface
+- Updated `src/services/restore-service.ts` — Pre-restore checksum verification of downloaded backup files
+- Updated `src/services/system-task-service.ts` — Added `system.integrity_check` system task (weekly, disabled by default)
 
 ## v0.9.4-beta - Universal Download Links & Logging System
 *Released: February 6, 2026*

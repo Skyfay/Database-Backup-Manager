@@ -316,6 +316,31 @@ export function encryptConfig(config: Record<string, unknown>) {
 
 ## Testing Adapters
 
+### BackupMetadata Interface
+
+The `BackupMetadata` interface (defined in `src/lib/core/interfaces.ts`) is used for the `.meta.json` sidecar files:
+
+```typescript
+interface BackupMetadata {
+  jobId: string;
+  jobName: string;
+  sourceAdapter: string;
+  timestamp: string;
+  size: number;
+  databases?: string[];
+  compression?: string;
+  encrypted?: boolean;
+  encryptionProfileId?: string;
+  iv?: string;
+  authTag?: string;
+  checksum?: string;       // SHA-256 hash of the final backup file (added in v0.9.5)
+  multiDb?: boolean;
+  locked?: boolean;
+}
+```
+
+> **Note:** The `checksum` field contains the SHA-256 hash of the final backup file (after compression and encryption). It is calculated during the upload step and used for post-upload verification, pre-restore verification, and periodic integrity checks.
+
 ### Unit Tests
 
 ```typescript

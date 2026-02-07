@@ -124,6 +124,7 @@ docs: update API documentation
 - [Runner Pipeline](/developer-guide/core/runner) - Backup execution flow
 - [Logging System](/developer-guide/core/logging) - System logger, custom errors, execution logs
 - [Download Tokens](/developer-guide/core/download-tokens) - Temporary download links for wget/curl
+- [Checksum & Integrity](/developer-guide/core/runner#checksum-verification) - SHA-256 verification throughout the backup lifecycle
 - [Testing Guide](/developer-guide/reference/testing) - Writing tests
 
 ## Package Manager

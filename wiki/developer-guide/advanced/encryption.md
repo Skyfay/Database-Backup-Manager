@@ -271,9 +271,12 @@ Every encrypted backup has a sidecar `.meta.json`:
   "encrypted": true,
   "encryptionProfileId": "profile-uuid",
   "iv": "a1b2c3d4e5f6...",
-  "authTag": "f6e5d4c3b2a1..."
+  "authTag": "f6e5d4c3b2a1...",
+  "checksum": "sha256-hash-of-final-encrypted-file"
 }
 ```
+
+> **Note:** The `checksum` field (added in v0.9.5) contains the SHA-256 hash of the final backup file (after compression and encryption). It is used for post-upload verification, pre-restore verification, and periodic integrity checks. See [Runner Pipeline](/developer-guide/core/runner) for details.
 
 ## Restore Decryption
 
@@ -405,6 +408,16 @@ async function importKey(name: string, hexKey: string) {
 2. **Export Profile Keys**: Save master keys in a password manager
 3. **Regular Restore Tests**: Verify encryption/decryption works
 4. **Key Rotation**: Create new profiles periodically for new backups
+5. **Enable Integrity Checks**: Activate the `system.integrity_check` system task for periodic SHA-256 checksum verification of all backups
+
+## Checksum & Encryption Interaction
+
+The SHA-256 checksum is always calculated on the **final** backup file — after both compression and encryption have been applied. This means:
+
+- The checksum verifies the encrypted file, not the raw dump
+- Integrity can be verified without decryption (no encryption key needed for checksum verification)
+- The checksum is stored alongside encryption metadata (`iv`, `authTag`) in the `.meta.json` sidecar file
+- During restore, the checksum is verified **before** decryption begins — preventing wasted processing on corrupted files
 
 ## Related Documentation
 

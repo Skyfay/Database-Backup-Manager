@@ -207,25 +207,35 @@ export async function stepUpload(ctx: RunnerContext) {
     ctx.log(`Upload complete: ${remotePath}`);
 
     // --- POST-UPLOAD CHECKSUM VERIFICATION ---
-    try {
-        ctx.log("Verifying upload integrity...");
-        const verifyPath = path.join(getTempDir(), `verify_${Date.now()}_${path.basename(ctx.tempFile)}`);
+    // Only perform re-download verification for local storage.
+    // Remote storage (S3, SFTP, etc.) already has transport-level integrity
+    // (S3 Content-MD5/CRC32C, SSH layer checksums) and re-downloading a
+    // multi-GB backup just to verify would be prohibitively slow and expensive.
+    const isLocalStorage = job.destination.adapterId === "local-filesystem";
 
-        const downloadOk = await destAdapter.download(destConfig, remotePath, verifyPath);
-        if (downloadOk) {
-            const result = await verifyFileChecksum(verifyPath, checksum);
-            if (result.valid) {
-                ctx.log("Integrity check passed ✓ (SHA-256 match)");
+    if (isLocalStorage) {
+        try {
+            ctx.log("Verifying upload integrity (local storage)...");
+            const verifyPath = path.join(getTempDir(), `verify_${Date.now()}_${path.basename(ctx.tempFile)}`);
+
+            const downloadOk = await destAdapter.download(destConfig, remotePath, verifyPath);
+            if (downloadOk) {
+                const result = await verifyFileChecksum(verifyPath, checksum);
+                if (result.valid) {
+                    ctx.log("Integrity check passed ✓ (SHA-256 match)");
+                } else {
+                    ctx.log(`WARNING: Integrity check FAILED! Expected: ${result.expected}, Got: ${result.actual}`, 'warning');
+                }
+                await fs.unlink(verifyPath).catch(() => {});
             } else {
-                ctx.log(`WARNING: Integrity check FAILED! Expected: ${result.expected}, Got: ${result.actual}`, 'warning');
+                ctx.log("Skipped integrity verification (download failed)", 'warning');
             }
-            await fs.unlink(verifyPath).catch(() => {});
-        } else {
-            ctx.log("Skipped integrity verification (download failed)", 'warning');
+        } catch (e: unknown) {
+            const message = e instanceof Error ? e.message : String(e);
+            ctx.log(`Integrity verification skipped: ${message}`, 'warning');
         }
-    } catch (e: unknown) {
-        const message = e instanceof Error ? e.message : String(e);
-        ctx.log(`Integrity verification skipped: ${message}`, 'warning');
+    } else {
+        ctx.log("Post-upload verification skipped (remote storage uses transport-level integrity)");
     }
     // --- END VERIFICATION ---
 }

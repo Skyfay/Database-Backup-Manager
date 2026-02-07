@@ -11,6 +11,7 @@ src/services/
 ├── restore-service.ts    # Restore orchestration
 ├── retention-service.ts  # GVS algorithm
 ├── encryption-service.ts # Encryption profiles
+├── integrity-service.ts  # SHA-256 checksum verification
 ├── user-service.ts       # User management
 └── oidc-provider-service.ts # SSO configuration
 ```
@@ -188,6 +189,33 @@ export const EncryptionService = {
   }
 };
 ```
+
+### IntegrityService
+
+Verifies SHA-256 checksums of all backups across all storage destinations.
+
+```typescript
+// src/services/integrity-service.ts
+export class IntegrityService {
+  async runFullIntegrityCheck(): Promise<IntegrityCheckResult> {
+    // 1. Load all storage configs
+    // 2. For each storage: list all job folders
+    // 3. For each backup: download, verify checksum from .meta.json
+    // 4. Report results
+  }
+}
+
+interface IntegrityCheckResult {
+  totalFiles: number;    // Total backup files found
+  verified: number;      // Files with checksums in metadata
+  passed: number;        // Checksums matched
+  failed: number;        // Checksums mismatched (corruption detected)
+  skipped: number;       // No checksum in metadata (older backups)
+  errors: string[];      // Error messages for failed operations
+}
+```
+
+**Integration:** Registered as a system task (`system.integrity_check`) in `system-task-service.ts`. Runs weekly (Sunday 4 AM), disabled by default. Can be triggered manually via Settings → System Tasks.
 
 ## Response Format
 

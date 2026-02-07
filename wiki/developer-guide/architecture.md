@@ -183,10 +183,10 @@ Executes backups through discrete steps:
 ┌────────────┐   ┌────────────┐   ┌────────────┐
 │ Initialize │──▶│    Dump    │──▶│   Upload   │
 │            │   │            │   │            │
-│ • Create   │   │ • Execute  │   │ • Upload   │
-│   execution│   │   dump     │   │   file     │
-│ • Resolve  │   │ • Compress │   │ • Write    │
-│   adapters │   │ • Encrypt  │   │   metadata │
+│ • Create   │   │ • Execute  │   │ • Checksum │
+│   execution│   │   dump     │   │ • Upload   │
+│ • Resolve  │   │ • Compress │   │   file     │
+│   adapters │   │ • Encrypt  │   │ • Verify   │
 └────────────┘   └────────────┘   └────────────┘
                                         │
 ┌────────────┐   ┌────────────┐         │
@@ -298,6 +298,36 @@ Request → Auth Check → Permission Check → Action
               │               │
               └── Session ────┴── User → Group → Permissions[]
 ```
+
+## Data Integrity
+
+### Checksum Verification
+
+DBackup uses SHA-256 checksums for end-to-end data integrity verification:
+
+```
+Backup Pipeline:
+  Final File → SHA-256 Hash → Store in .meta.json
+       │
+       ▼
+  Upload to Storage → Verify Hash (local storage only) ✓
+                      Remote storage uses transport-level integrity
+
+Restore Pipeline:
+  Download from Storage → Verify Hash → Decrypt → Decompress → Restore
+                               │
+                          Abort if mismatch ✗
+
+Periodic Integrity Check:
+  All Storage Destinations → All Backups → Download → Verify Hash
+                                                          │
+                                               Report: passed/failed/skipped
+```
+
+**Key Components:**
+- `src/lib/checksum.ts` — SHA-256 utility (stream-based, memory-efficient)
+- `src/services/integrity-service.ts` — Periodic full verification
+- System task `system.integrity_check` — Weekly schedule (disabled by default)
 
 ## Logging & Error Handling
 
