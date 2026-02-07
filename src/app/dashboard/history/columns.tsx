@@ -10,7 +10,9 @@ import { DateDisplay } from "@/components/utils/date-display";
 export interface Execution {
     id: string;
     jobId?: string;
-    job?: { name: string };
+    job?: {
+        name: string;
+    };
     type?: string;
     status: "Running" | "Success" | "Failed";
     startedAt: string;

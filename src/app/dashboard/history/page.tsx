@@ -104,7 +104,7 @@ function HistoryContent() {
                 { label: "Failed", value: "Failed" },
                 { label: "Running", value: "Running" },
             ]
-        }
+        },
     ], []);
 
     const parseMetadata = (json?: string | null) => {

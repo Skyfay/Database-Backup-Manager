@@ -20,7 +20,9 @@ export async function GET(_req: NextRequest) {
         const executions = await prisma.execution.findMany({
             include: {
                 job: {
-                    select: { name: true }
+                    select: {
+                        name: true,
+                    }
                 }
             },
             orderBy: { startedAt: 'desc' },

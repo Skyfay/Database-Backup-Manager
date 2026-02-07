@@ -5,7 +5,7 @@ All notable changes to DBackup are documented here.
 ## v0.9.5-beta - Dashboard Overhaul, Checksums & Visual Analytics
 *Release: In progress*
 
-This release introduces a completely redesigned dashboard with interactive charts, real-time statistics, and auto-refresh capabilities. It also adds SHA-256 checksum verification throughout the backup lifecycle for end-to-end data integrity. The dashboard now provides a comprehensive at-a-glance overview of backup health, job activity, and storage usage.
+This release introduces a completely redesigned dashboard with interactive charts, real-time statistics, and auto-refresh capabilities. It also adds SHA-256 checksum verification throughout the backup lifecycle for end-to-end data integrity. The dashboard now provides a comprehensive at-a-glance overview of backup health, job activity, and storage usage. Sources, Destinations, and Notifications pages now feature smart type filters for quick navigation.
 
 ### ✨ New Features
 
@@ -15,6 +15,13 @@ This release introduces a completely redesigned dashboard with interactive chart
 - **Restore Verification**: Before decryption/decompression, the downloaded backup file's checksum is verified against the stored value — aborts restore if mismatch detected
 - **Integrity Check System Task**: New periodic system task (`system.integrity_check`) that verifies all backups across all storage destinations. Runs weekly (Sunday 4 AM), disabled by default
 - **IntegrityService**: New service that iterates all storage configs, downloads each backup, and verifies checksums — reports total files, verified, passed, failed, and skipped counts
+
+#### 🔍 Smart Type Filters
+- **Sources Page**: Faceted filter to narrow sources by database type (MySQL, PostgreSQL, MongoDB, Redis, etc.)
+- **Destinations Page**: Faceted filter to narrow destinations by storage type (Local, S3, SFTP, etc.)
+- **Notifications Page**: Faceted filter to narrow notifications by adapter type
+- **Dynamic Options**: Filter only shows types that have at least one entry — no empty options cluttering the UI
+- **Auto-Hide**: Filter button is hidden entirely when all entries are the same type or only one entry exists
 
 #### 📊 Interactive Dashboard Charts
 - **Activity Chart**: New stacked bar chart showing backup and restore executions over the last 14 days, grouped by status (Completed, Failed, Running, Pending)

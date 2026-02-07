@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
@@ -129,6 +129,7 @@ export function AdapterManager({ type, title, description, canManage = true }: A
         {
             accessorKey: "adapterId",
             header: "Type",
+            filterFn: (row, id, value) => value.includes(row.getValue(id)),
             cell: ({ row }) => {
                 const def = ADAPTER_DEFINITIONS.find(d => d.id === row.getValue("adapterId"));
                 return (
@@ -184,6 +185,17 @@ export function AdapterManager({ type, title, description, canManage = true }: A
         }
     ];
 
+    // Only show filter options for adapter types that have at least one config entry
+    const typeFilterColumns = useMemo(() => {
+        const usedAdapterIds = new Set(configs.map(c => c.adapterId));
+        const options = availableAdapters
+            .filter(a => usedAdapterIds.has(a.id))
+            .map(a => ({ label: a.name, value: a.id }));
+
+        if (options.length <= 1) return [];
+        return [{ id: "adapterId", title: "Type", options }];
+    }, [configs, availableAdapters]);
+
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
@@ -233,6 +245,7 @@ export function AdapterManager({ type, title, description, canManage = true }: A
                             data={configs}
                             searchKey="name"
                             onRefresh={fetchConfigs}
+                            filterableColumns={typeFilterColumns}
                         />
                     </CardContent>
                 </Card>

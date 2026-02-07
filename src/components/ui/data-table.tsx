@@ -73,6 +73,7 @@ interface DataTableProps<TData, TValue> {
     data: TData[];
     searchKey?: string;
     filterableColumns?: DataTableFilterableColumn<TData>[];
+    initialColumnVisibility?: VisibilityState;
     autoResetPageIndex?: boolean;
     onRefresh?: () => void;
     isLoading?: boolean;
@@ -96,6 +97,7 @@ export function DataTable<TData, TValue>({
     data,
     searchKey = "name",
     filterableColumns = [],
+    initialColumnVisibility = {},
     autoResetPageIndex = true,
     onRefresh,
     isLoading = false,
@@ -118,7 +120,7 @@ export function DataTable<TData, TValue>({
         pageIndex: 0,
         pageSize: 10,
     });
-    const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
+    const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>(initialColumnVisibility);
     const [rowSelection, setRowSelection] = React.useState({});
 
     // Resolution (Controlled vs Internal)
