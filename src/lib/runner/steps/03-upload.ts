@@ -114,6 +114,10 @@ export async function stepUpload(ctx: RunnerContext) {
             await fs.unlink(inputFile);
             ctx.tempFile = currentFile;
 
+            // Update dump size to final file size (after compression/encryption)
+            ctx.dumpSize = statSync(currentFile).size;
+            ctx.log(`Pipeline complete. Final size: ${formatBytes(ctx.dumpSize)}`);
+
             // Finalize Metadata
             if (encryptionMeta && getAuthTagCallback) {
                 encryptionMeta.authTag = getAuthTagCallback().toString('hex');

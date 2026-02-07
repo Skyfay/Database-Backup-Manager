@@ -1,5 +1,9 @@
 import prisma from "@/lib/prisma";
 import { format, subDays, startOfDay } from "date-fns";
+import { registry } from "@/lib/core/registry";
+import { StorageAdapter } from "@/lib/core/interfaces";
+import { decryptConfig } from "@/lib/crypto";
+import { registerAdapters } from "@/lib/adapters";
 
 export interface DashboardStats {
   totalJobs: number;
@@ -57,8 +61,6 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     activeSchedules,
     success24h,
     failed24h,
-    totalSnapshots,
-    storageAgg,
     total30d,
     success30d,
   ] = await Promise.all([
@@ -71,13 +73,6 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     }),
     prisma.execution.count({
       where: { status: "Failed", startedAt: { gte: twentyFourHoursAgo } },
-    }),
-    prisma.execution.count({
-      where: { status: "Success" },
-    }),
-    prisma.execution.aggregate({
-      _sum: { size: true },
-      where: { status: "Success" },
     }),
     prisma.execution.count({
       where: {
@@ -93,7 +88,11 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     }),
   ]);
 
-  const totalStorageBytes = Number(storageAgg._sum.size ?? 0);
+  // Get actual storage stats from adapters (accurate file counts and sizes)
+  const storageVolume = await getStorageVolume();
+  const totalSnapshots = storageVolume.reduce((sum, s) => sum + s.count, 0);
+  const totalStorageBytes = storageVolume.reduce((sum, s) => sum + s.size, 0);
+
   const successRate30d = total30d > 0 ? Math.round((success30d / total30d) * 100) : 100;
 
   return {
@@ -196,44 +195,63 @@ export async function getJobStatusDistribution(): Promise<JobStatusDistribution[
 }
 
 /**
- * Fetches storage volume data grouped by storage destination.
- * Used for the Storage by Volume horizontal bar chart.
+ * Fetches storage volume data by reading actual file sizes from each storage adapter.
+ * This is more accurate than DB aggregation since it reflects the real storage usage
+ * including compression and encryption overhead.
  */
 export async function getStorageVolume(): Promise<StorageVolumeEntry[]> {
+  registerAdapters();
+
   const storageAdapters = await prisma.adapterConfig.findMany({
     where: { type: "storage" },
   });
 
   if (storageAdapters.length === 0) return [];
 
-  const executions = await prisma.execution.findMany({
-    where: { status: "Success", size: { not: null } },
-    select: {
-      size: true,
-      job: { select: { destinationId: true } },
-    },
-  });
+  const results: StorageVolumeEntry[] = [];
 
-  const stats = new Map<string, { size: number; count: number }>();
-  storageAdapters.forEach((ad) => stats.set(ad.id, { size: 0, count: 0 }));
+  for (const adapterConfig of storageAdapters) {
+    try {
+      const adapter = registry.get(adapterConfig.adapterId) as StorageAdapter;
+      if (!adapter) continue;
 
-  for (const ex of executions) {
-    if (ex.job?.destinationId && stats.has(ex.job.destinationId)) {
-      const current = stats.get(ex.job.destinationId)!;
-      current.size += Number(ex.size ?? 0);
-      current.count++;
+      const config = decryptConfig(JSON.parse(adapterConfig.config));
+      const files = await adapter.list(config, "");
+
+      // Filter out .meta.json sidecar files (they are not backup data)
+      const backupFiles = files.filter((f) => !f.name.endsWith(".meta.json"));
+
+      const totalSize = backupFiles.reduce((sum, f) => sum + (f.size || 0), 0);
+
+      results.push({
+        name: adapterConfig.name,
+        adapterId: adapterConfig.adapterId,
+        size: totalSize,
+        count: backupFiles.length,
+      });
+    } catch {
+      // If adapter is unreachable, fall back to DB aggregation for this adapter
+      const executions = await prisma.execution.findMany({
+        where: {
+          status: "Success",
+          size: { not: null },
+          job: { destinationId: adapterConfig.id },
+        },
+        select: { size: true },
+      });
+
+      const totalSize = executions.reduce((sum, ex) => sum + Number(ex.size ?? 0), 0);
+
+      results.push({
+        name: adapterConfig.name,
+        adapterId: adapterConfig.adapterId,
+        size: totalSize,
+        count: executions.length,
+      });
     }
   }
 
-  return storageAdapters.map((adapter) => {
-    const stat = stats.get(adapter.id) ?? { size: 0, count: 0 };
-    return {
-      name: adapter.name,
-      adapterId: adapter.adapterId,
-      size: stat.size,
-      count: stat.count,
-    };
-  });
+  return results;
 }
 
 /**

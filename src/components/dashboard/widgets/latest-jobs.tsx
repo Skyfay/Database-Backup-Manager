@@ -78,16 +78,18 @@ export function LatestJobs({ data }: LatestJobsProps) {
                     </div>
                     <div className="flex items-center gap-3 shrink-0 ml-2">
                       <StatusBadge status={job.status} />
-                      <span className="text-xs text-muted-foreground w-16 text-right">
+                      <span className="text-xs text-muted-foreground w-24 text-right whitespace-nowrap">
                         {isRunning ? (
                           <span className="text-blue-500 animate-pulse">Live</span>
                         ) : (
                           formatDistanceToNow(new Date(job.startedAt), { addSuffix: true })
                         )}
                       </span>
-                      {job.duration > 0 && !isRunning && (
-                        <FileText className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                      )}
+                      <div className="w-3.5">
+                        {job.duration > 0 && !isRunning && (
+                          <FileText className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                        )}
+                      </div>
                     </div>
                   </div>
                 </Link>

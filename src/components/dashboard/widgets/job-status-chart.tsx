@@ -27,11 +27,11 @@ const chartConfig = {
   },
   Running: {
     label: "Running",
-    color: "hsl(45, 93%, 58%)",
+    color: "hsl(225, 79%, 54%)",
   },
   Pending: {
     label: "Pending",
-    color: "hsl(225, 79%, 54%)",
+    color: "hsl(45, 93%, 58%)",
   },
 } satisfies ChartConfig;
 
