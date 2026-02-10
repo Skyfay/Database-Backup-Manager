@@ -136,7 +136,11 @@ export const SMBStorageAdapter: StorageAdapter = {
             const walk = async (currentDir: string) => {
                 let items: Array<{ name: string; type: string; size: number; modifyTime: Date }>;
                 try {
-                    items = await client.list(currentDir || "/");
+                    // smbclient's "dir" command requires a glob pattern to list directory contents.
+                    // "dir folder" matches the entry itself, "dir folder/*" lists its contents.
+                    // For root listing (empty currentDir), "*" lists everything in the share root.
+                    const listPath = currentDir ? currentDir + "/*" : "*";
+                    items = await client.list(listPath);
                 } catch {
                     return;
                 }

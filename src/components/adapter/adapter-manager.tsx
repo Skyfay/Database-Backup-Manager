@@ -87,12 +87,20 @@ export function AdapterManager({ type, title, description, canManage = true }: A
                 case 'redis':
                     return <span className="text-muted-foreground">{config.host}:{config.port} (DB {config.database ?? 0})</span>;
                 case 'local-filesystem':
-                    return <span className="font-mono text-xs">{config.basePath}</span>;
+                    return <span className="text-muted-foreground">{config.basePath}</span>;
+                case 'smb':
+                    return <span className="text-muted-foreground">{config.pathPrefix || config.address}</span>;
+                case 'sftp':
+                    return <span className="text-muted-foreground">{config.pathPrefix || `${config.host}:${config.port}`}</span>;
                 case 'discord':
                     return <span className="text-muted-foreground">Webhook</span>;
                 case 'email':
                     return <span className="text-muted-foreground">{config.from} → {config.to}</span>;
                 default:
+                    // S3 variants (s3-aws, s3-generic, s3-r2, s3-hetzner, s3-minio)
+                    if (adapterId.startsWith('s3')) {
+                        return <span className="text-muted-foreground">{config.bucket}</span>;
+                    }
                     return <span className="text-muted-foreground">-</span>;
             }
         } catch {
