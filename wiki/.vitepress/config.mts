@@ -120,7 +120,8 @@ export default defineConfig({
             { text: 'Cloudflare R2', link: '/user-guide/destinations/s3-r2' },
             { text: 'Hetzner Object Storage', link: '/user-guide/destinations/s3-hetzner' },
             { text: 'SFTP', link: '/user-guide/destinations/sftp' },
-            { text: 'SMB / Samba', link: '/user-guide/destinations/smb' }
+            { text: 'SMB / Samba', link: '/user-guide/destinations/smb' },
+            { text: 'WebDAV', link: '/user-guide/destinations/webdav' }
           ]
         },
         {

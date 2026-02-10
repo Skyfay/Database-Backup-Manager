@@ -13,6 +13,7 @@ Storage adapters handle file operations: upload, download, list, and delete.
 | Hetzner | `s3-hetzner` | Hetzner Object Storage |
 | SFTP | `sftp` | SSH File Transfer |
 | SMB | `smb` | SMB/CIFS network shares |
+| WebDAV | `webdav` | WebDAV (Nextcloud, ownCloud, Apache, etc.) |
 
 ## Interface
 

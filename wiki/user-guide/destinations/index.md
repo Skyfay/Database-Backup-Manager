@@ -13,6 +13,7 @@ DBackup supports multiple storage backends for your backups. Choose based on you
 | [Hetzner Object Storage](/user-guide/destinations/s3-hetzner) | Cloud | EU data residency |
 | [SFTP](/user-guide/destinations/sftp) | Remote | Existing servers |
 | [SMB / Samba](/user-guide/destinations/smb) | Network | Windows shares, NAS |
+| [WebDAV](/user-guide/destinations/webdav) | Network | Nextcloud, ownCloud, NAS |
 
 ## Choosing a Destination
 
@@ -109,6 +110,19 @@ DBackup supports multiple storage backends for your backups. Choose based on you
 
 **Best for:** Windows environments, NAS devices, Active Directory networks.
 
+### WebDAV
+
+**Pros:**
+- Works over HTTP/HTTPS — no special ports
+- Native Nextcloud/ownCloud integration
+- No CLI dependencies required
+
+**Cons:**
+- Performance depends on HTTP server
+- Some servers have upload size limits
+
+**Best for:** Nextcloud/ownCloud users, HTTP-accessible storage.
+
 ## Adding a Destination
 
 1. Navigate to **Destinations** in the sidebar
@@ -162,6 +176,7 @@ All storage credentials (access keys, passwords) are encrypted at rest using you
 - **S3**: Uses HTTPS (TLS 1.2+)
 - **SFTP**: Uses SSH encryption
 - **SMB**: Uses SMB3 encryption (configurable protocol version)
+- **WebDAV**: Uses HTTPS (TLS 1.2+)
 - **Local**: No network transfer
 
 ### Backup Encryption
@@ -198,3 +213,4 @@ Choose your storage destination:
 - [Hetzner Object Storage](/user-guide/destinations/s3-hetzner)
 - [SFTP](/user-guide/destinations/sftp)
 - [SMB / Samba](/user-guide/destinations/smb)
+- [WebDAV](/user-guide/destinations/webdav)

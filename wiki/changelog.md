@@ -47,6 +47,14 @@ This release introduces a completely redesigned dashboard with interactive chart
 - **Live File Scanning**: Storage sizes are calculated from actual files via storage adapters (not just database records)
 - **Total Summary**: Aggregated total row shown when multiple storage destinations are configured
 
+#### 🌐 WebDAV Storage Destination
+- **New Storage Adapter**: Store backups on any WebDAV-compatible server — Nextcloud, ownCloud, Synology WebDAV, Apache (mod_dav), Nginx, or any other WebDAV endpoint
+- **HTTPS Support**: Encrypted file transfers over standard HTTP/HTTPS — no special ports or protocols needed
+- **No CLI Dependency**: Uses the `webdav` npm package directly — no system-level tools required (unlike SMB)
+- **Path Prefix**: Optional subdirectory for organized backup storage
+- **Full Lifecycle**: Upload, download, list, delete, and read operations for complete backup management including retention policies
+- **Connection Testing**: Write/delete verification test ensures proper permissions before creating jobs
+
 #### 📂 SMB / Samba Storage Destination
 - **New Storage Adapter**: Store backups on SMB/CIFS network shares — Windows file servers, NAS devices (Synology, QNAP, TrueNAS), and Linux Samba servers
 - **Protocol Support**: Configurable SMB protocol version (SMB3, SMB2, NT1) with SMB3 as default for encryption support
@@ -64,9 +72,10 @@ This release introduces a completely redesigned dashboard with interactive chart
 - Removed outdated ESLint disable directive from core interfaces
 
 ### 🔧 Technical Changes
+- New `src/lib/adapters/storage/webdav.ts` — WebDAV storage adapter using `webdav` npm package
 - New `src/lib/adapters/storage/smb.ts` — SMB/CIFS storage adapter using `samba-client` npm package (wraps `smbclient` CLI)
-- Updated `src/lib/adapters/definitions.ts` — Added `SMBSchema`, `SMBConfig` type, and adapter definition
-- Updated `src/lib/adapters/index.ts` — Registered `SMBStorageAdapter`
+- Updated `src/lib/adapters/definitions.ts` — Added `WebDAVSchema`, `WebDAVConfig`, `SMBSchema`, `SMBConfig` types, and adapter definitions
+- Updated `src/lib/adapters/index.ts` — Registered `WebDAVStorageAdapter` and `SMBStorageAdapter`
 - Updated `Dockerfile` — Added `samba-client` Alpine package for `smbclient` CLI
 - Updated `scripts/setup-dev-macos.sh` — Added `brew install samba` for local development
 - New `src/lib/checksum.ts` — SHA-256 checksum utility with `calculateFileChecksum()`, `calculateChecksum()`, and `verifyFileChecksum()`
