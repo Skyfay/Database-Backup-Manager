@@ -164,7 +164,7 @@ export const FTPSchema = z.object({
     port: z.coerce.number().default(21),
     username: z.string().default("anonymous").describe("Username (default: anonymous)"),
     password: z.string().optional().describe("Password"),
-    tls: z.boolean().default(false).describe("Enable TLS/SSL (FTPS)"),
+    tls: z.boolean().default(false).describe("Enable TLS (FTPS)"),
     pathPrefix: z.string().optional().describe("Remote destination folder"),
 });
 

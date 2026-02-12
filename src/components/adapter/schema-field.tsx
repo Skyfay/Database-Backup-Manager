@@ -76,6 +76,7 @@ export function SchemaField({
     label = label.replace(/([A-Z])/g, ' $1').trim();
     if (fieldKey === 'disableSsl') label = "Disable SSL";
     if (fieldKey === 'uri') label = "URI";
+    if (fieldKey === 'tls') label = "Encryption";
 
     const isBoolean = unwrappedShape instanceof z.ZodBoolean || (unwrappedShape as any)._def?.typeName === "ZodBoolean";
     const isEnum = unwrappedShape instanceof z.ZodEnum || (unwrappedShape as any)._def?.typeName === "ZodEnum";
