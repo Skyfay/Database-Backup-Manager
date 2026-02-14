@@ -15,6 +15,7 @@ DBackup supports multiple storage backends for your backups. Choose based on you
 | [SMB / Samba](/user-guide/destinations/smb) | Network | Windows shares, NAS |
 | [WebDAV](/user-guide/destinations/webdav) | Network | Nextcloud, ownCloud, NAS |
 | [FTP / FTPS](/user-guide/destinations/ftp) | Remote | Classic FTP servers |
+| [Rsync (SSH)](/user-guide/destinations/rsync) | Remote | Efficient delta transfers |
 
 ## Choosing a Destination
 
@@ -193,6 +194,7 @@ All storage credentials (access keys, passwords) are encrypted at rest using you
 - **SMB**: Uses SMB3 encryption (configurable protocol version)
 - **WebDAV**: Uses HTTPS (TLS 1.2+)
 - **FTP/FTPS**: Uses TLS when enabled
+- **Rsync**: Uses SSH encryption
 - **Local**: No network transfer
 
 ### Backup Encryption
@@ -232,3 +234,4 @@ Choose your storage destination:
 - [SMB / Samba](/user-guide/destinations/smb)
 - [WebDAV](/user-guide/destinations/webdav)
 - [FTP / FTPS](/user-guide/destinations/ftp)
+- [Rsync (SSH)](/user-guide/destinations/rsync)

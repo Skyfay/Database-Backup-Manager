@@ -15,6 +15,7 @@ Storage adapters handle file operations: upload, download, list, and delete.
 | SMB | `smb` | SMB/CIFS network shares |
 | WebDAV | `webdav` | WebDAV (Nextcloud, ownCloud, Apache, etc.) |
 | FTP / FTPS | `ftp` | FTP with optional TLS encryption |
+| Rsync (SSH) | `rsync` | Rsync over SSH (delta transfers) |
 
 ## Interface
 
@@ -534,7 +535,7 @@ Two API routes use regex to map adapter IDs to permission groups. Add your adapt
 - `src/app/api/adapters/access-check/route.ts`
 
 ```typescript
-} else if (/local-filesystem|s3|sftp|smb|webdav|ftp/i.test(adapterId)) {
+} else if (/local-filesystem|s3|sftp|smb|webdav|ftp|rsync/i.test(adapterId)) {
     return PERMISSIONS.DESTINATIONS.READ;
 }
 ```

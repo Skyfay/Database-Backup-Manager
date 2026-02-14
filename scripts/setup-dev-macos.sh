@@ -40,6 +40,12 @@ brew install redis
 echo -e "${GREEN}Installing SMB Client (smbclient for Samba storage adapter)...${NC}"
 brew install samba
 
+echo -e "${GREEN}Installing rsync (for Rsync storage adapter)...${NC}"
+brew install rsync
+
+echo -e "${GREEN}Installing sshpass (for Rsync password authentication)...${NC}"
+brew install hudochenkov/sshpass/sshpass || echo -e "${YELLOW}sshpass install failed - password auth for rsync will not work. Use SSH keys instead.${NC}"
+
 echo -e "${GREEN}Installing generally useful tools (zip)...${NC}"
 brew install zip
 

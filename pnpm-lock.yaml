@@ -146,6 +146,9 @@ dependencies:
   recharts:
     specifier: 2.15.4
     version: 2.15.4(react-dom@19.2.3)(react@19.2.3)
+  rsync:
+    specifier: ^0.6.1
+    version: 0.6.1
   samba-client:
     specifier: ^7.2.0
     version: 7.2.0
@@ -9358,6 +9361,10 @@ packages:
 
   /rou3@0.7.12:
     resolution: {integrity: sha512-iFE4hLDuloSWcD7mjdCDhx2bKcIsYbtOTpfH5MHHLSKMOUyjqQXTeZVa289uuwEGEKFoE/BAPbhaU4B774nceg==}
+
+  /rsync@0.6.1:
+    resolution: {integrity: sha512-39HcwWuM67CQ9tHloazShXWUOWa2m3SGqX6XQhQMSj0VCQMkSI9PodoxM7/+hKf2p4v2umbhfoarYqd1gwII/w==}
+    dev: false
 
   /run-applescript@7.1.0:
     resolution: {integrity: sha512-DPe5pVFaAsinSaV6QjQ6gdiedWDcRCbUuiQfQa2wmWV7+xC9bGulGI8+TdRmoFkAPaBXk8CrAbnlY2ISniJ47Q==}

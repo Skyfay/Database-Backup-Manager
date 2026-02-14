@@ -165,7 +165,7 @@ export function StorageFormContent({
             </TabsList>
 
             <TabsContent value="connection" className="space-y-4 pt-4">
-                {adapter.id === 'sftp' ? (
+                {(adapter.id === 'sftp' || adapter.id === 'rsync') ? (
                     <div className="space-y-4">
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                             <div className="md:col-span-3">

@@ -122,7 +122,8 @@ export default defineConfig({
             { text: 'SFTP', link: '/user-guide/destinations/sftp' },
             { text: 'SMB / Samba', link: '/user-guide/destinations/smb' },
             { text: 'WebDAV', link: '/user-guide/destinations/webdav' },
-            { text: 'FTP / FTPS', link: '/user-guide/destinations/ftp' }
+            { text: 'FTP / FTPS', link: '/user-guide/destinations/ftp' },
+            { text: 'Rsync (SSH)', link: '/user-guide/destinations/rsync' }
           ]
         },
         {

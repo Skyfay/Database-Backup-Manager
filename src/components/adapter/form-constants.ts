@@ -5,6 +5,7 @@ export const STORAGE_CONNECTION_KEYS = [
     'address', 'domain', 'url',
     'user', 'username',
     'password', 'accessKeyId', 'secretAccessKey',
+    'authType',
     'privateKey', 'passphrase'
 ];
 
@@ -78,4 +79,13 @@ export const PLACEHOLDERS: Record<string, string> = {
     "ftp.username": "backup-user",
     "ftp.password": "secure-password",
     "ftp.pathPrefix": "/backups/server1",
+
+    // Rsync
+    "rsync.host": "backup-server.example.com",
+    "rsync.port": "22",
+    "rsync.username": "backup-user",
+    "rsync.password": "secure-password",
+    "rsync.privateKey": "-----BEGIN RSA PRIVATE KEY-----\n\n\n-----END RSA PRIVATE KEY-----",
+    "rsync.pathPrefix": "/backups/server1",
+    "rsync.options": "--bwlimit=5000 --compress",
 };

@@ -23,6 +23,9 @@ RUN echo 'http://dl-cdn.alpinelinux.org/alpine/v3.17/main' >> /etc/apk/repositor
     mongodb-tools \
     redis \
     samba-client \
+    rsync \
+    sshpass \
+    openssh-client \
     openssl \
     zip \
     su-exec

@@ -2,6 +2,43 @@
 
 All notable changes to DBackup are documented here.
 
+## v0.9.6-beta - Rsync Storage Destination
+*Release: In Progress*
+
+This release adds Rsync as a new storage destination, enabling efficient incremental file transfers over SSH.
+
+### ✨ New Features
+
+#### 📡 Rsync (SSH) Storage Destination
+- **New Storage Adapter**: Store backups on any remote server using rsync over SSH — leverages rsync's delta-transfer algorithm for efficient incremental syncs
+- **Three Auth Methods**: Password (via `sshpass`), SSH Private Key (PEM format), and SSH Agent authentication — matching SFTP's auth options
+- **Delta Transfer**: Only changed blocks are transferred, significantly reducing bandwidth for recurring backups to the same destination
+- **Compression**: Built-in transfer compression (`-z` flag) reduces network usage during upload and download
+- **Custom Options**: Optional field for additional rsync flags (e.g., `--bwlimit`, `--timeout`, `--exclude`)
+- **Full Lifecycle**: Upload, download, list, delete, and read operations for complete backup management including retention policies
+- **Connection Testing**: Write/delete verification test ensures proper permissions before creating jobs
+
+### 🔒 Security
+- **No Plaintext Passwords**: Passwords are never passed as command-line arguments — uses `SSHPASS` environment variable exclusively
+- **Sanitized Error Messages**: All error output is sanitized to strip commands, credentials, and SSH warnings before displaying to users
+- **SSH Options Hardening**: Password auth disables public key authentication to prevent SSH agent interference (`PreferredAuthentications=password`, `PubkeyAuthentication=no`)
+
+### 🔧 Technical Changes
+- New `src/lib/adapters/storage/rsync.ts` — Rsync storage adapter using `rsync` npm package (CLI wrapper)
+- New `src/types/rsync.d.ts` — TypeScript type declarations for the untyped `rsync` npm module
+- Updated `src/lib/adapters/definitions.ts` — Added `RsyncSchema`, `RsyncConfig` type, updated `StorageConfig` union and `ADAPTER_DEFINITIONS`
+- Updated `src/lib/adapters/index.ts` — Registered `RsyncAdapter`
+- Updated `src/components/adapter/form-constants.ts` — Added form field mappings and placeholders for Rsync
+- Updated `src/components/adapter/form-sections.tsx` — Conditional auth type field rendering (matching SFTP behavior)
+- Updated `src/components/adapter/utils.ts` — Added icon mapping for Rsync (Network icon)
+- Updated `src/components/adapter/adapter-manager.tsx` — Added summary display case for Rsync
+- Updated `src/app/api/adapters/test-connection/route.ts` — Added `rsync` to storage permission regex
+- Updated `src/app/api/adapters/access-check/route.ts` — Added `rsync` to storage permission regex
+- Updated `Dockerfile` — Added `rsync`, `sshpass`, and `openssh-client` Alpine packages
+- Updated `scripts/setup-dev-macos.sh` — Added `brew install rsync` and `brew install hudochenkov/sshpass/sshpass`
+
+---
+
 ## v0.9.5-beta - Dashboard Overhaul, Checksums & Visual Analytics
 *Released: February 13, 2026*
 

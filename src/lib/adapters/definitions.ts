@@ -168,6 +168,18 @@ export const FTPSchema = z.object({
     pathPrefix: z.string().optional().describe("Remote destination folder"),
 });
 
+export const RsyncSchema = z.object({
+    host: z.string().min(1, "Host is required"),
+    port: z.coerce.number().default(22).describe("SSH port"),
+    username: z.string().min(1, "Username is required"),
+    authType: z.enum(["password", "privateKey", "agent"]).default("password").describe("Authentication Method"),
+    password: z.string().optional().describe("Password"),
+    privateKey: z.string().optional().describe("Private Key (PEM format, optional)"),
+    passphrase: z.string().optional().describe("Passphrase for Private Key (optional)"),
+    pathPrefix: z.string().min(1, "Remote destination path is required").describe("Remote destination folder (e.g. /backups)"),
+    options: z.string().optional().describe("Additional rsync options"),
+});
+
 export const DiscordSchema = z.object({
     webhookUrl: z.string().url("Valid Webhook URL is required"),
     username: z.string().optional().default("Backup Manager"),
@@ -208,6 +220,7 @@ export type SFTPConfig = z.infer<typeof SFTPSchema>;
 export type SMBConfig = z.infer<typeof SMBSchema>;
 export type WebDAVConfig = z.infer<typeof WebDAVSchema>;
 export type FTPConfig = z.infer<typeof FTPSchema>;
+export type RsyncConfig = z.infer<typeof RsyncSchema>;
 
 // Notification Adapters
 export type DiscordConfig = z.infer<typeof DiscordSchema>;
@@ -215,7 +228,7 @@ export type EmailConfig = z.infer<typeof EmailSchema>;
 
 // Union types for adapter categories
 export type DatabaseConfig = MySQLConfig | MariaDBConfig | PostgresConfig | MongoDBConfig | SQLiteConfig | MSSQLConfig | RedisConfig;
-export type StorageConfig = LocalStorageConfig | S3GenericConfig | S3AWSConfig | S3R2Config | S3HetznerConfig | SFTPConfig | SMBConfig | WebDAVConfig | FTPConfig;
+export type StorageConfig = LocalStorageConfig | S3GenericConfig | S3AWSConfig | S3R2Config | S3HetznerConfig | SFTPConfig | SMBConfig | WebDAVConfig | FTPConfig | RsyncConfig;
 export type NotificationConfig = DiscordConfig | EmailConfig;
 
 // Generic type alias for dialect base class (accepts any database config)
@@ -239,6 +252,7 @@ export const ADAPTER_DEFINITIONS: AdapterDefinition[] = [
     { id: "smb", type: "storage", name: "SMB (Samba)", configSchema: SMBSchema },
     { id: "webdav", type: "storage", name: "WebDAV", configSchema: WebDAVSchema },
     { id: "ftp", type: "storage", name: "FTP / FTPS", configSchema: FTPSchema },
+    { id: "rsync", type: "storage", name: "Rsync (SSH)", configSchema: RsyncSchema },
 
     { id: "discord", type: "notification", name: "Discord Webhook", configSchema: DiscordSchema },
     { id: "email", type: "notification", name: "Email (SMTP)", configSchema: EmailSchema },
