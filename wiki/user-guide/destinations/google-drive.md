@@ -9,8 +9,8 @@ Google Drive integration provides:
 - ☁️ Cloud backup storage with 15 GB free tier
 - 🔐 OAuth 2.0 — one-click browser authorization
 - 🔄 Automatic token refresh — no manual re-authorization
-- 📁 Optional folder targeting — store in specific Drive folders
-- 🔒 Scoped access — DBackup can only access files it created (`drive.file` scope)
+- 📁 Visual folder browser — browse and select target folders directly in the UI
+- 🔒 Scoped access — `drive.file` for backup operations, `drive.readonly` for folder browsing
 
 ## Prerequisites
 
@@ -36,7 +36,9 @@ This is a one-time setup that takes about 5 minutes.
    - **User support email**: Your email
    - **Developer contact**: Your email
 4. Click **Save and Continue**
-5. **Scopes**: Add `https://www.googleapis.com/auth/drive.file`
+5. **Scopes**: Add both:
+   - `https://www.googleapis.com/auth/drive.file` (create/manage backup files)
+   - `https://www.googleapis.com/auth/drive.readonly` (browse existing folders)
 6. **Test users**: Add the Google account(s) that will authorize DBackup
 7. Click **Save and Continue**
 
@@ -55,6 +57,7 @@ While your app is in "Testing" status, only users you add as test users can auth
    https://your-dbackup-domain.com/api/adapters/google-drive/callback
    ```
    For local development:
+
    ```
    http://localhost:3000/api/adapters/google-drive/callback
    ```
@@ -70,15 +73,23 @@ While your app is in "Testing" status, only users you add as test users can auth
 | **Client Secret** | OAuth 2.0 Client Secret from Google Cloud Console | Required |
 | **Folder ID** | Target Google Drive folder ID | Optional (root) |
 
-### Finding a Folder ID
+### Folder Browser
 
-To store backups in a specific folder:
+After authorizing Google Drive, you can use the **visual folder browser** to select a target folder:
 
-1. Open the folder in Google Drive in your browser
-2. The URL looks like: `https://drive.google.com/drive/folders/1ABC123xyz...`
-3. Copy the ID after `/folders/` — that's your Folder ID
+1. Go to the **Configuration** tab in the adapter dialog
+2. Click the **📂 Browse** button next to the Folder ID field
+3. A dialog opens showing your Google Drive folder structure
+4. **Single-click** a folder to select it
+5. **Double-click** a folder to navigate into it
+6. Use the **breadcrumb navigation**, **Home**, and **Up** buttons to navigate
+7. Click **Select** to set the folder
 
-Leave empty to store backups in the root of your Google Drive.
+The selected folder's ID is automatically filled in. Leave the field empty to use the root of your Google Drive.
+
+::: tip Manual Folder ID
+You can also enter a folder ID manually. Open the folder in Google Drive — the URL looks like `https://drive.google.com/drive/folders/1ABC123xyz...` — and copy the ID after `/folders/`.
+:::
 
 ## OAuth Authorization
 
@@ -138,10 +149,16 @@ Google Drive/
 
 ### Scoped Access
 
-DBackup requests the `drive.file` scope, which means:
-- ✅ Can create, read, modify, and delete **files it created**
-- ❌ Cannot access your personal files, documents, or photos
-- ❌ Cannot see files created by other apps
+DBackup requests two OAuth scopes:
+
+| Scope | Purpose | Access Level |
+| :--- | :--- | :--- |
+| `drive.file` | Backup operations | Create, read, modify, delete **files DBackup created** |
+| `drive.readonly` | Folder browser | **Read-only** access to browse existing folders for target selection |
+
+::: info Why two scopes?
+`drive.file` alone cannot see folders you created manually (e.g., a "Backups" folder). The `drive.readonly` scope allows the folder browser to navigate your existing folder structure so you can select a target folder. DBackup never modifies or deletes files it didn't create.
+:::
 
 ### Credential Storage
 

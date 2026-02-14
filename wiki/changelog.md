@@ -14,6 +14,7 @@ This release adds Rsync as a new storage destination for efficient incremental f
 - **OAuth 2.0 Flow**: One-click authorization in the UI — redirects to Google's consent screen, automatically stores refresh token (encrypted at rest)
 - **Automatic Token Refresh**: Uses refresh tokens with auto-renewal — no manual re-authorization required
 - **Folder Management**: Optional target folder ID or automatic root-level storage — creates subfolder hierarchies as needed
+- **Visual Folder Browser**: Browse and select target folders directly from Google Drive — navigable dialog with breadcrumbs, single-click select, double-click navigate
 - **Full Lifecycle**: Upload, download, list, delete, and read operations for complete backup management including retention policies
 - **Progress Tracking**: Real-time upload/download progress with resumable media uploads for large backup files
 - **Connection Testing**: Verifies OAuth tokens, Drive API access, and folder permissions before creating jobs
@@ -30,7 +31,7 @@ This release adds Rsync as a new storage destination for efficient incremental f
 ### 🔒 Security
 - **OAuth Refresh Token Encryption**: Refresh tokens and client secrets are encrypted at rest using `ENCRYPTION_KEY` (added to `SENSITIVE_KEYS`)
 - **No Token Exposure**: Access tokens are never stored — generated on-the-fly from encrypted refresh tokens
-- **Scoped Access**: Uses `drive.file` scope — DBackup can only access files it created, not the user's entire Drive
+- **Scoped Access**: Uses `drive.file` scope for backup operations (only access files DBackup created) and `drive.readonly` for folder browsing (navigate existing folders to select a target)
 - **No Plaintext Passwords**: Rsync passwords are never passed as command-line arguments — uses `SSHPASS` environment variable exclusively
 - **Sanitized Error Messages**: All error output is sanitized to strip commands, credentials, and SSH warnings before displaying to users
 - **SSH Options Hardening**: Password auth disables public key authentication to prevent SSH agent interference (`PreferredAuthentications=password`, `PubkeyAuthentication=no`)
@@ -41,6 +42,8 @@ This release adds Rsync as a new storage destination for efficient incremental f
 - New `src/app/api/adapters/google-drive/callback/route.ts` — OAuth callback handler with token exchange
 - New `src/components/adapter/google-drive-oauth-button.tsx` — OAuth authorization button with status indicator
 - New `src/components/adapter/oauth-toast-handler.tsx` — OAuth redirect toast notifications
+- New `src/components/adapter/google-drive-folder-browser.tsx` — Visual folder browser dialog for Google Drive
+- New `src/app/api/system/filesystem/google-drive/route.ts` — Google Drive folder browsing API endpoint
 - New `src/lib/adapters/storage/rsync.ts` — Rsync storage adapter using `rsync` npm package (CLI wrapper)
 - New `src/types/rsync.d.ts` — TypeScript type declarations for the untyped `rsync` npm module
 - Updated `src/lib/adapters/definitions.ts` — Added `GoogleDriveSchema`, `GoogleDriveConfig` type, `RsyncSchema`, `RsyncConfig` type, updated `StorageConfig` union and `ADAPTER_DEFINITIONS`

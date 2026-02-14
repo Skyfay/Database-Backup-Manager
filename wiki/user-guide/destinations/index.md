@@ -160,7 +160,7 @@ DBackup supports multiple storage backends for your backups. Choose based on you
 **Pros:**
 - 15 GB free storage
 - OAuth 2.0 — no API keys needed
-- Scoped access (`drive.file`) — can only access its own files
+- Scoped access (`drive.file` + `drive.readonly`) — minimal permissions
 - Automatic token refresh
 
 **Cons:**

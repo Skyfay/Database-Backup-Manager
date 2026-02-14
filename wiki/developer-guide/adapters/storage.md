@@ -392,6 +392,10 @@ createDownloadStream(config, remotePath): Readable {
 
 Adding a storage adapter requires changes across multiple layers: backend adapter, schema/definitions, UI integration, and RBAC. Follow **every** step below to avoid missing integration points.
 
+::: info OAuth-Based Cloud Adapters
+If your adapter requires browser-based OAuth authorization (like Google Drive, Dropbox, OneDrive), additional steps are needed beyond the standard checklist. See the [OAuth-specific steps](#oauth-specific-additional-steps) section below.
+:::
+
 ### Step-by-Step Checklist
 
 #### 1. Install dependency
@@ -580,6 +584,27 @@ brew install your-package
 | 10 | `Dockerfile` | System CLI tools (if needed) |
 | 11 | `scripts/setup-dev-macos.sh` | Local dev CLI setup (if needed) |
 | 12 | `wiki/` | User guide + developer guide + changelog |
+
+### OAuth-Specific Additional Steps
+
+If the new adapter requires browser-based OAuth (e.g., Google Drive, Dropbox, OneDrive), these additional steps are needed on top of the standard checklist:
+
+| # | File | What to do |
+| :--- | :--- | :--- |
+| 13 | `src/app/api/adapters/<name>/auth/route.ts` | OAuth authorization URL generation endpoint |
+| 14 | `src/app/api/adapters/<name>/callback/route.ts` | OAuth callback — exchange code for tokens, store refresh token encrypted |
+| 15 | `src/components/adapter/<name>-oauth-button.tsx` | OAuth button component with authorized/unauthorized status |
+| 16 | `src/components/adapter/form-sections.tsx` | Special form layout: show OAuth button in connection tab, hide auto-managed fields (e.g., `refreshToken`) |
+| 17 | `src/lib/crypto.ts` | Add OAuth secret fields to `SENSITIVE_KEYS` (e.g., `clientSecret`, `refreshToken`) |
+| 18 | `src/app/api/system/filesystem/<name>/route.ts` | Folder browse API (if provider supports folder selection) |
+| 19 | `src/components/adapter/<name>-folder-browser.tsx` | Folder browser dialog (if provider supports folder selection) |
+
+**Reference implementation**: See the Google Drive adapter for a complete example of this pattern:
+- Storage adapter: `src/lib/adapters/storage/google-drive.ts`
+- OAuth routes: `src/app/api/adapters/google-drive/auth/` + `callback/`
+- OAuth button: `src/components/adapter/google-drive-oauth-button.tsx`
+- Folder browser: `src/components/adapter/google-drive-folder-browser.tsx`
+- Folder browse API: `src/app/api/system/filesystem/google-drive/route.ts`
 
 ## Related Documentation
 
