@@ -1,4 +1,5 @@
 import { useFormContext } from "react-hook-form";
+import { useState } from "react";
 import {
     Tabs,
     TabsContent,
@@ -6,12 +7,16 @@ import {
     TabsTrigger,
 } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import { Check } from "lucide-react";
+import { Check, FolderOpen } from "lucide-react";
 import { AdapterDefinition } from "@/lib/adapters/definitions";
 import { SchemaField } from "./schema-field";
 import { STORAGE_CONFIG_KEYS, STORAGE_CONNECTION_KEYS } from "./form-constants";
 import { GoogleDriveOAuthButton } from "./google-drive-oauth-button";
+import { GoogleDriveFolderBrowser } from "./google-drive-folder-browser";
 import { AdapterConfig } from "./types";
 
 interface SectionProps {
@@ -179,6 +184,9 @@ export function StorageFormContent({
         }
     })() : false;
 
+    // Watch full config for Google Drive folder browser
+    const config = watch("config");
+
     return (
         <Tabs defaultValue="connection" className="w-full">
             <TabsList className={cn("grid w-full", hasConfigKeys ? "grid-cols-2" : "grid-cols-1")}>
@@ -225,7 +233,15 @@ export function StorageFormContent({
 
             {hasConfigKeys && (
                 <TabsContent value="configuration" className="space-y-4 pt-4">
-                    <FieldList keys={configKeys} adapter={adapter} />
+                    {isGoogleDrive ? (
+                        <GoogleDriveFolderField
+                            adapter={adapter}
+                            config={config}
+                            hasRefreshToken={hasRefreshToken}
+                        />
+                    ) : (
+                        <FieldList keys={configKeys} adapter={adapter} />
+                    )}
                 </TabsContent>
             )}
         </Tabs>
@@ -250,6 +266,82 @@ export function GenericFormContent({ adapter, detectedVersion }: { adapter: Adap
 }
 
 // --- Helpers ---
+
+/**
+ * Google Drive folder picker field with browse button.
+ * Shows a text input for folderId + a browse button that opens the folder browser.
+ */
+function GoogleDriveFolderField({
+    adapter,
+    config,
+    hasRefreshToken,
+}: {
+    adapter: AdapterDefinition;
+    config: Record<string, unknown>;
+    hasRefreshToken: boolean;
+}) {
+    const { setValue, watch } = useFormContext();
+    const [isBrowserOpen, setIsBrowserOpen] = useState(false);
+    const folderId = watch("config.folderId") || "";
+    const [folderName, setFolderName] = useState<string | null>(null);
+
+    // Get refresh token from current form values (might be encrypted in DB but decrypted in form)
+    const refreshToken = config?.refreshToken as string | undefined;
+    const canBrowse = hasRefreshToken && !!refreshToken && !!config?.clientId && !!config?.clientSecret;
+
+    return (
+        <div className="space-y-4">
+            <div className="space-y-2">
+                <Label>Folder ID</Label>
+                <div className="flex gap-2">
+                    <Input
+                        value={folderId}
+                        onChange={(e) => setValue("config.folderId", e.target.value)}
+                        placeholder="Leave empty for root (My Drive)"
+                        className="font-mono text-sm"
+                    />
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() => setIsBrowserOpen(true)}
+                        disabled={!canBrowse}
+                        title={canBrowse ? "Browse Google Drive folders" : "Authorize Google Drive first to browse folders"}
+                    >
+                        <FolderOpen className="h-4 w-4" />
+                    </Button>
+                </div>
+                {folderName && folderId && (
+                    <p className="text-xs text-muted-foreground">
+                        Selected folder: <span className="font-medium">{folderName}</span>
+                    </p>
+                )}
+                {!canBrowse && (
+                    <p className="text-xs text-muted-foreground">
+                        Authorize Google Drive first to use the folder browser.
+                    </p>
+                )}
+            </div>
+
+            {canBrowse && (
+                <GoogleDriveFolderBrowser
+                    open={isBrowserOpen}
+                    onOpenChange={setIsBrowserOpen}
+                    onSelect={(selectedId, selectedName) => {
+                        setValue("config.folderId", selectedId);
+                        setFolderName(selectedName);
+                    }}
+                    config={{
+                        clientId: config.clientId as string,
+                        clientSecret: config.clientSecret as string,
+                        refreshToken: refreshToken!,
+                    }}
+                    initialFolderId={folderId || undefined}
+                />
+            )}
+        </div>
+    );
+}
 
 function FieldList({
     keys,

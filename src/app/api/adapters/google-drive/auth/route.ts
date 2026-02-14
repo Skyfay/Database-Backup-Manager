@@ -10,7 +10,10 @@ import { logger } from "@/lib/logger";
 
 const log = logger.child({ route: "adapters/google-drive/auth" });
 
-const SCOPES = ["https://www.googleapis.com/auth/drive.file"];
+const SCOPES = [
+    "https://www.googleapis.com/auth/drive.file",    // Create/access own files
+    "https://www.googleapis.com/auth/drive.readonly", // Browse existing folders
+];
 
 /**
  * POST /api/adapters/google-drive/auth
