@@ -50,7 +50,6 @@ export async function POST(req: NextRequest) {
         });
 
         if (!tokenRes.ok) {
-            const errorText = await tokenRes.text();
             return NextResponse.json(
                 { success: false, error: `Failed to refresh token: ${tokenRes.status}` },
                 { status: 401 }

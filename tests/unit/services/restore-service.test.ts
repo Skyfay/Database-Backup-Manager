@@ -6,7 +6,7 @@ import { StorageAdapter, DatabaseAdapter } from '@/lib/core/interfaces';
 import * as encryptionService from '@/services/encryption-service';
 import * as cryptoStream from '@/lib/crypto-stream';
 import fs from 'fs';
-import { Readable, PassThrough } from 'stream';
+import { PassThrough } from 'stream';
 
 // Mock Dependencies
 vi.mock('@/services/encryption-service', () => ({

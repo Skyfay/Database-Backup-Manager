@@ -147,9 +147,7 @@ describe("OneDriveAdapter", () => {
             mockTokenRefresh();
 
             // Drive info call
-            let apiCallIdx = 0;
             mockClient.api.mockImplementation((path: string) => {
-                apiCallIdx++;
                 if (path === "/me/drive") {
                     return {
                         select: vi.fn().mockReturnValue({

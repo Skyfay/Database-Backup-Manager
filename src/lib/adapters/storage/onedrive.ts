@@ -395,7 +395,7 @@ export const OneDriveAdapter: StorageAdapter = {
                     // Try to create the folder
                     try {
                         await ensureFolderExists(client, basePath);
-                    } catch (createErr: unknown) {
+                    } catch (_createErr: unknown) {
                         return { success: false, message: `Folder "${basePath}" does not exist and could not be created.` };
                     }
                 }
