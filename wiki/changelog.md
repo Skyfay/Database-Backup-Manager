@@ -9,6 +9,20 @@ This release adds Rsync as a new storage destination for efficient incremental f
 
 ### ✨ New Features
 
+#### 🔔 System Notifications
+- **System-Wide Event Alerts**: New notification framework for events beyond individual backup jobs — user logins, account creation, restore results, configuration backups, and system errors
+- **Settings UI**: New **Notifications** tab in Settings with global channel selection, per-event toggles, channel overrides, and test buttons
+- **Event Categories**: Six configurable system events across four categories (Authentication, Restore, System) — each with independent enable/disable and channel assignment
+- **Global & Per-Event Channels**: Set default notification channels globally, then optionally override channels for specific events (e.g., Discord for logins, Email for errors)
+- **Notify User Directly**: For login and account creation events, optionally send a direct email to the affected user — three modes: Disabled (admin only), Admin & User, or User only
+- **Unified Template System**: All notifications (per-job and system) now use the same `renderTemplate()` pipeline with adapter-agnostic payloads, ensuring consistent formatting across Discord embeds and HTML emails
+- **Single Email Template**: Replaced the legacy backup-only email template with a unified `SystemNotificationEmail` React component used for all notification types
+- **No Duplicate Notifications**: Backup success/failure events are intentionally excluded from system notifications (configured per-job only) to prevent double alerts
+- **Fire-and-Forget**: System notifications never block the calling operation — all errors are logged but never thrown
+
+#### 🧹 Notification Table Cleanup
+- **Removed Status Column**: The health check status column ("Pending") is no longer shown for notification adapters, as connection health monitoring is not applicable to notification channels (Discord webhooks, SMTP)
+
 #### ☁️ Google Drive Storage Destination
 - **New Cloud Adapter**: Store backups directly in Google Drive — the first cloud provider in DBackup with native OAuth 2.0 authentication
 - **OAuth 2.0 Flow**: One-click authorization in the UI — redirects to Google's consent screen, automatically stores refresh token (encrypted at rest)
@@ -77,6 +91,27 @@ This release adds Rsync as a new storage destination for efficient incremental f
 - **Adapter Details Column**: Fixed missing details display for OneDrive (`folderPath`), MariaDB, and MSSQL (`user@host:port`) in the Sources and Destinations tables
 
 ### 🔧 Technical Changes
+- New `src/lib/notifications/types.ts` — Type definitions, event constants (`NOTIFICATION_EVENTS`), `NotifyUserMode`, `SystemNotificationConfig`, and typed event data interfaces
+- New `src/lib/notifications/events.ts` — Event registry with metadata (category, default state, `supportsNotifyUser` flag)
+- New `src/lib/notifications/templates.ts` — Template functions generating adapter-agnostic `NotificationPayload` objects for all 8 event types
+- New `src/lib/notifications/index.ts` — Barrel exports
+- New `src/services/system-notification-service.ts` — Core dispatch service with `notify()`, `getNotificationConfig()`, `saveNotificationConfig()`, user-targeted email routing
+- New `src/app/actions/notification-settings.ts` — Server actions for loading/saving notification config and sending test notifications
+- New `src/components/settings/notification-settings.tsx` — Settings UI component with global channel selector, per-event cards, notify-user dropdown
+- New `src/components/email/system-notification-template.tsx` — Unified React email template with colored header bar and fields table
+- Updated `src/lib/core/interfaces.ts` — Extended `NotificationContext` with `eventType`, `title`, `fields`, `color` properties
+- Updated `src/lib/adapters/notification/discord.ts` — Simplified to single rendering path using `NotificationContext` fields for embeds
+- Updated `src/lib/adapters/notification/email.tsx` — Migrated to `SystemNotificationEmail` template, removed legacy `NotificationEmail` branch
+- Updated `src/lib/runner/steps/04-completion.ts` — Per-job notifications now use `renderTemplate()` with `BACKUP_SUCCESS`/`BACKUP_FAILURE` events
+- Updated `src/lib/auth.ts` — Added `databaseHooks.session.create.after` hook firing `USER_LOGIN` notification
+- Updated `src/app/actions/user.ts` — `createUser()` fires `USER_CREATED` notification
+- Updated `src/services/restore-service.ts` — Fires `RESTORE_COMPLETE`/`RESTORE_FAILURE` notifications
+- Updated `src/lib/runner/config-runner.ts` — Fires `CONFIG_BACKUP` notification after config backup
+- Updated `src/app/dashboard/settings/page.tsx` — Added Notifications tab to settings
+- Updated `src/components/adapter/adapter-manager.tsx` — Health status column conditionally hidden for notification adapters
+- Deleted `src/components/email/notification-template.tsx` — Legacy backup-only email template replaced by unified system template
+- Updated `wiki/user-guide/features/notifications.md` — Complete rewrite covering both per-job and system notifications
+- Updated `wiki/developer-guide/adapters/notification.md` — Complete rewrite with architecture overview, dispatch flow, and guides for adding new events/adapters
 - New `src/lib/adapters/storage/google-drive.ts` — Google Drive storage adapter using `googleapis` npm package
 - New `src/app/api/adapters/google-drive/auth/route.ts` — OAuth authorization URL generation endpoint
 - New `src/app/api/adapters/google-drive/callback/route.ts` — OAuth callback handler with token exchange

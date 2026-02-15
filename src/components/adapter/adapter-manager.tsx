@@ -125,14 +125,15 @@ export function AdapterManager({ type, title, description, canManage = true }: A
     };
 
     const columns: ColumnDef<AdapterConfig>[] = [
-        {
+        // Health status column – not relevant for notification adapters
+        ...(type !== 'notification' ? [{
             id: "status",
             header: "Status",
-            cell: ({ row }) => {
+            cell: ({ row }: { row: any }) => {
                 // Determine health status from config props
-                const lastCheck = (row.original as any).lastHealthCheck;
+                const lastCheck = row.original.lastHealthCheck;
                 // If lastHeathCheck is null, default to PENDING
-                const status = lastCheck ? ((row.original as any).lastStatus || "ONLINE") : "PENDING";
+                const status = lastCheck ? (row.original.lastStatus || "ONLINE") : "PENDING";
 
                 return (
                     <HealthStatusBadge
@@ -142,7 +143,7 @@ export function AdapterManager({ type, title, description, canManage = true }: A
                     />
                 );
             }
-        },
+        }] as ColumnDef<AdapterConfig>[] : []),
         {
             accessorKey: "name",
             header: "Name",
