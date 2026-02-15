@@ -12,12 +12,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { DataTable } from "@/components/ui/data-table";
 import { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
-import { Edit, Trash } from "lucide-react";
+import { Edit, Trash, BarChart3 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 import { AdapterManagerProps, AdapterConfig } from "./types";
 import { AdapterForm } from "./adapter-form";
 import { HealthStatusBadge } from "@/components/ui/health-status-badge";
+import { StorageHistoryModal } from "@/components/dashboard/widgets/storage-history-modal";
 
 export function AdapterManager({ type, title, description, canManage = true }: AdapterManagerProps) {
     const [configs, setConfigs] = useState<AdapterConfig[]>([]);
@@ -26,6 +27,7 @@ export function AdapterManager({ type, title, description, canManage = true }: A
     const [editingId, setEditingId] = useState<string | null>(null);
     const [deletingId, setDeletingId] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [historyAdapter, setHistoryAdapter] = useState<{ id: string; name: string } | null>(null);
 
     const fetchConfigs = useCallback(async () => {
         setIsLoading(true);
@@ -180,23 +182,36 @@ export function AdapterManager({ type, title, description, canManage = true }: A
             id: "actions",
             header: () => <div className="text-right">Actions</div>,
             cell: ({ row }) => {
-                if (!canManage) return null;
                 return (
                     <div className="flex justify-end gap-1">
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => { setEditingId(row.original.id); setIsDialogOpen(true); }}
-                        >
-                            <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDelete(row.original.id)}
-                        >
-                            <Trash className="h-4 w-4 text-destructive" />
-                        </Button>
+                        {type === "storage" && (
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                title="Storage History"
+                                onClick={() => setHistoryAdapter({ id: row.original.id, name: row.original.name })}
+                            >
+                                <BarChart3 className="h-4 w-4" />
+                            </Button>
+                        )}
+                        {canManage && (
+                            <>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => { setEditingId(row.original.id); setIsDialogOpen(true); }}
+                                >
+                                    <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => handleDelete(row.original.id)}
+                                >
+                                    <Trash className="h-4 w-4 text-destructive" />
+                                </Button>
+                            </>
+                        )}
                     </div>
                 );
             }
@@ -301,6 +316,15 @@ export function AdapterManager({ type, title, description, canManage = true }: A
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+
+            {historyAdapter && (
+                <StorageHistoryModal
+                    open={!!historyAdapter}
+                    onOpenChange={(open) => { if (!open) setHistoryAdapter(null); }}
+                    configId={historyAdapter.id}
+                    adapterName={historyAdapter.name}
+                />
+            )}
         </div>
     );
 }
