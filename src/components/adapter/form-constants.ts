@@ -12,6 +12,14 @@ export const STORAGE_CONNECTION_KEYS = [
 
 export const STORAGE_CONFIG_KEYS = ['pathPrefix', 'storageClass', 'forcePathStyle', 'maxProtocol', 'tls', 'options', 'folderId', 'folderPath'];
 
+export const NOTIFICATION_CONNECTION_KEYS = [
+    'webhookUrl',
+    'host', 'port', 'secure',
+    'user', 'password',
+];
+
+export const NOTIFICATION_CONFIG_KEYS = ['from', 'to', 'username', 'avatarUrl'];
+
 export const PLACEHOLDERS: Record<string, string> = {
     "email.from": "\"Backup Service\" <backup@example.com>",
     "email.host": "smtp.example.com",

@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 import { Check, FolderOpen } from "lucide-react";
 import { AdapterDefinition } from "@/lib/adapters/definitions";
 import { SchemaField } from "./schema-field";
-import { STORAGE_CONFIG_KEYS, STORAGE_CONNECTION_KEYS } from "./form-constants";
+import { STORAGE_CONFIG_KEYS, STORAGE_CONNECTION_KEYS, NOTIFICATION_CONNECTION_KEYS, NOTIFICATION_CONFIG_KEYS } from "./form-constants";
 import { GoogleDriveOAuthButton } from "./google-drive-oauth-button";
 import { GoogleDriveFolderBrowser } from "./google-drive-folder-browser";
 import { DropboxOAuthButton } from "./dropbox-oauth-button";
@@ -277,6 +277,31 @@ export function StorageFormContent({
                     ) : (
                         <FieldList keys={configKeys} adapter={adapter} />
                     )}
+                </TabsContent>
+            )}
+        </Tabs>
+    );
+}
+
+export function NotificationFormContent({ adapter }: { adapter: AdapterDefinition }) {
+    const hasConfigKeys = hasFields(adapter, NOTIFICATION_CONFIG_KEYS);
+
+    return (
+        <Tabs defaultValue="connection" className="w-full">
+            <TabsList className={cn("grid w-full", hasConfigKeys ? "grid-cols-2" : "grid-cols-1")}>
+                <TabsTrigger value="connection">Connection</TabsTrigger>
+                {hasConfigKeys && (
+                    <TabsTrigger value="configuration">Configuration</TabsTrigger>
+                )}
+            </TabsList>
+
+            <TabsContent value="connection" className="space-y-4 pt-4">
+                <FieldList keys={NOTIFICATION_CONNECTION_KEYS} adapter={adapter} />
+            </TabsContent>
+
+            {hasConfigKeys && (
+                <TabsContent value="configuration" className="space-y-4 pt-4">
+                    <FieldList keys={NOTIFICATION_CONFIG_KEYS} adapter={adapter} />
                 </TabsContent>
             )}
         </Tabs>

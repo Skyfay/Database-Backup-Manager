@@ -18,7 +18,7 @@ import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, A
 import { AdapterDefinition } from "@/lib/adapters/definitions";
 import { AdapterConfig } from "./types";
 import { useAdapterConnection } from "./use-adapter-connection";
-import { DatabaseFormContent, GenericFormContent, StorageFormContent } from "./form-sections";
+import { DatabaseFormContent, GenericFormContent, NotificationFormContent, StorageFormContent } from "./form-sections";
 import { SchemaField } from "./schema-field";
 
 export function AdapterForm({ type, adapters, onSuccess, initialData }: { type: string, adapters: AdapterDefinition[], onSuccess: () => void, initialData?: AdapterConfig }) {
@@ -249,7 +249,11 @@ export function AdapterForm({ type, adapters, onSuccess, initialData }: { type: 
                     <StorageFormContent adapter={selectedAdapter} initialData={initialData} />
                 )}
 
-                {selectedAdapter && type !== 'database' && type !== 'storage' && (
+                {selectedAdapter && type === 'notification' && (
+                    <NotificationFormContent adapter={selectedAdapter} />
+                )}
+
+                {selectedAdapter && type !== 'database' && type !== 'storage' && type !== 'notification' && (
                     <GenericFormContent adapter={selectedAdapter} detectedVersion={detectedVersion} />
                 )}
 
