@@ -1,26 +1,34 @@
 # Notifications
 
-Get alerts when backups complete or fail.
+Get alerts when backups complete, users log in, restores finish, and more.
 
 ## Overview
 
-DBackup can send notifications for backup events:
-- ✅ Successful backups
-- ❌ Failed backups
-- ⚠️ Warnings
+DBackup has **two notification layers** that work together:
+
+| Layer | Configured In | Purpose |
+| :--- | :--- | :--- |
+| **Per-Job Notifications** | Job → Notifications tab | Alerts for an individual backup job (success/failure) |
+| **System Notifications** | Settings → Notifications | Global alerts for system-wide events (login, restore, errors, etc.) |
+
+Both layers share the same notification channels (Email, Discord) that you configure under **Notifications** in the main menu.
 
 ## Supported Channels
 
 | Channel | Best For |
 | :--- | :--- |
-| [Discord](#discord) | Team notifications |
-| [Email](#email) | Formal alerts |
+| [Discord](#discord) | Team notifications via webhooks |
+| [Email](#email-smtp) | Formal alerts, per-user notifications |
 
-## Discord
+---
+
+## Channel Setup
+
+### Discord
 
 Send notifications to Discord channels via webhooks.
 
-### Setup
+#### Setup
 
 1. In Discord, go to **Server Settings** → **Integrations**
 2. Click **Create Webhook**
@@ -33,7 +41,7 @@ Send notifications to Discord channels via webhooks.
 9. Click **Test** to verify
 10. Save
 
-### Configuration
+#### Configuration
 
 | Field | Description | Default |
 | :--- | :--- | :--- |
@@ -41,32 +49,21 @@ Send notifications to Discord channels via webhooks.
 | **Username** | Bot display name | "Backup Manager" |
 | **Avatar URL** | Bot avatar image | Default |
 
-### Message Format
+#### Message Format
 
-Discord notifications include:
-- Job name
-- Status (Success/Failed)
-- Duration
-- Backup size
-- Database info
-- Timestamp
+Discord notifications are displayed as rich embeds with colored sidebars:
+- **Green** – Success (backup complete, restore finished, user created)
+- **Red** – Failure (backup failed, restore failed, system error)
+- **Blue** – Informational (user login)
+- **Purple** – System events (config backup)
 
-Example:
-```
-✅ Backup Successful
-─────────────────────
-Job: Daily MySQL Backup
-Duration: 45 seconds
-Size: 125 MB
-Databases: myapp, users
-Time: 2024-01-15 02:00:00
-```
+Each embed includes structured fields (job name, duration, size, etc.).
 
-## Email
+### Email (SMTP)
 
-Send notifications via SMTP.
+Send HTML notifications via any SMTP server.
 
-### Setup
+#### Setup
 
 1. Go to **Notifications**
 2. Click **Add Notification**
@@ -75,7 +72,7 @@ Send notifications via SMTP.
 5. Click **Test** to send test email
 6. Save
 
-### Configuration
+#### Configuration
 
 | Field | Description | Default |
 | :--- | :--- | :--- |
@@ -87,10 +84,9 @@ Send notifications via SMTP.
 | **From** | Sender email address | Required |
 | **To** | Recipient email address | Required |
 
-### Common SMTP Configurations
+#### Common SMTP Configurations
 
-#### Gmail
-
+::: details Gmail
 ```
 Host: smtp.gmail.com
 Port: 587
@@ -98,13 +94,10 @@ Security: STARTTLS
 User: your-email@gmail.com
 Password: App Password (not regular password)
 ```
-
-::: tip Gmail App Password
-Generate at: Google Account → Security → 2-Step Verification → App passwords
+Generate an App Password at: Google Account → Security → 2-Step Verification → App passwords
 :::
 
-#### SendGrid
-
+::: details SendGrid
 ```
 Host: smtp.sendgrid.net
 Port: 587
@@ -112,9 +105,9 @@ Security: STARTTLS
 User: apikey
 Password: Your SendGrid API key
 ```
+:::
 
-#### Mailgun
-
+::: details Mailgun
 ```
 Host: smtp.mailgun.org
 Port: 587
@@ -122,9 +115,9 @@ Security: STARTTLS
 User: postmaster@your-domain.mailgun.org
 Password: SMTP password from Mailgun
 ```
+:::
 
-#### Self-Hosted (Postfix)
-
+::: details Self-Hosted (Postfix)
 ```
 Host: mail.example.com
 Port: 587
@@ -132,36 +125,33 @@ Security: STARTTLS
 User: (if required)
 Password: (if required)
 ```
+:::
 
-### Email Format
+#### Email Format
 
-HTML emails with:
-- Clear status header
-- Job details
-- Execution summary
-- Error messages (if failed)
-- Quick links (optional)
+HTML emails with a colored status bar, structured detail fields, and timestamp. The template is consistent across all notification types.
 
-## Assigning to Jobs
+---
 
-### Per-Job Notifications
+## Per-Job Notifications
+
+Per-job notifications alert you when a specific backup job completes or fails.
+
+### Assigning to a Job
 
 1. Edit a backup job
-2. Go to **Notifications** section
-3. Select notification channel
-4. Choose trigger condition:
-   - **Always**: Both success and failure
-   - **On Success**: Only when backup succeeds
-   - **On Failure**: Only when backup fails
+2. Go to the **Notifications** section
+3. Select a notification channel
+4. Choose the trigger condition:
+   - **Always** – Both success and failure
+   - **On Success** – Only when the backup succeeds
+   - **On Failure** – Only when the backup fails
 
-### Multiple Notifications
+### Multiple Channels
 
-You can assign multiple notifications to one job:
-- Discord for team awareness
-- Email for formal records
-- Different channels for success vs failure
+You can assign multiple notifications to one job — for example Discord for quick team awareness and Email for formal audit records.
 
-## Notification Conditions
+### Notification Conditions
 
 | Condition | When Triggered |
 | :--- | :--- |
@@ -169,30 +159,91 @@ You can assign multiple notifications to one job:
 | **On Success** | Only successful backups |
 | **On Failure** | Only failed backups |
 
-### Recommended Setup
-
+::: tip Recommended Setup
 | Use Case | Condition |
 | :--- | :--- |
 | Critical production | Always |
 | Development | On Failure only |
 | Compliance | Always |
 | Team awareness | On Failure |
+:::
 
-## Testing Notifications
+---
 
-### Test Button
+## System Notifications
 
-1. In notification settings, click **Test**
-2. A test message is sent
-3. Verify receipt
-4. Check formatting
+System notifications cover events beyond individual backup jobs: user activity, restores, configuration backups, and system errors.
 
-### Real Test
+### Setup
 
-1. Create a simple backup job
-2. Assign notification
-3. Run the job
-4. Verify notification received
+1. Go to **Settings** → **Notifications** tab
+2. **Select global channels** – Choose which notification channels receive system alerts by default
+3. **Enable events** – Toggle individual events on or off
+4. Optionally override channels per event
+
+### Available Events
+
+#### Authentication Events
+
+| Event | Description | Default |
+| :--- | :--- | :--- |
+| **User Login** | A user logged into the application | Disabled |
+| **User Created** | A new user account was created | Disabled |
+
+#### Restore Events
+
+| Event | Description | Default |
+| :--- | :--- | :--- |
+| **Restore Completed** | A database restore completed successfully | Enabled |
+| **Restore Failed** | A database restore failed | Enabled |
+
+#### System Events
+
+| Event | Description | Default |
+| :--- | :--- | :--- |
+| **Configuration Backup** | System configuration backup was created | Disabled |
+| **System Error** | A critical system error occurred | Enabled |
+
+::: info Why no backup events?
+Backup success/failure notifications are configured **per-job** (Job → Notifications tab) and are not duplicated in system notifications. This prevents double notifications.
+:::
+
+### Global vs. Per-Event Channels
+
+- **Global Channels**: The default channels used for all events that don't have an explicit override.
+- **Per-Event Override**: Click the channel button on an event to assign custom channels. A "Custom Channels" badge appears. Click "Reset to Global Channels" to undo.
+
+### Notify User Directly
+
+For **User Login** and **User Created** events, you can optionally send an email directly to the affected user (e.g., a login notification to the user who logged in, or a welcome email to the newly created user).
+
+::: warning Email Channel Required
+This feature only works with Email (SMTP) channels. At least one Email channel must be selected for the event.
+:::
+
+#### Modes
+
+| Mode | Behavior |
+| :--- | :--- |
+| **Disabled** | Notification goes only to the configured admin channels |
+| **Admin & User** | Notification goes to admin channels AND a direct email to the user |
+| **User only** | Notification goes ONLY to the user's email (admin channels are skipped) |
+
+#### How to Configure
+
+1. Go to **Settings** → **Notifications**
+2. Enable **User Login** or **User Created**
+3. Ensure at least one Email channel is selected
+4. A **"Notify user directly"** dropdown appears below the channel selector
+5. Choose the desired mode
+
+The user's email address is taken from their account profile — no additional configuration needed.
+
+### Test Notifications
+
+Each event has a **Test** button that sends a sample notification through all selected channels using dummy data. Use this to verify your setup before relying on it.
+
+---
 
 ## Troubleshooting
 
@@ -247,43 +298,28 @@ Invalid login credentials
 3. SMTP logs for delivery status
 4. Domain reputation
 
+---
+
 ## Best Practices
 
 ### Notification Strategy
 
-1. **Always notify on failure** - Critical for reliability
-2. **Consider noise** - Too many success notifications = ignored
+1. **Always notify on failure** – Critical for reliability
+2. **Consider noise** – Too many success notifications get ignored
 3. **Use channels appropriately**:
    - Discord: Team visibility
-   - Email: Audit trail
-4. **Test regularly** - Ensure notifications work
-
-### Failure Alerts
-
-For critical backups:
-1. Notify on every failure
-2. Multiple channels (redundancy)
-3. Include on-call contact
-4. Document escalation process
+   - Email: Audit trail, per-user alerts
+4. **Test regularly** – Ensure notifications work
 
 ### Security
 
-1. **Don't log credentials** - Use environment variables
-2. **Secure webhooks** - Don't share URLs publicly
-3. **Review recipients** - Only needed parties
-4. **SMTP over TLS** - Encrypt email transport
-
-## Future Channels
-
-Coming soon:
-- Slack
-- Microsoft Teams
-- Custom webhooks
-- PagerDuty
-- SMS
+1. **Don't log credentials** – Use environment variables
+2. **Secure webhooks** – Don't share URLs publicly
+3. **Review recipients** – Only needed parties
+4. **SMTP over TLS** – Encrypt email transport
 
 ## Next Steps
 
-- [Creating Jobs](/user-guide/jobs/) - Assign notifications
-- [Scheduling](/user-guide/jobs/scheduling) - Automate backups
-- [Monitoring](/user-guide/features/storage-explorer) - Review backups
+- [Creating Jobs](/user-guide/jobs/) – Assign per-job notifications
+- [Scheduling](/user-guide/jobs/scheduling) – Automate backups
+- [Storage Explorer](/user-guide/features/storage-explorer) – Review backups
