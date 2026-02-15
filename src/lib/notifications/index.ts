@@ -8,6 +8,7 @@ export type {
   NotificationEventData,
   NotificationPayload,
   SystemNotificationConfig,
+  NotifyUserMode,
   UserLoginData,
   UserCreatedData,
   BackupResultData,

@@ -16,6 +16,7 @@ export const EVENT_DEFINITIONS: NotificationEventDefinition[] = [
     description: "A user logged into the application.",
     category: "auth",
     defaultEnabled: false,
+    supportsNotifyUser: true,
   },
   {
     id: NOTIFICATION_EVENTS.USER_CREATED,
@@ -23,6 +24,7 @@ export const EVENT_DEFINITIONS: NotificationEventDefinition[] = [
     description: "A new user account was created.",
     category: "auth",
     defaultEnabled: false,
+    supportsNotifyUser: true,
   },
 
   // NOTE: Backup success/failure events are NOT listed here because they are

@@ -26,15 +26,22 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Bell, ChevronsUpDown, Send, Shield, Database, RotateCcw, Monitor } from "lucide-react";
+import { Bell, ChevronsUpDown, Mail, Send, Shield, Database, RotateCcw, Monitor } from "lucide-react";
 import {
   getNotificationSettings,
   updateNotificationSettings,
   sendTestNotification,
 } from "@/app/actions/notification-settings";
-import type { SystemNotificationConfig } from "@/lib/notifications/types";
+import type { SystemNotificationConfig, NotifyUserMode } from "@/lib/notifications/types";
 import type { NotificationEventDefinition } from "@/lib/notifications/types";
 
 interface Channel {
@@ -172,6 +179,26 @@ export function NotificationSettings() {
         events: {
           ...config.events,
           [eventId]: { ...eventConfig, channels: null },
+        },
+      });
+    },
+    [config, persistConfig]
+  );
+
+  // ── Notify-user mode toggle (auth events) ───────────────────
+
+  const changeNotifyUser = useCallback(
+    (eventId: string, mode: NotifyUserMode) => {
+      if (!config) return;
+      const eventConfig = config.events[eventId] || {
+        enabled: true,
+        channels: null,
+      };
+      persistConfig({
+        ...config,
+        events: {
+          ...config.events,
+          [eventId]: { ...eventConfig, notifyUser: mode },
         },
       });
     },
@@ -435,6 +462,44 @@ export function NotificationSettings() {
                               <Send className="mr-1 h-3 w-3" />
                               Test
                             </Button>
+                          </div>
+                        )}
+
+                        {/* Notify user option for auth events */}
+                        {isEnabled &&
+                          eventDef.supportsNotifyUser &&
+                          channels.some(
+                            (ch) =>
+                              ch.adapterId === "email" &&
+                              effectiveChannels.includes(ch.id)
+                          ) && (
+                          <div className="flex items-center gap-2 pt-1">
+                            <Mail className="h-3 w-3 text-muted-foreground" />
+                            <span className="text-xs text-muted-foreground">
+                              Notify user directly:
+                            </span>
+                            <Select
+                              value={
+                                (eventConfig?.notifyUser as string) ?? "none"
+                              }
+                              onValueChange={(val) =>
+                                changeNotifyUser(
+                                  eventDef.id,
+                                  val as NotifyUserMode
+                                )
+                              }
+                            >
+                              <SelectTrigger className="h-7 w-[140px] text-xs">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="none">Disabled</SelectItem>
+                                <SelectItem value="also">
+                                  Admin &amp; User
+                                </SelectItem>
+                                <SelectItem value="only">User only</SelectItem>
+                              </SelectContent>
+                            </Select>
                           </div>
                         )}
                       </div>

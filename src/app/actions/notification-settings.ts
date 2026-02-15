@@ -20,6 +20,7 @@ const log = logger.child({ action: "notification-settings" });
 const eventSettingSchema = z.object({
   enabled: z.boolean(),
   channels: z.array(z.string()).nullable(),
+  notifyUser: z.enum(["none", "also", "only"]).optional(),
 });
 
 const configSchema = z.object({

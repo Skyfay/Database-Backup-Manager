@@ -20,11 +20,15 @@ import { getEventDefinition } from "@/lib/notifications/events";
 import {
   NotificationEventData,
   SystemNotificationConfig,
+  NOTIFICATION_EVENTS,
 } from "@/lib/notifications/types";
 
 const log = logger.child({ service: "SystemNotificationService" });
 
 const SETTING_KEY = "notifications.config";
+
+/** Email adapter IDs that support per-user `to` override */
+const EMAIL_ADAPTER_IDS = ["email"];
 
 /** Default configuration when none exists yet */
 function defaultConfig(): SystemNotificationConfig {
@@ -74,12 +78,74 @@ export async function getAvailableChannels() {
 // ── Notification Dispatch ──────────────────────────────────────
 
 /**
+ * Extract the target user's email from events that support per-user delivery.
+ * Returns undefined when the event has no user email.
+ */
+function extractUserEmail(event: NotificationEventData): string | undefined {
+  if (
+    event.eventType === NOTIFICATION_EVENTS.USER_LOGIN ||
+    event.eventType === NOTIFICATION_EVENTS.USER_CREATED
+  ) {
+    return (event.data as { email?: string }).email;
+  }
+  return undefined;
+}
+
+/**
+ * Send a notification payload through a single adapter channel.
+ * If `toOverride` is provided the email `to` field in the channel config is
+ * replaced (used for user-targeted delivery).
+ */
+async function sendThroughChannel(
+  channel: { id: string; name: string; adapterId: string; config: string },
+  payload: ReturnType<typeof renderTemplate>,
+  eventType: string,
+  toOverride?: string
+): Promise<void> {
+  const adapter = registry.get(channel.adapterId) as
+    | NotificationAdapter
+    | undefined;
+
+  if (!adapter) {
+    log.warn("Adapter not found for notification channel", {
+      channelId: channel.id,
+      adapterId: channel.adapterId,
+    });
+    return;
+  }
+
+  let channelConfig = decryptConfig(JSON.parse(channel.config));
+
+  // Override the recipient for user-targeted emails
+  if (toOverride && EMAIL_ADAPTER_IDS.includes(channel.adapterId)) {
+    channelConfig = { ...channelConfig, to: toOverride };
+  }
+
+  await adapter.send(channelConfig, payload.message, {
+    success: payload.success,
+    eventType,
+    title: payload.title,
+    fields: payload.fields,
+    color: payload.color,
+  });
+
+  log.info("System notification sent", {
+    eventType,
+    channelName: channel.name,
+    adapterId: channel.adapterId,
+    ...(toOverride ? { toOverride } : {}),
+  });
+}
+
+/**
  * Send a system notification for the given event.
  *
  * 1. Loads the stored config to determine which channels are active.
  * 2. Checks if the event is enabled.
  * 3. Renders the template.
  * 4. Sends through each selected channel (adapter).
+ * 5. If `notifyUser` is configured ("also" / "only"), sends an additional
+ *    email directly to the affected user via any email-type channel.
  *
  * Failures are logged but never thrown – callers should not be blocked by
  * notification delivery issues.
@@ -105,8 +171,7 @@ export async function notify(event: NotificationEventData): Promise<void> {
     }
 
     // Resolve channel IDs (event-level override or global)
-    const channelIds =
-      eventConfig?.channels ?? config.globalChannels;
+    const channelIds = eventConfig?.channels ?? config.globalChannels;
 
     if (!channelIds || channelIds.length === 0) {
       log.debug("System notification skipped (no channels configured)", {
@@ -121,46 +186,65 @@ export async function notify(event: NotificationEventData): Promise<void> {
     // Make sure adapters are registered
     registerAdapters();
 
-    // Load channel configs and send
+    // Load channel configs
     const channels = await prisma.adapterConfig.findMany({
       where: { id: { in: channelIds }, type: "notification" },
     });
 
-    for (const channel of channels) {
-      try {
-        const adapter = registry.get(channel.adapterId) as
-          | NotificationAdapter
-          | undefined;
+    // Determine user-targeted delivery mode
+    const notifyUser = eventConfig?.notifyUser ?? "none";
+    const userEmail =
+      notifyUser !== "none" && eventDef?.supportsNotifyUser
+        ? extractUserEmail(event)
+        : undefined;
 
-        if (!adapter) {
-          log.warn("Adapter not found for notification channel", {
-            channelId: channel.id,
-            adapterId: channel.adapterId,
-          });
-          continue;
+    // ── Admin / normal channel delivery ────────────────────────
+    if (notifyUser !== "only") {
+      for (const channel of channels) {
+        try {
+          await sendThroughChannel(channel, payload, event.eventType);
+        } catch (err) {
+          log.error(
+            "Failed to send system notification through channel",
+            { channelName: channel.name, eventType: event.eventType },
+            wrapError(err)
+          );
         }
+      }
+    }
 
-        const channelConfig = decryptConfig(JSON.parse(channel.config));
+    // ── User-targeted email delivery ───────────────────────────
+    if (userEmail && (notifyUser === "also" || notifyUser === "only")) {
+      const emailChannels = channels.filter((ch) =>
+        EMAIL_ADAPTER_IDS.includes(ch.adapterId)
+      );
 
-        await adapter.send(channelConfig, payload.message, {
-          success: payload.success,
-          eventType: event.eventType,
-          title: payload.title,
-          fields: payload.fields,
-          color: payload.color,
-        });
-
-        log.info("System notification sent", {
-          eventType: event.eventType,
-          channelName: channel.name,
-          adapterId: channel.adapterId,
-        });
-      } catch (err) {
-        log.error(
-          "Failed to send system notification through channel",
-          { channelName: channel.name, eventType: event.eventType },
-          wrapError(err)
+      if (emailChannels.length === 0) {
+        log.debug(
+          "User notification skipped (no email channel in selected channels)",
+          { eventType: event.eventType }
         );
+      }
+
+      for (const channel of emailChannels) {
+        try {
+          await sendThroughChannel(
+            channel,
+            payload,
+            event.eventType,
+            userEmail
+          );
+        } catch (err) {
+          log.error(
+            "Failed to send user-targeted notification",
+            {
+              channelName: channel.name,
+              eventType: event.eventType,
+              userEmail,
+            },
+            wrapError(err)
+          );
+        }
       }
     }
   } catch (err) {
