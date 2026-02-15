@@ -47,12 +47,10 @@ RUN mkdir -p /opt/pg14/bin /opt/pg16/bin /opt/pg18/bin && \
 # 1. Install Dependencies
 FROM base AS deps
 WORKDIR /app
-COPY package.json pnpm-lock.yaml* ./
+COPY package.json pnpm-lock.yaml ./
 # Pin pnpm version for consistent builds and caching
-RUN corepack enable && corepack prepare pnpm@9.15.9 --activate
-# NOTE: Using --no-frozen-lockfile because lockfile is v6 (pnpm 8.x)
-# TODO: Run `pnpm install` locally with pnpm 9.x to update lockfile, then switch to --frozen-lockfile
-RUN pnpm install --no-frozen-lockfile
+RUN corepack enable && corepack prepare pnpm@10.29.3 --activate
+RUN pnpm install --frozen-lockfile
 
 # 2. Builder Phase
 FROM base AS builder
