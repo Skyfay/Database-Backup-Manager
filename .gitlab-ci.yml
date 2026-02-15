@@ -66,6 +66,13 @@ build-and-publish:
       fi
 
       echo "📦 Building and Pushing with tags: $TAGS"
-      docker buildx build --platform linux/amd64,linux/arm64 --push $TAGS .
+
+      # Use registry cache for faster rebuilds
+      CACHE_IMAGE="$GITLAB_IMAGE"
+      docker buildx build \
+        --platform linux/amd64,linux/arm64 \
+        --cache-from type=registry,ref=$CACHE_IMAGE:buildcache \
+        --cache-to type=registry,ref=$CACHE_IMAGE:buildcache,mode=max \
+        --push $TAGS .
   only:
     - tags

@@ -48,10 +48,10 @@ RUN mkdir -p /opt/pg14/bin /opt/pg16/bin /opt/pg18/bin && \
 FROM base AS deps
 WORKDIR /app
 COPY package.json pnpm-lock.yaml* ./
-# Install pnpm if needed or use corepack
-RUN corepack enable && corepack prepare pnpm@latest --activate
-# Using --no-frozen-lockfile because of pnpm version mismatch (lockfile ignored by --force)
-# We regenerate the lockfile during build
+# Pin pnpm version for consistent builds and caching
+RUN corepack enable && corepack prepare pnpm@9.15.9 --activate
+# NOTE: Using --no-frozen-lockfile because lockfile is v6 (pnpm 8.x)
+# TODO: Run `pnpm install` locally with pnpm 9.x to update lockfile, then switch to --frozen-lockfile
 RUN pnpm install --no-frozen-lockfile
 
 # 2. Builder Phase
@@ -80,8 +80,8 @@ ENV DATABASE_URL="file:/app/db/dbackup.db"
 ENV TZ="UTC"
 ENV LOG_LEVEL="info"
 
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs
 
 # Copy built files
 COPY --from=builder /app/public ./public
