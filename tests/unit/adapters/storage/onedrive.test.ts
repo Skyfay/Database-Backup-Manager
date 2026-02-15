@@ -392,10 +392,8 @@ describe("OneDriveAdapter", () => {
             const downloadUrl = "https://download.onedrive.example.com/file";
 
             mockClient.api.mockReturnValue({
-                select: vi.fn().mockReturnValue({
-                    get: vi.fn().mockResolvedValue({
-                        "@microsoft.graph.downloadUrl": downloadUrl,
-                    }),
+                get: vi.fn().mockResolvedValue({
+                    "@microsoft.graph.downloadUrl": downloadUrl,
                 }),
             });
 
@@ -419,10 +417,8 @@ describe("OneDriveAdapter", () => {
             mockFs.mkdir.mockResolvedValue(undefined);
 
             mockClient.api.mockReturnValue({
-                select: vi.fn().mockReturnValue({
-                    get: vi.fn().mockResolvedValue({
-                        // No download URL
-                    }),
+                get: vi.fn().mockResolvedValue({
+                    // No download URL
                 }),
             });
 
@@ -440,9 +436,7 @@ describe("OneDriveAdapter", () => {
             mockFs.mkdir.mockResolvedValue(undefined);
 
             mockClient.api.mockReturnValue({
-                select: vi.fn().mockReturnValue({
-                    get: vi.fn().mockRejectedValue(new Error("Network error")),
-                }),
+                get: vi.fn().mockRejectedValue(new Error("Network error")),
             });
 
             const onLog = vi.fn();
@@ -472,10 +466,8 @@ describe("OneDriveAdapter", () => {
             mockTokenRefresh();
 
             mockClient.api.mockReturnValue({
-                select: vi.fn().mockReturnValue({
-                    get: vi.fn().mockResolvedValue({
-                        "@microsoft.graph.downloadUrl": "https://download.example.com/meta",
-                    }),
+                get: vi.fn().mockResolvedValue({
+                    "@microsoft.graph.downloadUrl": "https://download.example.com/meta",
                 }),
             });
 
@@ -493,9 +485,7 @@ describe("OneDriveAdapter", () => {
             mockTokenRefresh();
 
             mockClient.api.mockReturnValue({
-                select: vi.fn().mockReturnValue({
-                    get: vi.fn().mockRejectedValue(new Error("itemNotFound")),
-                }),
+                get: vi.fn().mockRejectedValue(new Error("itemNotFound")),
             });
 
             const result = await OneDriveAdapter.read(validConfig, "nonexistent.json");

@@ -91,32 +91,35 @@ function driveItemPath(filePath: string): string {
 
 /**
  * Ensures all parent folders exist for a given path.
- * OneDrive auto-creates parent folders on upload, but this is used for explicit folder creation.
+ * Checks each segment via GET first; only creates if it doesn't exist.
  */
 async function ensureFolderExists(client: Client, folderPath: string): Promise<void> {
     const segments = folderPath.split("/").filter(Boolean);
     let currentPath = "";
 
     for (const segment of segments) {
-        const parentPath = currentPath
-            ? `/me/drive/root:/${currentPath}:/children`
-            : "/me/drive/root/children";
+        const targetPath = currentPath ? `${currentPath}/${segment}` : segment;
 
+        // Check if the folder already exists
         try {
-            await client.api(parentPath).post({
+            await client
+                .api(`/me/drive/root:/${targetPath}:`)
+                .select("id,folder")
+                .get();
+            // Folder exists — continue to next segment
+        } catch {
+            // Folder doesn't exist — create it
+            const parentApiPath = currentPath
+                ? `/me/drive/root:/${currentPath}:/children`
+                : "/me/drive/root/children";
+
+            await client.api(parentApiPath).post({
                 name: segment,
                 folder: {},
-                "@microsoft.graph.conflictBehavior": "fail",
             });
-        } catch (error: unknown) {
-            // Ignore conflict errors — folder already exists
-            const errStr = String(error);
-            if (!errStr.includes("nameAlreadyExists") && !errStr.includes("409")) {
-                throw error;
-            }
         }
 
-        currentPath = currentPath ? `${currentPath}/${segment}` : segment;
+        currentPath = targetPath;
     }
 }
 
@@ -197,6 +200,15 @@ export const OneDriveAdapter: StorageAdapter = {
                 await ensureFolderExists(client, dirPath);
             }
 
+            // Delete existing file before upload to avoid "nameAlreadyExists" conflicts.
+            // The Graph SDK does not reliably pass @microsoft.graph.conflictBehavior
+            // as a query parameter, so we proactively remove the old file.
+            try {
+                await client.api(driveItemPath(drivePath)).delete();
+            } catch {
+                // File doesn't exist yet — that's fine
+            }
+
             const stats = await fs.stat(localPath);
             const fileSize = stats.size;
 
@@ -269,10 +281,11 @@ export const OneDriveAdapter: StorageAdapter = {
             // Ensure local directory exists
             await fs.mkdir(path.dirname(localPath), { recursive: true });
 
-            // Get the download URL from the drive item
+            // Get the download URL from the drive item.
+            // Do NOT use .select() — @microsoft.graph.downloadUrl is a computed
+            // property that is only returned when the full item is requested.
             const item = await client
                 .api(driveItemPath(drivePath))
-                .select("id,size,@microsoft.graph.downloadUrl")
                 .get();
 
             const downloadUrl = item["@microsoft.graph.downloadUrl"];
@@ -304,10 +317,11 @@ export const OneDriveAdapter: StorageAdapter = {
             const client = createGraphClient(accessToken);
             const drivePath = buildDrivePath(config.folderPath, remotePath);
 
-            // Get the download URL
+            // Get the download URL.
+            // Do NOT use .select() — @microsoft.graph.downloadUrl is a computed
+            // property that is only returned when the full item is requested.
             const item = await client
                 .api(driveItemPath(drivePath))
-                .select("@microsoft.graph.downloadUrl")
                 .get();
 
             const downloadUrl = item["@microsoft.graph.downloadUrl"];

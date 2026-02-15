@@ -19,7 +19,7 @@ This release adds Rsync as a new storage destination for efficient incremental f
 - **Progress Tracking**: Real-time upload/download progress with resumable media uploads for large backup files
 - **Connection Testing**: Verifies OAuth tokens, Drive API access, and folder permissions before creating jobs
 
-#### � Dropbox Storage Destination
+#### ☁️ Dropbox Storage Destination
 - **New Cloud Adapter**: Store backups directly in Dropbox with native OAuth 2.0 authentication
 - **OAuth 2.0 Flow**: One-click authorization in the UI — redirects to Dropbox's consent screen, automatically stores refresh token (encrypted at rest)
 - **Automatic Token Refresh**: Dropbox SDK handles token renewal automatically — no manual re-authorization required
@@ -29,7 +29,7 @@ This release adds Rsync as a new storage destination for efficient incremental f
 - **Full Lifecycle**: Upload, download, list, delete, and read operations for complete backup management including retention policies
 - **Connection Testing**: Verifies OAuth tokens, account access, and write/delete permissions before creating jobs
 
-#### �📡 Rsync (SSH) Storage Destination
+#### 📡 Rsync (SSH) Storage Destination
 - **New Storage Adapter**: Store backups on any remote server using rsync over SSH — leverages rsync's delta-transfer algorithm for efficient incremental syncs
 - **Three Auth Methods**: Password (via `sshpass`), SSH Private Key (PEM format), and SSH Agent authentication — matching SFTP's auth options
 - **Delta Transfer**: Only changed blocks are transferred, significantly reducing bandwidth for recurring backups to the same destination
