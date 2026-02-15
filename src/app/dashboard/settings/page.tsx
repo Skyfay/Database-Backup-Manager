@@ -7,6 +7,7 @@ import prisma from "@/lib/prisma";
 import { SystemSettingsForm } from "@/components/settings/system-settings-form";
 import { SystemTasksSettings } from "@/components/settings/system-tasks-settings";
 import { ConfigBackupSettings } from "@/components/settings/config-backup-settings";
+import { NotificationSettings } from "@/components/settings/notification-settings";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default async function SettingsPage() {
@@ -77,6 +78,7 @@ export default async function SettingsPage() {
             <Tabs defaultValue="general" className="space-y-4">
                 <TabsList>
                     <TabsTrigger value="general">General</TabsTrigger>
+                    <TabsTrigger value="notifications">Notifications</TabsTrigger>
                     <TabsTrigger value="tasks">System Tasks</TabsTrigger>
                     <TabsTrigger value="config">Configuration Backup</TabsTrigger>
                 </TabsList>
@@ -87,6 +89,9 @@ export default async function SettingsPage() {
                         initialAuditLogRetentionDays={auditLogRetentionDays}
                         initialCheckForUpdates={checkForUpdates}
                     />
+                </TabsContent>
+                <TabsContent value="notifications" className="space-y-4">
+                    <NotificationSettings />
                 </TabsContent>
                 <TabsContent value="tasks" className="space-y-4">
                     <SystemTasksSettings />

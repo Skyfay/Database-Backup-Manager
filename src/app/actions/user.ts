@@ -9,6 +9,8 @@ import { auditService } from "@/services/audit-service";
 import { AUDIT_ACTIONS, AUDIT_RESOURCES } from "@/lib/core/audit-types";
 import { logger } from "@/lib/logger";
 import { wrapError, getErrorMessage } from "@/lib/errors";
+import { notify } from "@/services/system-notification-service";
+import { NOTIFICATION_EVENTS } from "@/lib/notifications";
 
 const log = logger.child({ action: "user" });
 
@@ -29,6 +31,17 @@ export async function createUser(data: { name: string; email: string; password: 
                 result.user.id
             );
         }
+
+        // System notification (fire-and-forget)
+        notify({
+            eventType: NOTIFICATION_EVENTS.USER_CREATED,
+            data: {
+                userName: data.name,
+                email: data.email,
+                createdBy: currentUser?.name,
+                timestamp: new Date().toISOString(),
+            },
+        }).catch(() => {});
 
         return { success: true };
     } catch (error: unknown) {

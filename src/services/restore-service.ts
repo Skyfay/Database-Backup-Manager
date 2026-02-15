@@ -17,6 +17,8 @@ import { isMultiDbTar, readTarManifest } from "@/lib/adapters/database/common/ta
 import { logger } from "@/lib/logger";
 import { wrapError, getErrorMessage } from "@/lib/errors";
 import { verifyFileChecksum } from "@/lib/checksum";
+import { notify } from "@/services/system-notification-service";
+import { NOTIFICATION_EVENTS } from "@/lib/notifications";
 
 const svcLog = logger.child({ service: "RestoreService" });
 
@@ -641,6 +643,17 @@ export class RestoreService {
                         logs: JSON.stringify(internalLogs)
                     }
                 });
+
+                // System notification (fire-and-forget)
+                notify({
+                    eventType: NOTIFICATION_EVENTS.RESTORE_COMPLETE,
+                    data: {
+                        sourceName: targetSourceId,
+                        targetDatabase: targetDatabaseName,
+                        executionId,
+                        timestamp: new Date().toISOString(),
+                    },
+                }).catch(() => {});
             }
 
         } catch (error: unknown) {
@@ -652,6 +665,18 @@ export class RestoreService {
                 where: { id: executionId },
                 data: { status: 'Failed', endedAt: new Date(), logs: JSON.stringify(internalLogs) }
             });
+
+            // System notification (fire-and-forget)
+            notify({
+                eventType: NOTIFICATION_EVENTS.RESTORE_FAILURE,
+                data: {
+                    sourceName: targetSourceId,
+                    targetDatabase: targetDatabaseName,
+                    error: getErrorMessage(error),
+                    executionId,
+                    timestamp: new Date().toISOString(),
+                },
+            }).catch(() => {});
         } finally {
             if (tempFile && fs.existsSync(tempFile)) {
                 try { fs.unlinkSync(tempFile); } catch {}

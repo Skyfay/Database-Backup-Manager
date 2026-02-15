@@ -152,7 +152,12 @@ export interface StorageAdapter extends BaseAdapter {
 }
 
 /**
- * Context passed to notification adapters with backup/restore result details
+ * Context passed to notification adapters with backup/restore result details.
+ *
+ * When `eventType` is set the notification originates from the system
+ * notification framework (e.g. user login, config backup) and should be
+ * rendered using the generic `title / message / fields` properties instead
+ * of the backup-specific ones.
  */
 export interface NotificationContext {
     success: boolean;
@@ -171,6 +176,16 @@ export interface NotificationContext {
         stage?: string;
         details?: string;
     }>;
+
+    // ── System notification fields ─────────────────────────────
+    /** Identifies this as a system notification (set by SystemNotificationService) */
+    eventType?: string;
+    /** Short title used as email subject / embed title */
+    title?: string;
+    /** Structured key-value fields for rich rendering */
+    fields?: Array<{ name: string; value: string; inline?: boolean }>;
+    /** Hex colour for embeds / status indicators */
+    color?: string;
 }
 
 export interface NotificationAdapter extends BaseAdapter {

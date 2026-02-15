@@ -52,18 +52,40 @@ export const EmailAdapter: NotificationAdapter = {
             await transporter.verify();
 
             let subject = "Database Backup Notification";
-
-            if (context) {
-                subject = context.success ? "✅ Backup Successful" : "❌ Backup Failed";
-            }
+            let html: string;
 
             // Dynamic import to avoid build errors with server components in some contexts
             const { renderToStaticMarkup } = await import("react-dom/server");
-            const { NotificationEmail } = await import("@/components/email/notification-template");
 
-            const html = renderToStaticMarkup(
-                <NotificationEmail message={message} context={context} />
-            );
+            if (context?.eventType) {
+                // ── System notification (from SystemNotificationService) ───
+                subject = context.title || "System Notification";
+
+                const { SystemNotificationEmail } = await import(
+                    "@/components/email/system-notification-template"
+                );
+
+                html = renderToStaticMarkup(
+                    <SystemNotificationEmail
+                        title={context.title || "Notification"}
+                        message={message}
+                        fields={context.fields}
+                        color={context.color}
+                        success={context.success}
+                    />
+                );
+            } else {
+                // ── Legacy backup notification ─────────────────────────────
+                if (context) {
+                    subject = context.success ? "✅ Backup Successful" : "❌ Backup Failed";
+                }
+
+                const { NotificationEmail } = await import("@/components/email/notification-template");
+
+                html = renderToStaticMarkup(
+                    <NotificationEmail message={message} context={context} />
+                );
+            }
 
             const info = await transporter.sendMail({
                 from: config.from,

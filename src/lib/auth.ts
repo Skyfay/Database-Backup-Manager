@@ -158,6 +158,36 @@ export const auth = betterAuth({
         enabled: true,
         autoSignIn: true
     },
+    databaseHooks: {
+        session: {
+            create: {
+                after: async (session) => {
+                    // Fire-and-forget system notification for user login
+                    // Dynamic import to avoid circular dependencies
+                    Promise.all([
+                        import("@/services/system-notification-service"),
+                        import("@/lib/notifications"),
+                        prisma.user.findUnique({
+                            where: { id: session.userId },
+                            select: { name: true, email: true },
+                        }),
+                    ])
+                        .then(([{ notify }, { NOTIFICATION_EVENTS }, user]) => {
+                            if (!user) return;
+                            return notify({
+                                eventType: NOTIFICATION_EVENTS.USER_LOGIN,
+                                data: {
+                                    userName: user.name,
+                                    email: user.email,
+                                    timestamp: new Date().toISOString(),
+                                },
+                            });
+                        })
+                        .catch(() => {});
+                },
+            },
+        },
+    },
     plugins: [
         twoFactor(),
         passkey(),

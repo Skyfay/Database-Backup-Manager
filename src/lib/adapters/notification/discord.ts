@@ -43,30 +43,53 @@ export const DiscordAdapter: NotificationAdapter = {
                 avatar_url: config.avatarUrl,
             };
 
-            // If we have context (like a backup result), we can add an embed
             if (context) {
-                const color = context.success ? 0x00ff00 : 0xff0000; // Green or Red
-                const embed: any = {
-                    title: context.success ? "Backup Successful" : "Backup Failed",
-                    color: color,
-                    timestamp: new Date().toISOString(),
-                    fields: [
-                        { name: "Adapter", value: context.adapterName || "Unknown", inline: true },
-                        { name: "Duration", value: context.duration ? `${context.duration}ms` : "N/A", inline: true },
-                    ]
-                };
+                // ── System notification (from SystemNotificationService) ───
+                if (context.eventType) {
+                    const color = context.color
+                        ? parseInt(context.color.replace("#", ""), 16)
+                        : context.success
+                          ? 0x00ff00
+                          : 0xff0000;
 
-                if (context.size !== undefined) {
-                    embed.fields.push({ name: "Size", value: formatBytes(context.size), inline: true });
+                    const embed: any = {
+                        title: context.title || "Notification",
+                        description: message,
+                        color,
+                        timestamp: new Date().toISOString(),
+                        fields: (context.fields || []).map((f: any) => ({
+                            name: f.name,
+                            value: f.value,
+                            inline: f.inline ?? true,
+                        })),
+                    };
+
+                    payload.embeds = [embed];
+                    // Clear content so we don't duplicate the message
+                    payload.content = undefined;
+                } else {
+                    // ── Legacy backup notification ─────────────────────────
+                    const color = context.success ? 0x00ff00 : 0xff0000; // Green or Red
+                    const embed: any = {
+                        title: context.success ? "Backup Successful" : "Backup Failed",
+                        color: color,
+                        timestamp: new Date().toISOString(),
+                        fields: [
+                            { name: "Adapter", value: context.adapterName || "Unknown", inline: true },
+                            { name: "Duration", value: context.duration ? `${context.duration}ms` : "N/A", inline: true },
+                        ]
+                    };
+
+                    if (context.size !== undefined) {
+                        embed.fields.push({ name: "Size", value: formatBytes(context.size), inline: true });
+                    }
+
+                    if (context.error) {
+                        embed.description = `**Error:** ${context.error}`;
+                    }
+
+                    payload.embeds = [embed];
                 }
-
-                if (context.error) {
-                    embed.description = `**Error:** ${context.error}`;
-                }
-
-                payload.embeds = [embed];
-                // If we use embeds, we might want to put the main message in the embed or keep it as content.
-                // Let's keep content for mentions if needed, but if message is generic, maybe rely on embed.
             }
 
             const response = await fetch(config.webhookUrl, {

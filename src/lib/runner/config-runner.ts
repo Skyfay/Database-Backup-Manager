@@ -14,6 +14,8 @@ import { StorageAdapter } from "@/lib/core/interfaces";
 import { decryptConfig } from "@/lib/crypto";
 import { logger } from "@/lib/logger";
 import { wrapError, EncryptionError, ConfigurationError } from "@/lib/errors";
+import { notify } from "@/services/system-notification-service";
+import { NOTIFICATION_EVENTS } from "@/lib/notifications";
 
 const pipelineAsync = promisify(pipeline);
 const log = logger.child({ runner: "ConfigRunner" });
@@ -181,6 +183,16 @@ export async function runConfigBackup() {
     await storageAdapter.upload(decryptedConfig, metaTempPath, remoteMetaFilename);
 
     log.info("Configuration Backup complete");
+
+    // System notification (fire-and-forget)
+    notify({
+        eventType: NOTIFICATION_EVENTS.CONFIG_BACKUP,
+        data: {
+            fileName: remoteFilename,
+            encrypted: !!profileId?.value,
+            timestamp: new Date().toISOString(),
+        },
+    }).catch(() => {});
 
     // 9. Cleanup Temp
     try {
