@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -25,6 +25,24 @@ export function AdapterForm({ type, adapters, onSuccess, initialData }: { type: 
     const [selectedAdapterId, setSelectedAdapterId] = useState<string>(initialData?.adapterId || "");
 
     const selectedAdapter = adapters.find(a => a.id === selectedAdapterId);
+
+    // Group adapters by their group field (preserves insertion order)
+    const adapterGroups = useMemo(() => {
+        const groups: { label: string; items: AdapterDefinition[] }[] = [];
+        const seen = new Map<string, AdapterDefinition[]>();
+        for (const adapter of adapters) {
+            const key = adapter.group ?? "";
+            if (!seen.has(key)) {
+                const items: AdapterDefinition[] = [];
+                seen.set(key, items);
+                groups.push({ label: key, items });
+            }
+            seen.get(key)!.push(adapter);
+        }
+        return groups;
+    }, [adapters]);
+
+    const hasGroups = adapterGroups.some(g => g.label !== "");
 
     // Initial load of databases if editing
     useEffect(() => {
@@ -185,33 +203,35 @@ export function AdapterForm({ type, adapters, onSuccess, initialData }: { type: 
                                                 </Button>
                                             </FormControl>
                                         </PopoverTrigger>
-                                        <PopoverContent className="w-62.5 p-0" align="start">
+                                        <PopoverContent className={cn("p-0", hasGroups ? "w-80" : "w-62.5")} align="start">
                                             <Command>
                                                 <CommandInput placeholder="Search type..." />
                                                 <CommandList>
                                                     <CommandEmpty>No type found.</CommandEmpty>
-                                                    <CommandGroup>
-                                                        {adapters.map((adapter) => (
-                                                            <CommandItem
-                                                                value={adapter.name}
-                                                                key={adapter.id}
-                                                                onSelect={() => {
-                                                                    form.setValue("adapterId", adapter.id)
-                                                                    setSelectedAdapterId(adapter.id);
-                                                                }}
-                                                            >
-                                                                <Check
-                                                                    className={cn(
-                                                                        "mr-2 h-4 w-4",
-                                                                        adapter.id === field.value
-                                                                            ? "opacity-100"
-                                                                            : "opacity-0"
-                                                                    )}
-                                                                />
-                                                                {adapter.name}
-                                                            </CommandItem>
-                                                        ))}
-                                                    </CommandGroup>
+                                                    {adapterGroups.map((group) => (
+                                                        <CommandGroup key={group.label} heading={group.label || undefined}>
+                                                            {group.items.map((adapter) => (
+                                                                <CommandItem
+                                                                    value={adapter.name}
+                                                                    key={adapter.id}
+                                                                    onSelect={() => {
+                                                                        form.setValue("adapterId", adapter.id)
+                                                                        setSelectedAdapterId(adapter.id);
+                                                                    }}
+                                                                >
+                                                                    <Check
+                                                                        className={cn(
+                                                                            "mr-2 h-4 w-4",
+                                                                            adapter.id === field.value
+                                                                                ? "opacity-100"
+                                                                                : "opacity-0"
+                                                                        )}
+                                                                    />
+                                                                    {adapter.name}
+                                                                </CommandItem>
+                                                            ))}
+                                                        </CommandGroup>
+                                                    ))}
                                                 </CommandList>
                                             </Command>
                                         </PopoverContent>

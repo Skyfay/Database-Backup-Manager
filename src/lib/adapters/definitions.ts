@@ -4,6 +4,7 @@ export type AdapterDefinition = {
     id: string;
     type: 'database' | 'storage' | 'notification';
     name: string;
+    group?: string;
     configSchema: z.ZodObject<any>;
 }
 
@@ -270,19 +271,19 @@ export const ADAPTER_DEFINITIONS: AdapterDefinition[] = [
     { id: "mssql", type: "database", name: "Microsoft SQL Server", configSchema: MSSQLSchema },
     { id: "redis", type: "database", name: "Redis", configSchema: RedisSchema },
 
-    { id: "local-filesystem", type: "storage", name: "Local Filesystem", configSchema: LocalStorageSchema },
-    { id: "s3-generic", type: "storage", name: "S3 Compatible (Generic)", configSchema: S3GenericSchema },
-    { id: "s3-aws", type: "storage", name: "Amazon S3", configSchema: S3AWSSchema },
-    { id: "s3-r2", type: "storage", name: "Cloudflare R2", configSchema: S3R2Schema },
-    { id: "s3-hetzner", type: "storage", name: "Hetzner Object Storage", configSchema: S3HetznerSchema },
-    { id: "sftp", type: "storage", name: "SFTP (SSH)", configSchema: SFTPSchema },
-    { id: "smb", type: "storage", name: "SMB (Samba)", configSchema: SMBSchema },
-    { id: "webdav", type: "storage", name: "WebDAV", configSchema: WebDAVSchema },
-    { id: "ftp", type: "storage", name: "FTP / FTPS", configSchema: FTPSchema },
-    { id: "rsync", type: "storage", name: "Rsync (SSH)", configSchema: RsyncSchema },
-    { id: "google-drive", type: "storage", name: "Google Drive", configSchema: GoogleDriveSchema },
-    { id: "dropbox", type: "storage", name: "Dropbox", configSchema: DropboxSchema },
-    { id: "onedrive", type: "storage", name: "Microsoft OneDrive", configSchema: OneDriveSchema },
+    { id: "local-filesystem", type: "storage", group: "Local", name: "Local Filesystem", configSchema: LocalStorageSchema },
+    { id: "s3-aws", type: "storage", group: "Cloud Storage (S3)", name: "Amazon S3", configSchema: S3AWSSchema },
+    { id: "s3-generic", type: "storage", group: "Cloud Storage (S3)", name: "S3 Compatible (Generic)", configSchema: S3GenericSchema },
+    { id: "s3-r2", type: "storage", group: "Cloud Storage (S3)", name: "Cloudflare R2", configSchema: S3R2Schema },
+    { id: "s3-hetzner", type: "storage", group: "Cloud Storage (S3)", name: "Hetzner Object Storage", configSchema: S3HetznerSchema },
+    { id: "google-drive", type: "storage", group: "Cloud Drives", name: "Google Drive", configSchema: GoogleDriveSchema },
+    { id: "dropbox", type: "storage", group: "Cloud Drives", name: "Dropbox", configSchema: DropboxSchema },
+    { id: "onedrive", type: "storage", group: "Cloud Drives", name: "Microsoft OneDrive", configSchema: OneDriveSchema },
+    { id: "sftp", type: "storage", group: "Network", name: "SFTP (SSH)", configSchema: SFTPSchema },
+    { id: "ftp", type: "storage", group: "Network", name: "FTP / FTPS", configSchema: FTPSchema },
+    { id: "webdav", type: "storage", group: "Network", name: "WebDAV", configSchema: WebDAVSchema },
+    { id: "smb", type: "storage", group: "Network", name: "SMB (Samba)", configSchema: SMBSchema },
+    { id: "rsync", type: "storage", group: "Network", name: "Rsync (SSH)", configSchema: RsyncSchema },
 
     { id: "discord", type: "notification", name: "Discord Webhook", configSchema: DiscordSchema },
     { id: "email", type: "notification", name: "Email (SMTP)", configSchema: EmailSchema },

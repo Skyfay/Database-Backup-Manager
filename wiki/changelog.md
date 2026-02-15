@@ -2,6 +2,35 @@
 
 All notable changes to DBackup are documented here.
 
+## v0.9.7-beta - Grouped Destination Selector & Documentation Updates
+*Release: In Progress*
+
+This release improves the destination type selector UX with categorized grouping and fixes mouse wheel scrolling in command list dropdowns.
+
+### ✨ New Features
+
+#### 🗂️ Grouped Destination Type Selector
+- **Categorized Adapter List**: The destination type dropdown now groups storage adapters into logical categories for better discoverability
+- **Four Groups**: Local, Cloud Storage (S3), Cloud Drives, and Network — each displayed as a labeled section with a heading
+- **Wider Popover**: The dropdown is now wider when groups are present to accommodate category headings
+- **Adapter Reordering**: Storage adapters are reordered to match their category grouping (e.g., all S3 variants together, all network protocols together)
+- **Backward Compatible**: Database and notification adapters without groups continue to display as a flat list
+
+### 🐛 Bug Fixes
+- **Mouse Wheel Scrolling**: Fixed mouse wheel scrolling not working in command list dropdowns (type selector, comboboxes). The `cmdk` library was intercepting scroll events — added a manual `onWheel` handler to `CommandList` to ensure native scroll behavior
+
+### 📚 Documentation
+- **Supported Destinations Table**: Added a comprehensive table listing all 13 supported storage destinations with details to both the wiki landing page and README
+- **Supported Notifications Table**: Added a table listing all supported notification channels (Discord, Email) to both the wiki landing page and README
+- **Reduced Duplication**: Shortened feature descriptions in the hero section and README features list to avoid repeating information already shown in the new tables
+
+### 🔧 Technical Changes
+- Updated `src/lib/adapters/definitions.ts` — Added optional `group` field to `AdapterDefinition` type, assigned groups to all 13 storage adapters
+- Updated `src/components/adapter/adapter-form.tsx` — Adapter list is grouped via `useMemo`, rendered as multiple `CommandGroup` components with headings, popover width adapts based on presence of groups
+- Updated `src/components/ui/command.tsx` — Added `onWheel` handler to `CommandList` for manual scroll support, bypassing `cmdk`'s event interception
+- Updated `wiki/index.md` — Added "Supported Destinations" and "Supported Notifications" sections, shortened hero feature texts
+- Updated `README.md` — Added "Supported Destinations" and "Supported Notifications" sections, shortened feature bullet points
+
 ## v0.9.6-beta - Rsync, Google Drive, Dropbox & OneDrive Storage Destinations & New Notification System
 *Released: February 15, 2026*
 
