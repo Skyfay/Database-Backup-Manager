@@ -114,7 +114,7 @@ describe("OneDriveAdapter", () => {
     // ====================================================================
     describe("authorization guard", () => {
         it("should fail test() when no refreshToken is set", async () => {
-            const result = await OneDriveAdapter.test(unauthorizedConfig);
+            const result = await OneDriveAdapter.test!(unauthorizedConfig);
 
             expect(result.success).toBe(false);
             expect(result.message).toContain("not authorized");
@@ -182,7 +182,7 @@ describe("OneDriveAdapter", () => {
                 };
             });
 
-            const result = await OneDriveAdapter.test(validConfig);
+            const result = await OneDriveAdapter.test!(validConfig);
 
             expect(result.success).toBe(true);
             expect(result.message).toContain("Write/Delete verified");
@@ -213,7 +213,7 @@ describe("OneDriveAdapter", () => {
                 };
             });
 
-            const result = await OneDriveAdapter.test(validConfig);
+            const result = await OneDriveAdapter.test!(validConfig);
 
             expect(result.success).toBe(false);
             expect(result.message).toContain("not a folder");
@@ -226,7 +226,7 @@ describe("OneDriveAdapter", () => {
                 text: async () => '{"error":"invalid_grant","error_description":"AADSTS700082: The refresh token has expired"}',
             });
 
-            const result = await OneDriveAdapter.test(validConfig);
+            const result = await OneDriveAdapter.test!(validConfig);
 
             expect(result.success).toBe(false);
             expect(result.message).toContain("re-authorize with Microsoft");
@@ -257,7 +257,7 @@ describe("OneDriveAdapter", () => {
                 };
             });
 
-            const result = await OneDriveAdapter.test(rootConfig);
+            const result = await OneDriveAdapter.test!(rootConfig);
 
             expect(result.success).toBe(true);
         });
@@ -271,7 +271,7 @@ describe("OneDriveAdapter", () => {
                 }),
             }));
 
-            const result = await OneDriveAdapter.test(validConfig);
+            const result = await OneDriveAdapter.test!(validConfig);
 
             expect(result.success).toBe(false);
             expect(result.message).toContain("ECONNREFUSED");
@@ -474,7 +474,7 @@ describe("OneDriveAdapter", () => {
                 text: async () => '{"compression":"gzip"}',
             });
 
-            const result = await OneDriveAdapter.read(validConfig, "backup.meta.json");
+            const result = await OneDriveAdapter.read!(validConfig, "backup.meta.json");
 
             expect(result).toBe('{"compression":"gzip"}');
         });
@@ -486,7 +486,7 @@ describe("OneDriveAdapter", () => {
                 get: vi.fn().mockRejectedValue(new Error("itemNotFound")),
             });
 
-            const result = await OneDriveAdapter.read(validConfig, "nonexistent.json");
+            const result = await OneDriveAdapter.read!(validConfig, "nonexistent.json");
 
             expect(result).toBeNull();
         });
@@ -538,7 +538,7 @@ describe("OneDriveAdapter", () => {
                 }),
             }));
 
-            const result = await OneDriveAdapter.list(validConfig);
+            const result = await OneDriveAdapter.list(validConfig, "");
 
             expect(result).toHaveLength(2);
             expect(result[0].name).toBe("backup-2024.sql");
@@ -557,7 +557,7 @@ describe("OneDriveAdapter", () => {
                 get: vi.fn().mockRejectedValue(new Error("Access denied")),
             });
 
-            const result = await OneDriveAdapter.list(validConfig);
+            const result = await OneDriveAdapter.list(validConfig, "");
 
             expect(result).toEqual([]);
         });
@@ -589,7 +589,7 @@ describe("OneDriveAdapter", () => {
                 }),
             }));
 
-            const result = await OneDriveAdapter.list(validConfig);
+            const result = await OneDriveAdapter.list(validConfig, "");
 
             expect(result).toHaveLength(2);
             expect(result[0].name).toBe("file1.sql");

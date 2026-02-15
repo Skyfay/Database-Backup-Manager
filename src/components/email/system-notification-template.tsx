@@ -31,6 +31,7 @@ export const SystemNotificationEmail: React.FC<SystemNotificationEmailProps> = (
           alignItems: "center",
         }}
       >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={LOGO_URL}
           alt="DBackup"

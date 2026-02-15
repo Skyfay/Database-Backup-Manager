@@ -43,7 +43,6 @@ import {
   saveNotificationConfig,
   notify,
 } from "@/services/system-notification-service";
-import { registry } from "@/lib/core/registry";
 
 describe("SystemNotificationService", () => {
   beforeEach(() => {
@@ -70,10 +69,10 @@ describe("SystemNotificationService", () => {
       };
 
       prismaMock.systemSetting.findUnique.mockResolvedValue({
-        id: "1",
         key: "notifications.config",
         value: JSON.stringify(stored),
         description: null,
+        updatedAt: new Date(),
       });
 
       const config = await getNotificationConfig();
@@ -84,10 +83,10 @@ describe("SystemNotificationService", () => {
 
     it("should return defaults for invalid JSON", async () => {
       prismaMock.systemSetting.findUnique.mockResolvedValue({
-        id: "1",
         key: "notifications.config",
         value: "{{invalid json",
         description: null,
+        updatedAt: new Date(),
       });
 
       const config = await getNotificationConfig();
@@ -106,10 +105,10 @@ describe("SystemNotificationService", () => {
       };
 
       prismaMock.systemSetting.upsert.mockResolvedValue({
-        id: "1",
         key: "notifications.config",
         value: JSON.stringify(config),
         description: null,
+        updatedAt: new Date(),
       });
 
       await saveNotificationConfig(config as any);
@@ -135,8 +134,12 @@ describe("SystemNotificationService", () => {
       adapterId: "email",
       type: "notification",
       config: JSON.stringify({ host: "smtp.test.com", from: "bot@test.com", to: "admin@test.com" }),
+      metadata: null,
       createdAt: new Date(),
       updatedAt: new Date(),
+      lastHealthCheck: null,
+      lastStatus: "ONLINE",
+      consecutiveFailures: 0,
     };
 
     const discordChannel = {
@@ -145,19 +148,23 @@ describe("SystemNotificationService", () => {
       adapterId: "discord",
       type: "notification",
       config: JSON.stringify({ webhookUrl: "https://discord.com/api/webhooks/xxx" }),
+      metadata: null,
       createdAt: new Date(),
       updatedAt: new Date(),
+      lastHealthCheck: null,
+      lastStatus: "ONLINE",
+      consecutiveFailures: 0,
     };
 
     it("should skip disabled events", async () => {
       prismaMock.systemSetting.findUnique.mockResolvedValue({
-        id: "1",
         key: "notifications.config",
         value: JSON.stringify({
           globalChannels: ["ch-email"],
           events: { user_login: { enabled: false, channels: null } },
         }),
         description: null,
+        updatedAt: new Date(),
       });
 
       await notify({
@@ -174,13 +181,13 @@ describe("SystemNotificationService", () => {
 
     it("should skip when no channels are configured", async () => {
       prismaMock.systemSetting.findUnique.mockResolvedValue({
-        id: "1",
         key: "notifications.config",
         value: JSON.stringify({
           globalChannels: [],
           events: { user_login: { enabled: true, channels: null } },
         }),
         description: null,
+        updatedAt: new Date(),
       });
 
       await notify({
@@ -197,13 +204,13 @@ describe("SystemNotificationService", () => {
 
     it("should send through configured channels", async () => {
       prismaMock.systemSetting.findUnique.mockResolvedValue({
-        id: "1",
         key: "notifications.config",
         value: JSON.stringify({
           globalChannels: ["ch-email"],
           events: { user_login: { enabled: true, channels: null } },
         }),
         description: null,
+        updatedAt: new Date(),
       });
 
       prismaMock.adapterConfig.findMany.mockResolvedValue([emailChannel]);
@@ -231,7 +238,6 @@ describe("SystemNotificationService", () => {
 
     it("should use event-level channel overrides over global channels", async () => {
       prismaMock.systemSetting.findUnique.mockResolvedValue({
-        id: "1",
         key: "notifications.config",
         value: JSON.stringify({
           globalChannels: ["ch-email"],
@@ -240,6 +246,7 @@ describe("SystemNotificationService", () => {
           },
         }),
         description: null,
+        updatedAt: new Date(),
       });
 
       prismaMock.adapterConfig.findMany.mockResolvedValue([discordChannel]);
@@ -265,13 +272,13 @@ describe("SystemNotificationService", () => {
     it("should use event defaultEnabled when no explicit config exists", async () => {
       // SYSTEM_ERROR has defaultEnabled: true
       prismaMock.systemSetting.findUnique.mockResolvedValue({
-        id: "1",
         key: "notifications.config",
         value: JSON.stringify({
           globalChannels: ["ch-email"],
           events: {}, // no explicit config for system_error
         }),
         description: null,
+        updatedAt: new Date(),
       });
 
       prismaMock.adapterConfig.findMany.mockResolvedValue([emailChannel]);
@@ -290,7 +297,6 @@ describe("SystemNotificationService", () => {
 
     it("should not send through admin channels when notifyUser is 'only'", async () => {
       prismaMock.systemSetting.findUnique.mockResolvedValue({
-        id: "1",
         key: "notifications.config",
         value: JSON.stringify({
           globalChannels: ["ch-email"],
@@ -303,6 +309,7 @@ describe("SystemNotificationService", () => {
           },
         }),
         description: null,
+        updatedAt: new Date(),
       });
 
       prismaMock.adapterConfig.findMany.mockResolvedValue([emailChannel]);
@@ -328,7 +335,6 @@ describe("SystemNotificationService", () => {
 
     it("should send to both admin and user when notifyUser is 'also'", async () => {
       prismaMock.systemSetting.findUnique.mockResolvedValue({
-        id: "1",
         key: "notifications.config",
         value: JSON.stringify({
           globalChannels: ["ch-email"],
@@ -341,6 +347,7 @@ describe("SystemNotificationService", () => {
           },
         }),
         description: null,
+        updatedAt: new Date(),
       });
 
       prismaMock.adapterConfig.findMany.mockResolvedValue([emailChannel]);
@@ -360,13 +367,13 @@ describe("SystemNotificationService", () => {
 
     it("should never throw even when adapter fails", async () => {
       prismaMock.systemSetting.findUnique.mockResolvedValue({
-        id: "1",
         key: "notifications.config",
         value: JSON.stringify({
           globalChannels: ["ch-email"],
           events: { system_error: { enabled: true, channels: null } },
         }),
         description: null,
+        updatedAt: new Date(),
       });
 
       prismaMock.adapterConfig.findMany.mockResolvedValue([emailChannel]);
@@ -405,7 +412,6 @@ describe("SystemNotificationService", () => {
     it("should skip notifyUser for events that don't support it", async () => {
       // CONFIG_BACKUP does not have supportsNotifyUser
       prismaMock.systemSetting.findUnique.mockResolvedValue({
-        id: "1",
         key: "notifications.config",
         value: JSON.stringify({
           globalChannels: ["ch-email"],
@@ -418,6 +424,7 @@ describe("SystemNotificationService", () => {
           },
         }),
         description: null,
+        updatedAt: new Date(),
       });
 
       prismaMock.adapterConfig.findMany.mockResolvedValue([emailChannel]);

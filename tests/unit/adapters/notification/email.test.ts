@@ -90,7 +90,7 @@ describe("Email Adapter", () => {
     });
 
     it("should use DBackup Notification as default subject", async () => {
-      const result = await EmailAdapter.send(baseConfig, "Test message", {});
+      const result = await EmailAdapter.send(baseConfig, "Test message", { success: true });
 
       expect(result).toBe(true);
       expect(mockSendMail).toHaveBeenCalledWith(
@@ -106,7 +106,7 @@ describe("Email Adapter", () => {
         to: ["admin@example.com", "ops@example.com", "dev@example.com"],
       };
 
-      await EmailAdapter.send(multiConfig, "Test", { title: "Test" });
+      await EmailAdapter.send(multiConfig, "Test", { title: "Test", success: true });
 
       expect(mockSendMail).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -116,7 +116,7 @@ describe("Email Adapter", () => {
     });
 
     it("should handle single string recipient", async () => {
-      await EmailAdapter.send(baseConfig, "Test", { title: "Test" });
+      await EmailAdapter.send(baseConfig, "Test", { title: "Test", success: true });
 
       expect(mockSendMail).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -128,7 +128,7 @@ describe("Email Adapter", () => {
     it("should return false on send failure", async () => {
       mockSendMail.mockRejectedValueOnce(new Error("SMTP timeout"));
 
-      const result = await EmailAdapter.send(baseConfig, "Test", {});
+      const result = await EmailAdapter.send(baseConfig, "Test", { success: true });
 
       expect(result).toBe(false);
     });

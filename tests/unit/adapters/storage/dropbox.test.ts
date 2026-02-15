@@ -73,7 +73,7 @@ describe("DropboxAdapter", () => {
     // ====================================================================
     describe("authorization guard", () => {
         it("should fail test() when no refreshToken is set", async () => {
-            const result = await DropboxAdapter.test(unauthorizedConfig);
+            const result = await DropboxAdapter.test!(unauthorizedConfig);
 
             expect(result.success).toBe(false);
             expect(result.message).toContain("not authorized");
@@ -106,7 +106,7 @@ describe("DropboxAdapter", () => {
             mockDbx.filesUpload.mockResolvedValue({});
             mockDbx.filesDeleteV2.mockResolvedValue({});
 
-            const result = await DropboxAdapter.test(validConfig);
+            const result = await DropboxAdapter.test!(validConfig);
 
             expect(result.success).toBe(true);
             expect(result.message).toContain("Test User");
@@ -121,7 +121,7 @@ describe("DropboxAdapter", () => {
                 result: { ".tag": "file" },
             });
 
-            const result = await DropboxAdapter.test(validConfig);
+            const result = await DropboxAdapter.test!(validConfig);
 
             expect(result.success).toBe(false);
             expect(result.message).toContain("not a folder");
@@ -132,7 +132,7 @@ describe("DropboxAdapter", () => {
                 new Error("invalid_access_token")
             );
 
-            const result = await DropboxAdapter.test(validConfig);
+            const result = await DropboxAdapter.test!(validConfig);
 
             expect(result.success).toBe(false);
             expect(result.message).toContain("expired");
@@ -149,7 +149,7 @@ describe("DropboxAdapter", () => {
             mockDbx.filesUpload.mockResolvedValue({});
             mockDbx.filesDeleteV2.mockResolvedValue({});
 
-            const result = await DropboxAdapter.test(validConfig);
+            const result = await DropboxAdapter.test!(validConfig);
 
             expect(result.success).toBe(true);
             expect(mockDbx.filesCreateFolderV2).toHaveBeenCalledWith({
@@ -163,7 +163,7 @@ describe("DropboxAdapter", () => {
                 new Error("Network timeout")
             );
 
-            const result = await DropboxAdapter.test(validConfig);
+            const result = await DropboxAdapter.test!(validConfig);
 
             expect(result.success).toBe(false);
             expect(result.message).toContain("Network timeout");
@@ -178,7 +178,7 @@ describe("DropboxAdapter", () => {
             mockDbx.filesUpload.mockResolvedValue({});
             mockDbx.filesDeleteV2.mockResolvedValue({});
 
-            const result = await DropboxAdapter.test(rootConfig);
+            const result = await DropboxAdapter.test!(rootConfig);
 
             expect(result.success).toBe(true);
             // No metadata check when no folder path
@@ -406,7 +406,7 @@ describe("DropboxAdapter", () => {
                 },
             });
 
-            const files = await DropboxAdapter.list(validConfig);
+            const files = await DropboxAdapter.list(validConfig, "");
 
             expect(files).toHaveLength(2);
             expect(files[0]).toEqual({
@@ -456,7 +456,7 @@ describe("DropboxAdapter", () => {
                 },
             });
 
-            const files = await DropboxAdapter.list(validConfig);
+            const files = await DropboxAdapter.list(validConfig, "");
 
             expect(files).toHaveLength(2);
             expect(mockDbx.filesListFolderContinue).toHaveBeenCalledWith({
@@ -486,7 +486,7 @@ describe("DropboxAdapter", () => {
                 },
             });
 
-            const files = await DropboxAdapter.list(validConfig);
+            const files = await DropboxAdapter.list(validConfig, "");
 
             expect(files).toHaveLength(1);
             expect(files[0].name).toBe("backup.sql");
@@ -495,7 +495,7 @@ describe("DropboxAdapter", () => {
         it("should return empty array on error", async () => {
             mockDbx.filesListFolder.mockRejectedValue(new Error("API error"));
 
-            const files = await DropboxAdapter.list(validConfig);
+            const files = await DropboxAdapter.list(validConfig, "");
 
             expect(files).toEqual([]);
         });

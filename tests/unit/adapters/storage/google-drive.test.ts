@@ -88,7 +88,7 @@ describe("GoogleDriveAdapter", () => {
     // ====================================================================
     describe("authorization guard", () => {
         it("should fail test() when no refreshToken is set", async () => {
-            const result = await GoogleDriveAdapter.test(unauthorizedConfig);
+            const result = await GoogleDriveAdapter.test!(unauthorizedConfig);
 
             expect(result.success).toBe(false);
             expect(result.message).toContain("not authorized");
@@ -130,7 +130,7 @@ describe("GoogleDriveAdapter", () => {
             });
             mockDrive.files.delete.mockResolvedValue({});
 
-            const result = await GoogleDriveAdapter.test(validConfig);
+            const result = await GoogleDriveAdapter.test!(validConfig);
 
             expect(result.success).toBe(true);
             expect(result.message).toContain("Write/Delete verified");
@@ -145,7 +145,7 @@ describe("GoogleDriveAdapter", () => {
                 },
             });
 
-            const result = await GoogleDriveAdapter.test(validConfig);
+            const result = await GoogleDriveAdapter.test!(validConfig);
 
             expect(result.success).toBe(false);
             expect(result.message).toContain("not a folder");
@@ -156,7 +156,7 @@ describe("GoogleDriveAdapter", () => {
                 new Error("invalid_grant: Token has been expired")
             );
 
-            const result = await GoogleDriveAdapter.test(validConfig);
+            const result = await GoogleDriveAdapter.test!(validConfig);
 
             expect(result.success).toBe(false);
             expect(result.message).toContain("expired");
@@ -170,7 +170,7 @@ describe("GoogleDriveAdapter", () => {
             });
             mockDrive.files.delete.mockResolvedValue({});
 
-            const result = await GoogleDriveAdapter.test(rootConfig);
+            const result = await GoogleDriveAdapter.test!(rootConfig);
 
             expect(result.success).toBe(true);
             // folderId check should not happen without folderId
@@ -180,7 +180,7 @@ describe("GoogleDriveAdapter", () => {
         it("should handle generic network errors", async () => {
             mockDrive.files.get.mockRejectedValue(new Error("ECONNREFUSED"));
 
-            const result = await GoogleDriveAdapter.test(validConfig);
+            const result = await GoogleDriveAdapter.test!(validConfig);
 
             expect(result.success).toBe(false);
             expect(result.message).toContain("ECONNREFUSED");
@@ -433,7 +433,7 @@ describe("GoogleDriveAdapter", () => {
                 },
             });
 
-            const files = await GoogleDriveAdapter.list(validConfig);
+            const files = await GoogleDriveAdapter.list(validConfig, "");
 
             expect(files).toHaveLength(2);
             expect(files[0]).toEqual({
@@ -475,7 +475,7 @@ describe("GoogleDriveAdapter", () => {
                 },
             });
 
-            const files = await GoogleDriveAdapter.list(validConfig);
+            const files = await GoogleDriveAdapter.list(validConfig, "");
 
             expect(files).toHaveLength(1);
             expect(files[0].path).toBe("daily/backup.sql");
@@ -512,7 +512,7 @@ describe("GoogleDriveAdapter", () => {
                     },
                 });
 
-            const files = await GoogleDriveAdapter.list(validConfig);
+            const files = await GoogleDriveAdapter.list(validConfig, "");
 
             expect(files).toHaveLength(2);
         });
@@ -520,7 +520,7 @@ describe("GoogleDriveAdapter", () => {
         it("should return empty array on error", async () => {
             mockDrive.files.list.mockRejectedValue(new Error("Forbidden"));
 
-            const files = await GoogleDriveAdapter.list(validConfig);
+            const files = await GoogleDriveAdapter.list(validConfig, "");
 
             expect(files).toEqual([]);
         });

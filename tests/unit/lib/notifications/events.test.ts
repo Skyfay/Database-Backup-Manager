@@ -1,11 +1,5 @@
 import { describe, it, expect } from "vitest";
-import {
-  NOTIFICATION_EVENTS,
-  type NotificationEventType,
-  type NotifyUserMode,
-  type SystemNotificationConfig,
-  type NotificationPayload,
-} from "@/lib/notifications/types";
+import { NOTIFICATION_EVENTS } from "@/lib/notifications/types";
 import {
   EVENT_DEFINITIONS,
   getEventDefinition,

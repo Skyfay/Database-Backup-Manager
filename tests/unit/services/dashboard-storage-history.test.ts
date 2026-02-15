@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { prismaMock } from "@/lib/testing/prisma-mock";
 
 // Mock logger to prevent output during tests
@@ -48,16 +48,28 @@ describe("Storage History (dashboard-service)", () => {
     it("should return formatted snapshot entries for a given configId", async () => {
       const mockSnapshots = [
         {
+          id: "snap-1",
+          adapterConfigId: "config-123",
+          adapterName: "Local",
+          adapterId: "local",
           size: BigInt(1024 * 1024 * 100), // 100 MB
           count: 5,
           createdAt: new Date("2026-02-10T10:00:00.000Z"),
         },
         {
+          id: "snap-2",
+          adapterConfigId: "config-123",
+          adapterName: "Local",
+          adapterId: "local",
           size: BigInt(1024 * 1024 * 200), // 200 MB
           count: 8,
           createdAt: new Date("2026-02-12T10:00:00.000Z"),
         },
         {
+          id: "snap-3",
+          adapterConfigId: "config-123",
+          adapterName: "Local",
+          adapterId: "local",
           size: BigInt(1024 * 1024 * 350), // 350 MB
           count: 12,
           createdAt: new Date("2026-02-14T10:00:00.000Z"),
@@ -129,6 +141,10 @@ describe("Storage History (dashboard-service)", () => {
       const largeSize = BigInt(5 * 1024 * 1024 * 1024); // 5 GB
       prismaMock.storageSnapshot.findMany.mockResolvedValue([
         {
+          id: "snap-large",
+          adapterConfigId: "config-large",
+          adapterName: "Local",
+          adapterId: "local",
           size: largeSize,
           count: 50,
           createdAt: new Date("2026-02-14T12:00:00.000Z"),
