@@ -1,5 +1,7 @@
 import * as React from "react";
 
+const LOGO_URL = "https://dbackup.app/logo.png";
+
 interface SystemNotificationEmailProps {
   title: string;
   message: string;
@@ -25,8 +27,17 @@ export const SystemNotificationEmail: React.FC<SystemNotificationEmailProps> = (
           backgroundColor: statusColor,
           padding: "16px 24px",
           borderRadius: "8px 8px 0 0",
+          display: "flex",
+          alignItems: "center",
         }}
       >
+        <img
+          src={LOGO_URL}
+          alt="DBackup"
+          width="28"
+          height="28"
+          style={{ marginRight: "12px", borderRadius: "4px" }}
+        />
         <h1 style={{ margin: 0, color: "#ffffff", fontSize: "20px", fontWeight: 600 }}>
           {title}
         </h1>
@@ -99,7 +110,7 @@ export const SystemNotificationEmail: React.FC<SystemNotificationEmailProps> = (
             textAlign: "center" as const,
           }}
         >
-          Sent by Database Backup Manager
+          Sent by DBackup
         </p>
       </div>
     </div>

@@ -50,7 +50,7 @@ export const EmailAdapter: NotificationAdapter = {
             // Verify connection configuration
             await transporter.verify();
 
-            const subject = context?.title || "Database Backup Manager Notification";
+            const subject = context?.title || "DBackup Notification";
 
             // Dynamic import to avoid build errors with server components in some contexts
             const { renderToStaticMarkup } = await import("react-dom/server");
