@@ -33,11 +33,24 @@ export async function POST(req: NextRequest) {
             );
         }
 
+        // Patched fetch that adds .buffer() for Dropbox SDK compatibility
+        // The SDK calls res.buffer() internally which doesn't exist on native fetch
+        const dropboxFetch: typeof fetch = async (input, init) => {
+            const response = await fetch(input, init);
+            if (!("buffer" in response)) {
+                (response as any).buffer = async () => {
+                    const ab = await response.arrayBuffer();
+                    return Buffer.from(ab);
+                };
+            }
+            return response;
+        };
+
         const dbx = new Dropbox({
             clientId: config.clientId,
             clientSecret: config.clientSecret,
             refreshToken: config.refreshToken,
-            fetch: fetch,
+            fetch: dropboxFetch,
         });
 
         // Dropbox uses "" for root, paths must start with /

@@ -24,6 +24,48 @@ const UPLOAD_CHUNK_SIZE = 8 * 1024 * 1024; // 8 MB per chunk for session upload
 const SIMPLE_UPLOAD_LIMIT = 150 * 1024 * 1024; // 150 MB
 
 /**
+ * Patched fetch that adds `.buffer()` to the Response object.
+ * The Dropbox SDK internally calls `res.buffer()` (a node-fetch v2 method)
+ * which doesn't exist on the native Node.js fetch Response.
+ * Without this patch, filesDownload() fails silently and fileBinary is undefined.
+ */
+const dropboxFetch: typeof fetch = async (input, init) => {
+    const response = await fetch(input, init);
+
+    if (!("buffer" in response)) {
+        (response as any).buffer = async () => {
+            const ab = await response.arrayBuffer();
+            return Buffer.from(ab);
+        };
+    }
+
+    return response;
+};
+
+/**
+ * Extracts file data from a Dropbox filesDownload response.
+ * The SDK sets either `fileBinary` (Buffer, in CJS/Node) or `fileBlob` (Blob, in ESM/bundled envs)
+ * depending on the `isWindowOrWorker()` check. Next.js Turbopack bundles code as ESM where
+ * `typeof module === 'undefined'`, causing the SDK to use the blob path.
+ */
+async function getFileBuffer(result: Record<string, unknown>): Promise<Buffer | null> {
+    // Node.js CJS path: fileBinary is a Buffer
+    if (result.fileBinary) {
+        const data = result.fileBinary;
+        return Buffer.isBuffer(data) ? data : Buffer.from(data as ArrayBuffer);
+    }
+
+    // ESM/bundled path: fileBlob is a Blob
+    if (result.fileBlob) {
+        const blob = result.fileBlob as Blob;
+        const arrayBuffer = await blob.arrayBuffer();
+        return Buffer.from(arrayBuffer);
+    }
+
+    return null;
+}
+
+/**
  * Creates an authenticated Dropbox client using OAuth2 refresh token.
  * The SDK handles automatic token refresh with clientId + clientSecret + refreshToken.
  */
@@ -36,7 +78,7 @@ function createDropboxClient(config: DropboxConfig): Dropbox {
         clientId: config.clientId,
         clientSecret: config.clientSecret,
         refreshToken: config.refreshToken,
-        fetch: fetch,
+        fetch: dropboxFetch,
     });
 }
 
@@ -224,15 +266,13 @@ export const DropboxAdapter: StorageAdapter = {
             await fs.mkdir(path.dirname(localPath), { recursive: true });
 
             const res = await dbx.filesDownload({ path: dropboxPath });
-            const fileData = (res.result as any).fileBinary;
+            const buffer = await getFileBuffer(res.result as unknown as Record<string, unknown>);
 
-            if (fileData) {
-                await fs.writeFile(localPath, fileData);
-            } else {
-                // Some environments return result differently
-                const buffer = Buffer.from(JSON.stringify(res.result));
-                await fs.writeFile(localPath, buffer);
+            if (!buffer) {
+                throw new Error("No file data received from Dropbox download");
             }
+
+            await fs.writeFile(localPath, buffer);
 
             if (onLog) onLog(`Dropbox download completed: ${dropboxPath}`, "info", "storage");
             return true;
@@ -249,13 +289,14 @@ export const DropboxAdapter: StorageAdapter = {
             const dropboxPath = buildDropboxPath(config.folderPath, remotePath);
 
             const res = await dbx.filesDownload({ path: dropboxPath });
-            const fileData = (res.result as any).fileBinary;
+            const buffer = await getFileBuffer(res.result as unknown as Record<string, unknown>);
 
-            if (fileData) {
-                return Buffer.isBuffer(fileData) ? fileData.toString("utf-8") : String(fileData);
+            if (!buffer) {
+                log.warn("No file data received from Dropbox read", { remotePath });
+                return null;
             }
 
-            return null;
+            return buffer.toString("utf-8");
         } catch {
             return null;
         }
