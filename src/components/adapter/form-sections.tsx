@@ -125,7 +125,7 @@ export function DatabaseFormContent({
                     </div>
                 )}
                 <FieldList
-                    keys={['uri', 'host', 'port', 'user', 'password']}
+                    keys={['uri', 'host', 'port', 'user', 'username', 'password']}
                     adapter={adapter}
                     isDatabase={true}
                     availableDatabases={availableDatabases}
@@ -146,7 +146,13 @@ export function DatabaseFormContent({
                     </div>
                 )}
                 <FieldList
-                    keys={['database', 'authenticationDatabase', 'options', 'disableSsl']}
+                    keys={[
+                        'database', 'authenticationDatabase', 'options', 'disableSsl',
+                        // MSSQL-specific
+                        'encrypt', 'trustServerCertificate', 'backupPath', 'localBackupPath', 'requestTimeout',
+                        // Redis-specific
+                        'mode', 'tls', 'sentinelMasterName', 'sentinelNodes',
+                    ]}
                     adapter={adapter}
                     isDatabase={true}
                     availableDatabases={availableDatabases}

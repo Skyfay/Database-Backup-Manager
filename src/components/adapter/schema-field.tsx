@@ -77,6 +77,10 @@ export function SchemaField({
     if (fieldKey === 'disableSsl') label = "Disable SSL";
     if (fieldKey === 'uri') label = "URI";
     if (fieldKey === 'tls') label = "Encryption";
+    if (fieldKey === 'trustServerCertificate') label = "Trust Server Certificate";
+    if (fieldKey === 'backupPath') label = "Backup Path (Server)";
+    if (fieldKey === 'localBackupPath') label = "Backup Path (Host)";
+    if (fieldKey === 'requestTimeout') label = "Request Timeout (ms)";
 
     const isBoolean = unwrappedShape instanceof z.ZodBoolean || (unwrappedShape as any)._def?.typeName === "ZodBoolean";
     const isEnum = unwrappedShape instanceof z.ZodEnum || (unwrappedShape as any)._def?.typeName === "ZodEnum";

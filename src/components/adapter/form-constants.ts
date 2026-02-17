@@ -29,10 +29,18 @@ export const PLACEHOLDERS: Record<string, string> = {
     "host": "localhost",
     // DB Ports
     "mysql.port": "3306",
+    "mariadb.port": "3306",
     "postgres.port": "5432",
     "mongodb.port": "27017",
+    "mssql.port": "1433",
+    "redis.port": "6379",
     "email.port": "587",
     "mongodb.uri": "mongodb://user:password@localhost:27017/db?authSource=admin",
+
+    // MSSQL Paths & Timeout
+    "mssql.backupPath": "/var/opt/mssql/backup",
+    "mssql.localBackupPath": "/tmp",
+    "mssql.requestTimeout": "300000",
     // Options Examples
     "mysql.options": "--single-transaction --quick",
     "postgres.options": "--clean --if-exists",
