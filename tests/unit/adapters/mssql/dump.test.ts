@@ -14,17 +14,23 @@ const {
     mockFsStat,
     mockFsUnlink,
     mockExistsSync,
-} = vi.hoisted(() => ({
-    mockExecuteQuery: vi.fn(),
-    mockSupportsCompression: vi.fn(),
-    mockSshConnect: vi.fn(),
-    mockSshDownload: vi.fn(),
-    mockSshDeleteRemote: vi.fn(),
-    mockSshEnd: vi.fn(),
-    mockFsStat: vi.fn(),
-    mockFsUnlink: vi.fn(),
-    mockExistsSync: vi.fn(),
-}));
+    PassThrough,
+} = vi.hoisted(() => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { PassThrough } = require("stream") as { PassThrough: typeof import("stream").PassThrough };
+    return {
+        mockExecuteQuery: vi.fn(),
+        mockSupportsCompression: vi.fn(),
+        mockSshConnect: vi.fn(),
+        mockSshDownload: vi.fn(),
+        mockSshDeleteRemote: vi.fn(),
+        mockSshEnd: vi.fn(),
+        mockFsStat: vi.fn(),
+        mockFsUnlink: vi.fn(),
+        mockExistsSync: vi.fn(),
+        PassThrough,
+    };
+});
 
 // Mock connection module
 vi.mock("@/lib/adapters/database/mssql/connection", () => ({
@@ -59,8 +65,6 @@ vi.mock("fs/promises", () => ({
 
 // Mock fs (sync functions + streams)
 vi.mock("fs", () => {
-    const { PassThrough } = require("stream");
-
     const existsSync = (...args: any[]) => mockExistsSync(...args);
 
     const createReadStream = vi.fn(() => {
@@ -88,8 +92,7 @@ vi.mock("fs", () => {
 // Mock tar-stream
 vi.mock("tar-stream", () => ({
     pack: vi.fn(() => {
-        const { PassThrough } = require("stream");
-        const stream = new PassThrough();
+        const stream = new PassThrough() as any;
         stream.entry = vi.fn((_opts: any) => {
             // Return a writable entry stream - don't auto-emit finish
             // The entry naturally ends when the source pipe calls .end()

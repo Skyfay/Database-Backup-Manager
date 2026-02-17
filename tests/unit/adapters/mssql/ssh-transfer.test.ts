@@ -8,7 +8,9 @@ import { MSSQLConfig } from "@/lib/adapters/definitions";
  * MockClient stores event handlers internally, returns `this` for chaining,
  * and triggers "ready" or "error" in connect() based on `connectBehavior`.
  */
-const { mockConnect, mockSftpFn, mockEnd, connectBehavior, MockClient } = vi.hoisted(() => {
+const { mockConnect, mockSftpFn, mockEnd, connectBehavior, MockClient, PassThrough } = vi.hoisted(() => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { PassThrough } = require("stream") as { PassThrough: typeof import("stream").PassThrough };
     const mockConnect = vi.fn();
     const mockSftpFn = vi.fn();
     const mockEnd = vi.fn();
@@ -19,15 +21,17 @@ const { mockConnect, mockSftpFn, mockEnd, connectBehavior, MockClient } = vi.hoi
         error: null as Error | null,
     };
 
-    class MockClient {
-        private _handlers: Record<string, Function> = {};
+    type EventHandler = (...args: unknown[]) => void;
 
-        on(event: string, handler: Function) {
+    class MockClient {
+        private _handlers: Record<string, EventHandler> = {};
+
+        on(event: string, handler: EventHandler) {
             this._handlers[event] = handler;
             return this; // Return the real instance for chaining
         }
 
-        connect(config: any) {
+        connect(config: unknown) {
             mockConnect(config);
             if (connectBehavior.mode === "error" && this._handlers["error"]) {
                 process.nextTick(() => this._handlers["error"](connectBehavior.error));
@@ -36,7 +40,7 @@ const { mockConnect, mockSftpFn, mockEnd, connectBehavior, MockClient } = vi.hoi
             }
         }
 
-        sftp(cb: Function) {
+        sftp(cb: (...args: unknown[]) => void) {
             mockSftpFn(cb);
         }
 
@@ -45,7 +49,7 @@ const { mockConnect, mockSftpFn, mockEnd, connectBehavior, MockClient } = vi.hoi
         }
     }
 
-    return { mockConnect, mockSftpFn, mockEnd, connectBehavior, MockClient };
+    return { mockConnect, mockSftpFn, mockEnd, connectBehavior, MockClient, PassThrough };
 });
 
 vi.mock("ssh2", () => ({
@@ -53,8 +57,6 @@ vi.mock("ssh2", () => ({
 }));
 
 vi.mock("fs", () => {
-    const { PassThrough } = require("stream");
-
     const createReadStream = vi.fn(() => {
         const stream = new PassThrough();
         process.nextTick(() => stream.end(Buffer.from("fake-data")));
@@ -212,8 +214,6 @@ describe("MssqlSshTransfer", () => {
 
     describe("download", () => {
         it("should download a file from remote to local via SFTP", async () => {
-            const { PassThrough } = require("stream");
-
             const mockSftpReadStream = new PassThrough();
             const mockSftp = {
                 createReadStream: vi.fn(() => mockSftpReadStream),
@@ -239,8 +239,6 @@ describe("MssqlSshTransfer", () => {
 
     describe("upload", () => {
         it("should upload a file from local to remote via SFTP", async () => {
-            const { PassThrough } = require("stream");
-
             const mockSftpWriteStream = new PassThrough();
             const mockSftp = {
                 createWriteStream: vi.fn(() => mockSftpWriteStream),

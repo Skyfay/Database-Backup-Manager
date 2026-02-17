@@ -14,17 +14,23 @@ const {
     mockFsStat,
     mockFsUnlink,
     mockFsOpen,
-} = vi.hoisted(() => ({
-    mockExecuteQuery: vi.fn(),
-    mockExecuteParameterizedQuery: vi.fn(),
-    mockSshConnect: vi.fn(),
-    mockSshUpload: vi.fn(),
-    mockSshDeleteRemote: vi.fn(),
-    mockSshEnd: vi.fn(),
-    mockFsStat: vi.fn(),
-    mockFsUnlink: vi.fn(),
-    mockFsOpen: vi.fn(),
-}));
+    PassThrough,
+} = vi.hoisted(() => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { PassThrough } = require("stream") as { PassThrough: typeof import("stream").PassThrough };
+    return {
+        mockExecuteQuery: vi.fn(),
+        mockExecuteParameterizedQuery: vi.fn(),
+        mockSshConnect: vi.fn(),
+        mockSshUpload: vi.fn(),
+        mockSshDeleteRemote: vi.fn(),
+        mockSshEnd: vi.fn(),
+        mockFsStat: vi.fn(),
+        mockFsUnlink: vi.fn(),
+        mockFsOpen: vi.fn(),
+        PassThrough,
+    };
+});
 
 // Mock connection module
 vi.mock("@/lib/adapters/database/mssql/connection", () => ({
@@ -61,8 +67,6 @@ vi.mock("fs/promises", () => ({
 
 // Mock fs (sync functions + streams)
 vi.mock("fs", () => {
-    const { PassThrough } = require("stream");
-
     const createReadStream = vi.fn(() => {
         const stream = new PassThrough();
         process.nextTick(() => stream.end(Buffer.from("backup-content")));
@@ -87,7 +91,6 @@ vi.mock("fs", () => {
 // Mock tar-stream
 vi.mock("tar-stream", () => ({
     extract: vi.fn(() => {
-        const { PassThrough } = require("stream");
         const stream = new PassThrough({ objectMode: true });
         // Simulate empty tar (no entries) by default
         process.nextTick(() => stream.emit("finish"));
