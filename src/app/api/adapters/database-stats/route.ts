@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { registry } from "@/lib/core/registry";
 import { registerAdapters } from "@/lib/adapters";
-import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
-import { checkPermission } from "@/lib/access-control";
+import { getAuthContext, checkPermissionWithContext } from "@/lib/access-control";
 import { PERMISSIONS } from "@/lib/permissions";
 import { DatabaseInfo } from "@/lib/core/interfaces";
 import prisma from "@/lib/prisma";
@@ -19,15 +18,13 @@ registerAdapters();
  * Accepts either raw config (adapterId + config) or a saved source ID (sourceId).
  */
 export async function POST(req: NextRequest) {
-    const session = await auth.api.getSession({
-        headers: await headers()
-    });
+    const ctx = await getAuthContext(await headers());
 
-    if (!session) {
+    if (!ctx) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    await checkPermission(PERMISSIONS.SOURCES.READ);
+    checkPermissionWithContext(ctx, PERMISSIONS.SOURCES.READ);
 
     try {
         const body = await req.json();

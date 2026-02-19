@@ -1,5 +1,5 @@
-import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
+import { getAuthContext } from "@/lib/access-control";
 import { NextRequest, NextResponse } from "next/server";
 import path from "path";
 import fs from "fs/promises";
@@ -17,11 +17,9 @@ export async function GET(
     // But since we are moving away from public/, let's enforce some access control or at least valid session.
     // If the image is used on public profiles, we might need to relax this or allow specific access.
     // For now, let's assume strict privacy.
-    const session = await auth.api.getSession({
-        headers: await headers()
-    });
+    const ctx = await getAuthContext(await headers());
 
-    if (!session) {
+    if (!ctx) {
         return new NextResponse(null, { status: 401 });
     }
 

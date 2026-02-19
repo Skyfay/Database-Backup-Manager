@@ -1,19 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { systemTaskService, SYSTEM_TASKS, DEFAULT_TASK_CONFIG } from "@/services/system-task-service";
-import { checkPermission } from "@/lib/access-control";
+import { getAuthContext, checkPermissionWithContext } from "@/lib/access-control";
 import { PERMISSIONS } from "@/lib/permissions";
-import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { scheduler } from "@/lib/scheduler";
 import { auditService } from "@/services/audit-service";
 import { AUDIT_ACTIONS, AUDIT_RESOURCES } from "@/lib/core/audit-types";
 
 export async function GET(_req: NextRequest) {
-    const session = await auth.api.getSession({
-        headers: await headers()
-    });
-    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    await checkPermission(PERMISSIONS.SETTINGS.READ); // assuming generic settings permission
+    const ctx = await getAuthContext(await headers());
+    if (!ctx) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    checkPermissionWithContext(ctx, PERMISSIONS.SETTINGS.READ); // assuming generic settings permission
 
     const tasks = [];
     for (const [_key, taskId] of Object.entries(SYSTEM_TASKS)) {
@@ -38,11 +35,9 @@ export async function GET(_req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-    const session = await auth.api.getSession({
-        headers: await headers()
-    });
-    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    await checkPermission(PERMISSIONS.SETTINGS.WRITE);
+    const ctx = await getAuthContext(await headers());
+    if (!ctx) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    checkPermissionWithContext(ctx, PERMISSIONS.SETTINGS.WRITE);
 
     const body = await req.json();
     const { taskId, schedule, runOnStartup, enabled } = body;
@@ -66,26 +61,22 @@ export async function POST(req: NextRequest) {
     // Refresh scheduler
     await scheduler.refresh();
 
-    if (session.user) {
-        await auditService.log(
-            session.user.id,
-            AUDIT_ACTIONS.UPDATE,
-            AUDIT_RESOURCES.SYSTEM,
-            { task: taskId, schedule, runOnStartup, enabled },
-            taskId
-        );
-    }
+    await auditService.log(
+        ctx.userId,
+        AUDIT_ACTIONS.UPDATE,
+        AUDIT_RESOURCES.SYSTEM,
+        { task: taskId, schedule, runOnStartup, enabled },
+        taskId
+    );
 
     return NextResponse.json({ success: true });
 }
 
 export async function PUT(req: NextRequest) {
     // Run Task immediately manual trigger
-    const session = await auth.api.getSession({
-        headers: await headers()
-    });
-    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    await checkPermission(PERMISSIONS.SETTINGS.WRITE);
+    const ctx = await getAuthContext(await headers());
+    if (!ctx) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    checkPermissionWithContext(ctx, PERMISSIONS.SETTINGS.WRITE);
 
     const body = await req.json();
     const { taskId } = body;
@@ -95,15 +86,13 @@ export async function PUT(req: NextRequest) {
     // Run async
     systemTaskService.runTask(taskId);
 
-    if (session.user) {
-        await auditService.log(
-            session.user.id,
-            AUDIT_ACTIONS.EXECUTE,
-            AUDIT_RESOURCES.SYSTEM,
-            { task: taskId },
-            taskId
-        );
-    }
+    await auditService.log(
+        ctx.userId,
+        AUDIT_ACTIONS.EXECUTE,
+        AUDIT_RESOURCES.SYSTEM,
+        { task: taskId },
+        taskId
+    );
 
     return NextResponse.json({ success: true, message: "Task started" });
 }

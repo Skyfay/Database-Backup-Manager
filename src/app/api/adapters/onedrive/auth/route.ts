@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import prisma from "@/lib/prisma";
-import { checkPermission } from "@/lib/access-control";
+import { getAuthContext, checkPermissionWithContext } from "@/lib/access-control";
 import { PERMISSIONS } from "@/lib/permissions";
 import { decryptConfig } from "@/lib/crypto";
 import { logger } from "@/lib/logger";
@@ -21,13 +20,13 @@ const SCOPES = [
  * Body: { adapterId: string } — The saved adapter config ID to authorize.
  */
 export async function POST(req: NextRequest) {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session) {
+    const ctx = await getAuthContext(await headers());
+    if (!ctx) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     try {
-        await checkPermission(PERMISSIONS.DESTINATIONS.WRITE);
+        checkPermissionWithContext(ctx, PERMISSIONS.DESTINATIONS.WRITE);
 
         const { adapterId } = await req.json();
         if (!adapterId) {

@@ -52,6 +52,10 @@ export const PERMISSIONS = {
     READ: "settings:read",
     WRITE: "settings:write",
   },
+  API_KEYS: {
+    READ: "api-keys:read",
+    WRITE: "api-keys:write",
+  },
 } as const;
 
 export type Permission =
@@ -82,7 +86,9 @@ export type Permission =
   | typeof PERMISSIONS.PROFILE.MANAGE_2FA
   | typeof PERMISSIONS.PROFILE.MANAGE_PASSKEYS
   | typeof PERMISSIONS.SETTINGS.READ
-  | typeof PERMISSIONS.SETTINGS.WRITE;
+  | typeof PERMISSIONS.SETTINGS.WRITE
+  | typeof PERMISSIONS.API_KEYS.READ
+  | typeof PERMISSIONS.API_KEYS.WRITE;
 
 export const AVAILABLE_PERMISSIONS = [
   // Users & Groups
@@ -128,4 +134,8 @@ export const AVAILABLE_PERMISSIONS = [
   // Settings
   { id: PERMISSIONS.SETTINGS.READ, label: "View System Settings", category: "Settings" },
   { id: PERMISSIONS.SETTINGS.WRITE, label: "Manage System Settings", category: "Settings" },
+
+  // API Keys
+  { id: PERMISSIONS.API_KEYS.READ, label: "View API Keys", category: "API Keys" },
+  { id: PERMISSIONS.API_KEYS.WRITE, label: "Manage API Keys (Create/Delete/Rotate)", category: "API Keys" },
 ];

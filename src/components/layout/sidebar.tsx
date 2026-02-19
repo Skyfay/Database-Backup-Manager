@@ -39,7 +39,7 @@ const sidebarItems = [
     { icon: SearchCode, label: "Database Explorer", href: "/dashboard/explorer", permission: PERMISSIONS.SOURCES.READ },
     { icon: History, label: "History", href: "/dashboard/history", permission: PERMISSIONS.HISTORY.READ },
     { icon: Lock, label: "Vault", href: "/dashboard/vault", permission: PERMISSIONS.VAULT.READ },
-    { icon: Users, label: "Users & Groups", href: "/dashboard/users", permission: PERMISSIONS.USERS.READ },
+    { icon: Users, label: "Users & Groups", href: "/dashboard/users", permission: [PERMISSIONS.USERS.READ, PERMISSIONS.GROUPS.READ, PERMISSIONS.AUDIT.READ, PERMISSIONS.API_KEYS.READ] },
     { icon: Settings, label: "Settings", href: "/dashboard/settings", permission: PERMISSIONS.SETTINGS.READ },
 ]
 
@@ -93,14 +93,10 @@ export function Sidebar({ permissions = [], isSuperAdmin = false, updateAvailabl
             <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
                 {sidebarItems.map((item) => {
                     // Check if item requires specific permission
-                    if (item.permission && !permissions.includes(item.permission)) {
-                        // Special check for Users page: it requires EITHER USERS.READ OR GROUPS.READ
-                        if (item.href === "/dashboard/users") {
-                            const hasGroupRead = permissions.includes(PERMISSIONS.GROUPS.READ);
-                            if (!hasGroupRead) return null;
-                        } else {
-                            return null;
-                        }
+                    if (item.permission) {
+                        const requiredPerms = Array.isArray(item.permission) ? item.permission : [item.permission];
+                        const hasAny = requiredPerms.some((p) => permissions.includes(p));
+                        if (!isSuperAdmin && !hasAny) return null;
                     }
 
                     return (

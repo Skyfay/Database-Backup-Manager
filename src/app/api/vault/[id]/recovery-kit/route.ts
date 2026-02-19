@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
-import { getUserPermissions } from "@/lib/access-control";
+import { getAuthContext, checkPermissionWithContext } from "@/lib/access-control";
 import { PERMISSIONS } from "@/lib/permissions";
 import * as encryptionService from "@/services/encryption-service";
 import AdmZip from "adm-zip";
@@ -23,27 +22,22 @@ export async function GET(
 
     // 1. Auth & Permissions
     const headersList = await headers();
-    const session = await auth.api.getSession({ headers: headersList });
-    if (!session) {
+    const ctx = await getAuthContext(headersList);
+    if (!ctx) {
         return new NextResponse("Unauthorized", { status: 401 });
     }
 
     // Security: Require VAULT.WRITE for master key export (sensitive operation)
-    const permissions = await getUserPermissions();
-    if (!permissions.includes(PERMISSIONS.VAULT.WRITE)) {
-        return new NextResponse("Forbidden - Write permission required for key export", { status: 403 });
-    }
+    checkPermissionWithContext(ctx, PERMISSIONS.VAULT.WRITE);
 
     // Audit log: Track master key export
-    if (session.user) {
-        await auditService.log(
-            session.user.id,
-            AUDIT_ACTIONS.EXPORT,
-            AUDIT_RESOURCES.VAULT,
-            { action: 'recovery_kit_download', profileId: id },
-            id
-        );
-    }
+    await auditService.log(
+        ctx.userId,
+        AUDIT_ACTIONS.EXPORT,
+        AUDIT_RESOURCES.VAULT,
+        { action: 'recovery_kit_download', profileId: id },
+        id
+    );
 
     try {
         // 2. Fetch Profile & Key

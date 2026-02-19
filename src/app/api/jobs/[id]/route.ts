@@ -1,24 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { jobService } from "@/services/job-service";
-import { checkPermission } from "@/lib/access-control";
+import { getAuthContext, checkPermissionWithContext } from "@/lib/access-control";
 import { PERMISSIONS } from "@/lib/permissions";
 
 export async function DELETE(
     req: NextRequest,
     props: { params: Promise<{ id: string }> }
 ) {
-    const session = await auth.api.getSession({
-        headers: await headers()
-    });
-
-    if (!session) {
+    const ctx = await getAuthContext(await headers());
+    if (!ctx) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // RBAC: Require JOBS.WRITE permission
-    await checkPermission(PERMISSIONS.JOBS.WRITE);
+    checkPermissionWithContext(ctx, PERMISSIONS.JOBS.WRITE);
 
     const params = await props.params;
     try {
@@ -33,16 +28,12 @@ export async function PUT(
     req: NextRequest,
     props: { params: Promise<{ id: string }> }
 ) {
-    const session = await auth.api.getSession({
-        headers: await headers()
-    });
-
-    if (!session) {
+    const ctx = await getAuthContext(await headers());
+    if (!ctx) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // RBAC: Require JOBS.WRITE permission
-    await checkPermission(PERMISSIONS.JOBS.WRITE);
+    checkPermissionWithContext(ctx, PERMISSIONS.JOBS.WRITE);
 
     const params = await props.params;
     try {

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
-import { checkPermission } from "@/lib/access-control";
+import { getAuthContext, checkPermissionWithContext } from "@/lib/access-control";
 import { PERMISSIONS } from "@/lib/permissions";
 import { jobService } from "@/services/job-service";
 import { logger } from "@/lib/logger";
@@ -10,16 +9,13 @@ import { wrapError } from "@/lib/errors";
 const log = logger.child({ route: "jobs" });
 
 export async function GET(_req: NextRequest) {
-    const session = await auth.api.getSession({
-        headers: await headers()
-    });
-
-    if (!session) {
+    const ctx = await getAuthContext(await headers());
+    if (!ctx) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     try {
-        await checkPermission(PERMISSIONS.JOBS.READ);
+        checkPermissionWithContext(ctx, PERMISSIONS.JOBS.READ);
 
         const jobs = await jobService.getJobs();
         return NextResponse.json(jobs);
@@ -29,16 +25,13 @@ export async function GET(_req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-    const session = await auth.api.getSession({
-        headers: await headers()
-    });
-
-    if (!session) {
+    const ctx = await getAuthContext(await headers());
+    if (!ctx) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     try {
-        await checkPermission(PERMISSIONS.JOBS.WRITE);
+        checkPermissionWithContext(ctx, PERMISSIONS.JOBS.WRITE);
 
         const body = await req.json();
         const { name, schedule, sourceId, destinationId, notificationIds, enabled, encryptionProfileId, compression, retention, notificationEvents } = body;

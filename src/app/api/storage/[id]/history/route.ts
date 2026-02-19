@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
-import { checkPermission } from "@/lib/access-control";
+import { getAuthContext, checkPermissionWithContext } from "@/lib/access-control";
 import { PERMISSIONS } from "@/lib/permissions";
 import { getStorageHistory } from "@/services/dashboard-service";
 import { logger } from "@/lib/logger";
@@ -17,11 +16,9 @@ export async function GET(
   req: NextRequest,
   props: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+  const ctx = await getAuthContext(await headers());
 
-  if (!session) {
+  if (!ctx) {
     return NextResponse.json(
       { success: false, error: "Unauthorized" },
       { status: 401 }
@@ -29,7 +26,7 @@ export async function GET(
   }
 
   try {
-    await checkPermission(PERMISSIONS.STORAGE.READ);
+    checkPermissionWithContext(ctx, PERMISSIONS.STORAGE.READ);
 
     const params = await props.params;
     const url = new URL(req.url);

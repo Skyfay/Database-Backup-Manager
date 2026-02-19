@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { registerAdapters } from "@/lib/adapters";
 import { storageService } from "@/services/storage-service";
-import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
-import { checkPermission } from "@/lib/access-control";
+import { getAuthContext, checkPermissionWithContext } from "@/lib/access-control";
 import { PERMISSIONS } from "@/lib/permissions";
 import { logger } from "@/lib/logger";
 import { wrapError, getErrorMessage } from "@/lib/errors";
@@ -14,16 +13,14 @@ const log = logger.child({ route: "storage/files" });
 registerAdapters();
 
 export async function GET(req: NextRequest, props: { params: Promise<{ id: string }> }) {
-    const session = await auth.api.getSession({
-        headers: await headers()
-    });
+    const ctx = await getAuthContext(await headers());
 
-    if (!session) {
+    if (!ctx) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     try {
-        await checkPermission(PERMISSIONS.STORAGE.READ);
+        checkPermissionWithContext(ctx, PERMISSIONS.STORAGE.READ);
 
         const params = await props.params;
         const url = new URL(req.url);
@@ -52,16 +49,14 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
 }
 
 export async function DELETE(req: NextRequest, props: { params: Promise<{ id: string }> }) {
-    const session = await auth.api.getSession({
-        headers: await headers()
-    });
+    const ctx = await getAuthContext(await headers());
 
-    if (!session) {
+    if (!ctx) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     try {
-        await checkPermission(PERMISSIONS.STORAGE.DELETE);
+        checkPermissionWithContext(ctx, PERMISSIONS.STORAGE.DELETE);
 
         const { path } = await req.json();
         const params = await props.params;

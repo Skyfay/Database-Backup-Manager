@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { encryptConfig, decryptConfig } from "@/lib/crypto";
-import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
-import { checkPermission } from "@/lib/access-control";
+import { getAuthContext, checkPermissionWithContext } from "@/lib/access-control";
 import { PERMISSIONS } from "@/lib/permissions";
 import { auditService } from "@/services/audit-service";
 import { AUDIT_ACTIONS, AUDIT_RESOURCES } from "@/lib/core/audit-types";
@@ -13,11 +12,8 @@ import { wrapError, getErrorMessage } from "@/lib/errors";
 const log = logger.child({ route: "adapters" });
 
 export async function GET(req: NextRequest) {
-    const session = await auth.api.getSession({
-        headers: await headers()
-    });
-
-    if (!session) {
+    const ctx = await getAuthContext(await headers());
+    if (!ctx) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -26,11 +22,11 @@ export async function GET(req: NextRequest) {
 
     try {
         if (type === 'database') {
-            await checkPermission(PERMISSIONS.SOURCES.READ);
+            checkPermissionWithContext(ctx, PERMISSIONS.SOURCES.READ);
         } else if (type === 'storage') {
-            await checkPermission(PERMISSIONS.DESTINATIONS.READ);
+            checkPermissionWithContext(ctx, PERMISSIONS.DESTINATIONS.READ);
         } else if (type === 'notification') {
-             await checkPermission(PERMISSIONS.NOTIFICATIONS.READ);
+             checkPermissionWithContext(ctx, PERMISSIONS.NOTIFICATIONS.READ);
         }
         // Security: Require type parameter to prevent leaking all adapter configs
         else if (!type) {
@@ -78,11 +74,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-    const session = await auth.api.getSession({
-        headers: await headers()
-    });
-
-    if (!session) {
+    const ctx = await getAuthContext(await headers());
+    if (!ctx) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -92,11 +85,11 @@ export async function POST(req: NextRequest) {
 
         // Permission Check
         if (type === 'database') {
-            await checkPermission(PERMISSIONS.SOURCES.WRITE);
+            checkPermissionWithContext(ctx, PERMISSIONS.SOURCES.WRITE);
         } else if (type === 'storage') {
-            await checkPermission(PERMISSIONS.DESTINATIONS.WRITE);
+            checkPermissionWithContext(ctx, PERMISSIONS.DESTINATIONS.WRITE);
         } else if (type === 'notification') {
-            await checkPermission(PERMISSIONS.NOTIFICATIONS.WRITE);
+            checkPermissionWithContext(ctx, PERMISSIONS.NOTIFICATIONS.WRITE);
         }
 
         // Basic validation
@@ -122,9 +115,9 @@ export async function POST(req: NextRequest) {
             },
         });
 
-        if (session.user) {
+        if (ctx) {
             await auditService.log(
-                session.user.id,
+                ctx.userId,
                 AUDIT_ACTIONS.CREATE,
                 AUDIT_RESOURCES.ADAPTER,
                 { name, type, adapterId },

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
-import { checkPermission } from "@/lib/access-control";
+import { getAuthContext, checkPermissionWithContext } from "@/lib/access-control";
 import { PERMISSIONS } from "@/lib/permissions";
 import prisma from "@/lib/prisma";
 import { logger } from "@/lib/logger";
@@ -14,13 +13,11 @@ export async function GET(
     req: NextRequest,
     context: { params: Promise<{ id: string }> } // In Next.js 15+ Params is a Promise
 ) {
-    const session = await auth.api.getSession({
-        headers: await headers()
-    });
-    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const ctx = await getAuthContext(await headers());
+    if (!ctx) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     // Permission check - Reading health history requires READ permission on sources/destinations
-    await checkPermission(PERMISSIONS.SOURCES.READ); // Broadly using SOURCES.READ for now
+    checkPermissionWithContext(ctx, PERMISSIONS.SOURCES.READ); // Broadly using SOURCES.READ for now
 
     const { id } = await context.params;
     const { searchParams } = new URL(req.url);

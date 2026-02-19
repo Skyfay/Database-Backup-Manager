@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { registry } from "@/lib/core/registry";
 import { registerAdapters } from "@/lib/adapters";
-import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import prisma from "@/lib/prisma";
-import { checkPermission } from "@/lib/access-control";
+import { getAuthContext, checkPermissionWithContext } from "@/lib/access-control";
 import { PERMISSIONS, Permission } from "@/lib/permissions";
 import { logger } from "@/lib/logger";
 import { wrapError } from "@/lib/errors";
@@ -27,11 +26,9 @@ function getPermissionForAdapter(adapterId: string): Permission | null {
 }
 
 export async function POST(req: NextRequest) {
-    const session = await auth.api.getSession({
-        headers: await headers()
-    });
+    const ctx = await getAuthContext(await headers());
 
-    if (!session) {
+    if (!ctx) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -42,7 +39,7 @@ export async function POST(req: NextRequest) {
         // RBAC: Check permission based on adapter type
         const requiredPermission = getPermissionForAdapter(adapterId || '');
         if (requiredPermission) {
-            await checkPermission(requiredPermission);
+            checkPermissionWithContext(ctx, requiredPermission);
         }
 
         if (!adapterId || !config) {

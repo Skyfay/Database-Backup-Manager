@@ -20,6 +20,7 @@ export const AUDIT_RESOURCES = {
   SYSTEM: "SYSTEM",
   ADAPTER: "ADAPTER",
   VAULT: "VAULT", // Encryption profiles / recovery kits
+  API_KEY: "API_KEY",
 } as const;
 
 export type AuditResource = typeof AUDIT_RESOURCES[keyof typeof AUDIT_RESOURCES];

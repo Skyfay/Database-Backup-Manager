@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
-import { checkPermission } from "@/lib/access-control";
+import { getAuthContext, checkPermissionWithContext } from "@/lib/access-control";
 import { PERMISSIONS } from "@/lib/permissions";
 import { generateDownloadToken } from "@/lib/download-tokens";
 import { logger } from "@/lib/logger";
@@ -17,18 +16,16 @@ const log = logger.child({ route: "storage/download-url" });
  * Tokens are single-use and expire after 5 minutes.
  */
 export async function POST(req: NextRequest, props: { params: Promise<{ id: string }> }) {
-    const session = await auth.api.getSession({
-        headers: await headers()
-    });
+    const ctx = await getAuthContext(await headers());
 
-    if (!session) {
+    if (!ctx) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const params = await props.params;
 
     try {
-        await checkPermission(PERMISSIONS.STORAGE.DOWNLOAD);
+        checkPermissionWithContext(ctx, PERMISSIONS.STORAGE.DOWNLOAD);
 
         const body = await req.json();
         const { file, decrypt = true } = body;

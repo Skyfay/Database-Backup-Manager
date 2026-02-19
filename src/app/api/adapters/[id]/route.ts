@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { encryptConfig } from "@/lib/crypto";
-import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { auditService } from "@/services/audit-service";
 import { AUDIT_ACTIONS, AUDIT_RESOURCES } from "@/lib/core/audit-types";
-import { checkPermission } from "@/lib/access-control";
+import { getAuthContext, checkPermissionWithContext } from "@/lib/access-control";
 import { PERMISSIONS, Permission } from "@/lib/permissions";
 import { logger } from "@/lib/logger";
 import { wrapError, getErrorMessage } from "@/lib/errors";
@@ -26,11 +25,8 @@ export async function DELETE(
     req: NextRequest,
     props: { params: Promise<{ id: string }> }
 ) {
-    const session = await auth.api.getSession({
-        headers: await headers()
-    });
-
-    if (!session) {
+    const ctx = await getAuthContext(await headers());
+    if (!ctx) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -44,7 +40,7 @@ export async function DELETE(
         if (!adapter) {
             return NextResponse.json({ success: false, error: "Adapter not found" }, { status: 404 });
         }
-        await checkPermission(getWritePermissionForType(adapter.type));
+        checkPermissionWithContext(ctx, getWritePermissionForType(adapter.type));
 
         // Check for usage in Jobs (Source or Destination)
         const linkedJobs = await prisma.job.findMany({
@@ -77,9 +73,9 @@ export async function DELETE(
             where: { id: params.id },
         });
 
-        if (session.user) {
+        if (ctx) {
             await auditService.log(
-                session.user.id,
+                ctx.userId,
                 AUDIT_ACTIONS.DELETE,
                 AUDIT_RESOURCES.ADAPTER,
                 { name: deletedAdapter.name },
@@ -101,11 +97,8 @@ export async function PUT(
     req: NextRequest,
     props: { params: Promise<{ id: string }> }
 ) {
-    const session = await auth.api.getSession({
-        headers: await headers()
-    });
-
-    if (!session) {
+    const ctx = await getAuthContext(await headers());
+    if (!ctx) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -119,7 +112,7 @@ export async function PUT(
         if (!existingAdapter) {
             return NextResponse.json({ success: false, error: "Adapter not found" }, { status: 404 });
         }
-        await checkPermission(getWritePermissionForType(existingAdapter.type));
+        checkPermissionWithContext(ctx, getWritePermissionForType(existingAdapter.type));
 
         const body = await req.json();
         const { name, config } = body;
@@ -136,9 +129,9 @@ export async function PUT(
             }
         });
 
-        if (session.user) {
+        if (ctx) {
             await auditService.log(
-                session.user.id,
+                ctx.userId,
                 AUDIT_ACTIONS.UPDATE,
                 AUDIT_RESOURCES.ADAPTER,
                 { name },

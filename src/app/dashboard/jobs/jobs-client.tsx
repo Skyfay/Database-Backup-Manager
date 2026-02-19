@@ -14,9 +14,10 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Edit, Play, Trash2, Clock, Lock } from "lucide-react";
+import { Edit, Play, Trash2, Clock, Lock, Webhook } from "lucide-react";
 import { toast } from "sonner";
 import { JobForm, JobData, AdapterOption, EncryptionOption } from "@/components/dashboard/jobs/job-form";
+import { ApiTriggerDialog } from "@/components/dashboard/jobs/api-trigger-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -51,6 +52,7 @@ export function JobsClient({ canManage, canExecute }: JobsClientProps) {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingJob, setEditingJob] = useState<JobData | null>(null);
     const [deletingId, setDeletingId] = useState<string | null>(null);
+    const [apiTriggerJob, setApiTriggerJob] = useState<{ id: string; name: string } | null>(null);
     const router = useRouter();
     const { autoRedirectOnJobStart } = useUserPreferences();
 
@@ -206,6 +208,11 @@ export function JobsClient({ canManage, canExecute }: JobsClientProps) {
                             <Play className="h-4 w-4 text-green-500" />
                         </Button>
                     )}
+                    {canExecute && (
+                        <Button variant="ghost" size="icon" onClick={() => setApiTriggerJob({ id: row.original.id, name: row.original.name })} title="API Trigger">
+                            <Webhook className="h-4 w-4" />
+                        </Button>
+                    )}
                     {canManage && (
                         <>
                             <Button variant="ghost" size="icon" onClick={() => { setEditingJob(row.original); setIsDialogOpen(true); }}>
@@ -320,6 +327,15 @@ export function JobsClient({ canManage, canExecute }: JobsClientProps) {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+
+            {apiTriggerJob && (
+                <ApiTriggerDialog
+                    jobId={apiTriggerJob.id}
+                    jobName={apiTriggerJob.name}
+                    open={!!apiTriggerJob}
+                    onOpenChange={(open) => !open && setApiTriggerJob(null)}
+                />
+            )}
         </div>
     );
 }

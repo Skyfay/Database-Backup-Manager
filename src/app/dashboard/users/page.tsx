@@ -1,12 +1,15 @@
 import { getUsers } from "@/app/actions/user";
 import { getGroups } from "@/app/actions/group";
 import { getSsoProviders } from "@/app/actions/oidc";
+import { getApiKeys } from "@/app/actions/api-key";
 import { UserTable } from "./user-table";
 import { GroupTable } from "./group-table";
 import { AddSsoProviderDialog } from "@/components/oidc/add-sso-provider-dialog";
 import { SsoProviderList } from "@/components/oidc/sso-provider-list";
 import { CreateUserDialog } from "./create-user-dialog";
 import { CreateGroupDialog } from "./create-group-dialog";
+import { CreateApiKeyDialog } from "@/components/api-keys/create-api-key-dialog";
+import { ApiKeyTable } from "@/components/api-keys/api-key-table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getUserPermissions } from "@/lib/access-control";
 import { PERMISSIONS } from "@/lib/permissions";
@@ -20,13 +23,15 @@ export default async function UsersPage() {
     const hasReadUsers = permissions.includes(PERMISSIONS.USERS.READ);
     const hasReadGroups = permissions.includes(PERMISSIONS.GROUPS.READ);
     const hasReadAudit = permissions.includes(PERMISSIONS.AUDIT.READ);
+    const hasReadApiKeys = permissions.includes(PERMISSIONS.API_KEYS.READ);
 
-    if (!hasReadUsers && !hasReadGroups && !hasReadAudit) {
+    if (!hasReadUsers && !hasReadGroups && !hasReadAudit && !hasReadApiKeys) {
         redirect("/dashboard");
     }
 
     const canManageUsers = permissions.includes(PERMISSIONS.USERS.WRITE);
     const canManageGroups = permissions.includes(PERMISSIONS.GROUPS.WRITE);
+    const canManageApiKeys = permissions.includes(PERMISSIONS.API_KEYS.WRITE);
     const hasReadSettings = permissions.includes(PERMISSIONS.SETTINGS.READ);
     const hasWriteSettings = permissions.includes(PERMISSIONS.SETTINGS.WRITE);
 
@@ -34,6 +39,7 @@ export default async function UsersPage() {
     const users = hasReadUsers ? await getUsers() : [];
     const groups = hasReadGroups ? await getGroups() : [];
     const ssoProviders = hasReadSettings ? await getSsoProviders() : [];
+    const apiKeys = hasReadApiKeys ? await getApiKeys() : [];
 
     return (
         <div className="space-y-6">
@@ -46,10 +52,11 @@ export default async function UsersPage() {
                 </div>
             </div>
 
-            <Tabs defaultValue={hasReadUsers ? "users" : hasReadGroups ? "groups" : "audit"} className="space-y-4">
+            <Tabs defaultValue={hasReadUsers ? "users" : hasReadGroups ? "groups" : hasReadApiKeys ? "apikeys" : "audit"} className="space-y-4">
                 <TabsList>
                     {hasReadUsers && <TabsTrigger value="users">Users</TabsTrigger>}
                     {hasReadGroups && <TabsTrigger value="groups">Groups</TabsTrigger>}
+                    {hasReadApiKeys && <TabsTrigger value="apikeys">API Keys</TabsTrigger>}
                     {hasReadAudit && <TabsTrigger value="audit">Audit Log</TabsTrigger>}
                     {hasReadSettings && <TabsTrigger value="sso">SSO / OIDC</TabsTrigger>}
                 </TabsList>
@@ -85,6 +92,24 @@ export default async function UsersPage() {
                             </CardHeader>
                             <CardContent>
                                 <GroupTable data={groups} canManage={canManageGroups} />
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+                )}
+                {hasReadApiKeys && (
+                    <TabsContent value="apikeys" className="space-y-4">
+                        <Card>
+                            <CardHeader>
+                                <div className="flex justify-between items-center">
+                                    <div>
+                                        <CardTitle>API Keys</CardTitle>
+                                        <CardDescription>Create and manage API keys for external integrations and automation.</CardDescription>
+                                    </div>
+                                    {canManageApiKeys && <CreateApiKeyDialog />}
+                                </div>
+                            </CardHeader>
+                            <CardContent>
+                                <ApiKeyTable data={apiKeys} canManage={canManageApiKeys} />
                             </CardContent>
                         </Card>
                     </TabsContent>

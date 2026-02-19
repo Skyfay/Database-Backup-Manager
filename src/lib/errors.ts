@@ -334,6 +334,29 @@ export class QueueError extends DBackupError {
 }
 
 // ============================================================================
+// API Key Errors
+// ============================================================================
+
+/**
+ * Error thrown during API key authentication or management
+ */
+export class ApiKeyError extends DBackupError {
+  public readonly reason: string;
+
+  constructor(
+    reason: string,
+    message: string,
+    options?: { cause?: Error; context?: Record<string, unknown> }
+  ) {
+    super(message, "API_KEY_ERROR", {
+      ...options,
+      context: { ...options?.context, reason },
+    });
+    this.reason = reason;
+  }
+}
+
+// ============================================================================
 // Utility Functions
 // ============================================================================
 

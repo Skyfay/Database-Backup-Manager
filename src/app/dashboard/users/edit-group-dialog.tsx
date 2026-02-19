@@ -18,7 +18,6 @@ import {
     FormDescription
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { Checkbox } from "@/components/ui/checkbox"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
@@ -26,8 +25,7 @@ import { useEffect, useState } from "react"
 import { toast } from "sonner"
 import { Loader2 } from "lucide-react"
 import { updateGroup } from "@/app/actions/group"
-import { AVAILABLE_PERMISSIONS } from "@/lib/permissions"
-import { ScrollArea } from "@/components/ui/scroll-area"
+import { PermissionPicker } from "@/components/permission-picker"
 import { GroupWithStats } from "@/types"
 
 const formSchema = z.object({
@@ -80,31 +78,6 @@ export function EditGroupDialog({ group, open, onOpenChange }: EditGroupDialogPr
         }
     }
 
-    // Group permissions by category
-    const groupedPermissions = AVAILABLE_PERMISSIONS.reduce((acc, permission) => {
-        if (!acc[permission.category]) {
-            acc[permission.category] = [];
-        }
-        acc[permission.category].push(permission);
-        return acc;
-    }, {} as Record<string, typeof AVAILABLE_PERMISSIONS>);
-
-
-    const toggleCategory = (category: string) => {
-        const categoryPermissions = groupedPermissions[category].map(p => p.id);
-        const current = form.getValues("permissions");
-        const allSelected = categoryPermissions.every(p => current.includes(p));
-
-        if (allSelected) {
-            // Deselect all
-            form.setValue("permissions", current.filter(p => !categoryPermissions.includes(p as any)));
-        } else {
-            // Select all
-            const newPermissions = [...new Set([...current, ...categoryPermissions])];
-            form.setValue("permissions", newPermissions);
-        }
-    }
-
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[600px]">
@@ -138,58 +111,11 @@ export function EditGroupDialog({ group, open, onOpenChange }: EditGroupDialogPr
                                             Select the permissions for this group.
                                         </FormDescription>
                                     </div>
-                                    <ScrollArea className="h-[300px] border rounded-md p-4">
-                                        <div className="space-y-6">
-                                            {Object.entries(groupedPermissions).map(([category, permissions]) => (
-                                                <div key={category} className="space-y-3">
-                                                    <div className="flex items-center justify-between">
-                                                        <h4 className="font-medium text-sm text-foreground/80">{category}</h4>
-                                                        <Button
-                                                            type="button"
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            className="h-6 text-xs"
-                                                            onClick={() => toggleCategory(category)}
-                                                        >
-                                                            Toggle All
-                                                        </Button>
-                                                    </div>
-                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                                        {permissions.map((permission) => (
-                                                            <label
-                                                                key={permission.id}
-                                                                htmlFor={`edit-permission-${permission.id}`}
-                                                                className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-3 shadow-sm hover:bg-accent/50 transition-colors cursor-pointer"
-                                                            >
-                                                                <FormControl>
-                                                                    <Checkbox
-                                                                        id={`edit-permission-${permission.id}`}
-                                                                        checked={field.value?.includes(permission.id)}
-                                                                        onCheckedChange={(checked) => {
-                                                                            return checked
-                                                                                ? field.onChange([...field.value, permission.id])
-                                                                                : field.onChange(
-                                                                                    field.value?.filter(
-                                                                                        (value) => value !== permission.id
-                                                                                    )
-                                                                                )
-                                                                        }}
-                                                                    />
-                                                                </FormControl>
-                                                                <div className="space-y-1 leading-none">
-                                                                    <span
-                                                                        className="text-sm font-normal leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                                                                    >
-                                                                        {permission.label}
-                                                                    </span>
-                                                                </div>
-                                                            </label>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </ScrollArea>
+                                    <PermissionPicker
+                                        value={field.value}
+                                        onChange={field.onChange}
+                                        idPrefix="edit-permission"
+                                    />
                                     <FormMessage />
                                 </FormItem>
                             )}

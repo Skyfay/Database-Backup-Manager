@@ -91,6 +91,7 @@ model User {
   passkeys         Passkey[]
   sessions         Session[]
   auditLogs        AuditLog[]
+  apiKeys          ApiKey[]
 
   groupId String?
   group   Group?  @relation(fields: [groupId], references: [id])
@@ -241,6 +242,23 @@ model AuditLog {
   @@index([userId])
   @@index([resource])
   @@index([createdAt])
+}
+
+model ApiKey {
+  id          String    @id @default(uuid())
+  name        String
+  prefix      String    // First 8 chars of raw key for UI identification (e.g. "dbm_a3f2")
+  hashedKey   String    @unique // SHA-256 hash of the full key
+  permissions String    // JSON array of permission strings (same format as Group.permissions)
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt   DateTime? // Optional expiration date
+  lastUsedAt  DateTime? // Updated on each successful authentication
+  enabled     Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+
+  @@index([hashedKey])
+  @@index([userId])
 }
 
 model StorageSnapshot {
