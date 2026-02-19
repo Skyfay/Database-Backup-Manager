@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -158,6 +158,7 @@ export function DatabaseExplorer({ sources }: DatabaseExplorerProps) {
                             <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
                                 <Command>
                                     <CommandInput placeholder="Search sources..." />
+                                    <CommandList>
                                     <CommandEmpty>No source found.</CommandEmpty>
                                     <CommandGroup>
                                         {sources.map((source) => (
@@ -181,6 +182,7 @@ export function DatabaseExplorer({ sources }: DatabaseExplorerProps) {
                                             </CommandItem>
                                         ))}
                                     </CommandGroup>
+                                    </CommandList>
                                 </Command>
                             </PopoverContent>
                         </Popover>
