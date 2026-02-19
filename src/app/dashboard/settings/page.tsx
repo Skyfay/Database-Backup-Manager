@@ -8,7 +8,9 @@ import { SystemSettingsForm } from "@/components/settings/system-settings-form";
 import { SystemTasksSettings } from "@/components/settings/system-tasks-settings";
 import { ConfigBackupSettings } from "@/components/settings/config-backup-settings";
 import { NotificationSettings } from "@/components/settings/notification-settings";
+import { RateLimitSettings } from "@/components/settings/rate-limit-settings";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { getRateLimitConfig } from "@/lib/rate-limit";
 
 export default async function SettingsPage() {
     const headersList = await headers();
@@ -65,6 +67,9 @@ export default async function SettingsPage() {
         retention: configRetention ? parseInt(configRetention.value) : 10,
     };
 
+    // Load Rate Limit Settings
+    const rateLimitConfig = await getRateLimitConfig();
+
 
     return (
         <div className="space-y-6">
@@ -81,6 +86,7 @@ export default async function SettingsPage() {
                     <TabsTrigger value="notifications">Notifications</TabsTrigger>
                     <TabsTrigger value="tasks">System Tasks</TabsTrigger>
                     <TabsTrigger value="config">Configuration Backup</TabsTrigger>
+                    <TabsTrigger value="ratelimits">Rate Limits</TabsTrigger>
                 </TabsList>
                 <TabsContent value="general" className="space-y-4">
                     <SystemSettingsForm
@@ -102,6 +108,9 @@ export default async function SettingsPage() {
                         storageAdapters={filteredStorageAdapters}
                         encryptionProfiles={encryptionProfiles}
                     />
+                </TabsContent>
+                <TabsContent value="ratelimits" className="space-y-4">
+                    <RateLimitSettings initialConfig={rateLimitConfig} />
                 </TabsContent>
             </Tabs>
         </div>

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { authLimiter, apiLimiter, mutationLimiter } from "./lib/rate-limit";
+import { getAuthLimiter, getApiLimiter, getMutationLimiter } from "./lib/rate-limit";
 import { logger } from "./lib/logger";
 
 const log = logger.child({ module: "Middleware" });
@@ -44,14 +44,14 @@ export async function middleware(request: NextRequest) {
     try {
         if (path.startsWith("/api/auth/sign-in")) {
              rateLimitType = "auth";
-             await authLimiter.consume(ip);
+             await getAuthLimiter().consume(ip);
         } else if (path.startsWith("/api/")) {
              if (method === 'GET' || method === 'HEAD') {
                 rateLimitType = "api";
-                await apiLimiter.consume(ip);
+                await getApiLimiter().consume(ip);
              } else {
                 rateLimitType = "mutation";
-                await mutationLimiter.consume(ip);
+                await getMutationLimiter().consume(ip);
              }
         }
     } catch {
