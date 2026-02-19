@@ -18,7 +18,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Database, ArrowRight, FileIcon, AlertTriangle, ShieldAlert, Loader2, HardDrive } from "lucide-react";
+import { Database, ArrowRight, FileIcon, AlertTriangle, ShieldAlert, Loader2, HardDrive, ChevronDown, ChevronUp, Server } from "lucide-react";
 import { toast } from "sonner";
 import { FileInfo } from "@/app/dashboard/storage/columns";
 import { useRouter } from "next/navigation";
@@ -29,6 +29,14 @@ import { restoreFromStorageAction } from "@/app/actions/config-management";
 import { RestoreOptions } from "@/lib/types/config-backup";
 import { RedisRestoreWizard } from "./redis-restore-wizard";
 import { useUserPreferences } from "@/hooks/use-user-preferences";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Progress } from "@/components/ui/progress";
+
+interface DatabaseInfo {
+    name: string;
+    sizeInBytes?: number;
+    tableCount?: number;
+}
 
 interface AdapterConfig {
     id: string;
@@ -72,6 +80,11 @@ export function RestoreDialog({ file, open, onOpenChange, destinationId, sources
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const router = useRouter();
     const { autoRedirectOnJobStart } = useUserPreferences();
+
+    // Target server database stats
+    const [targetDatabases, setTargetDatabases] = useState<DatabaseInfo[]>([]);
+    const [isLoadingTargetDbs, setIsLoadingTargetDbs] = useState(false);
+    const [showTargetDbs, setShowTargetDbs] = useState(false);
 
     const isSystemConfig = file?.sourceType === 'SYSTEM';
 
@@ -119,7 +132,41 @@ export function RestoreDialog({ file, open, onOpenChange, destinationId, sources
         setShowPrivileged(false);
         setPrivPass("");
         setPrivUser("root");
+        setTargetDatabases([]);
+        setShowTargetDbs(false);
     }, []);
+
+    // Fetch target server databases when a source is selected
+    const fetchTargetDatabases = useCallback(async (sourceId: string) => {
+        setIsLoadingTargetDbs(true);
+        setTargetDatabases([]);
+        try {
+            const res = await fetch('/api/adapters/database-stats', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sourceId })
+            });
+            const data = await res.json();
+            if (data.success && data.databases) {
+                setTargetDatabases(data.databases);
+                setShowTargetDbs(true);
+            }
+        } catch {
+            // Non-critical - just don't show the section
+        } finally {
+            setIsLoadingTargetDbs(false);
+        }
+    }, []);
+
+    // Trigger fetch when target source changes
+    useEffect(() => {
+        if (targetSource) {
+            fetchTargetDatabases(targetSource);
+        } else {
+            setTargetDatabases([]);
+            setShowTargetDbs(false);
+        }
+    }, [targetSource, fetchTargetDatabases]);
 
     const analyzeBackup = useCallback(async (file: FileInfo) => {
         setIsAnalyzing(true);
@@ -403,6 +450,104 @@ export function RestoreDialog({ file, open, onOpenChange, destinationId, sources
                                 Existing databases with matching names will be overwritten. Rename targets below to restore as new databases.
                             </p>
                         </div>
+
+                        {/* Existing Databases on Target Server */}
+                        {targetSource && (isLoadingTargetDbs || targetDatabases.length > 0) && (
+                            <div className="space-y-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowTargetDbs(!showTargetDbs)}
+                                    className="flex items-center justify-between w-full text-sm font-medium hover:text-foreground/80 transition-colors"
+                                >
+                                    <span className="flex items-center gap-2">
+                                        <Server className="h-4 w-4 text-muted-foreground" />
+                                        Existing Databases on Target
+                                        {!isLoadingTargetDbs && (
+                                            <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">
+                                                {targetDatabases.length}
+                                            </Badge>
+                                        )}
+                                    </span>
+                                    {showTargetDbs ? (
+                                        <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                                    ) : (
+                                        <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                                    )}
+                                </button>
+
+                                {showTargetDbs && (
+                                    isLoadingTargetDbs ? (
+                                        <div className="space-y-1.5">
+                                            <Skeleton className="h-7 w-full" />
+                                            <Skeleton className="h-7 w-full" />
+                                            <Skeleton className="h-7 w-3/4" />
+                                        </div>
+                                    ) : (
+                                        <div className="border rounded-md overflow-hidden bg-card">
+                                            <div className="max-h-48 overflow-y-auto">
+                                                <Table>
+                                                    <TableHeader className="bg-muted/50 sticky top-0">
+                                                        <TableRow className="hover:bg-transparent border-b text-xs uppercase tracking-wider">
+                                                            <TableHead>Database</TableHead>
+                                                            <TableHead className="text-right w-24">Size</TableHead>
+                                                            <TableHead className="text-right w-20">Tables</TableHead>
+                                                        </TableRow>
+                                                    </TableHeader>
+                                                    <TableBody>
+                                                        {targetDatabases.map(db => {
+                                                            const isConflict = analyzedDbs.some(
+                                                                backupDb => dbConfig.find(c => c.name === backupDb && c.selected)?.targetName === db.name
+                                                            );
+                                                            return (
+                                                                <TableRow key={db.name} className={isConflict ? 'bg-destructive/5' : ''}>
+                                                                    <TableCell className="py-1.5 text-sm">
+                                                                        <span className="flex items-center gap-2">
+                                                                            {db.name}
+                                                                            {isConflict && (
+                                                                                <TooltipProvider>
+                                                                                    <Tooltip>
+                                                                                        <TooltipTrigger>
+                                                                                            <AlertTriangle className="h-3.5 w-3.5 text-destructive" />
+                                                                                        </TooltipTrigger>
+                                                                                        <TooltipContent>
+                                                                                            <p>Will be overwritten by restore</p>
+                                                                                        </TooltipContent>
+                                                                                    </Tooltip>
+                                                                                </TooltipProvider>
+                                                                            )}
+                                                                        </span>
+                                                                    </TableCell>
+                                                                    <TableCell className="py-1.5 text-sm text-right text-muted-foreground">
+                                                                        {db.sizeInBytes != null ? formatBytes(db.sizeInBytes) : '—'}
+                                                                    </TableCell>
+                                                                    <TableCell className="py-1.5 text-sm text-right text-muted-foreground">
+                                                                        {db.tableCount != null ? db.tableCount : '—'}
+                                                                    </TableCell>
+                                                                </TableRow>
+                                                            );
+                                                        })}
+                                                        {targetDatabases.length === 0 && (
+                                                            <TableRow>
+                                                                <TableCell colSpan={3} className="py-3 text-center text-sm text-muted-foreground">
+                                                                    No databases found on target server.
+                                                                </TableCell>
+                                                            </TableRow>
+                                                        )}
+                                                    </TableBody>
+                                                </Table>
+                                            </div>
+                                            {/* Total size summary */}
+                                            {targetDatabases.some(db => db.sizeInBytes != null) && (
+                                                <div className="px-4 py-2 border-t bg-muted/30 text-xs text-muted-foreground flex justify-between">
+                                                    <span>Total: {targetDatabases.length} database{targetDatabases.length !== 1 ? 's' : ''}</span>
+                                                    <span>{formatBytes(targetDatabases.reduce((sum, db) => sum + (db.sizeInBytes ?? 0), 0))}</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )
+                                )}
+                            </div>
+                        )}
 
                         {/* Database Mapping */}
                         {isAnalyzing ? (

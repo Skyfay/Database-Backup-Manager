@@ -1,0 +1,81 @@
+import { NextRequest, NextResponse } from "next/server";
+import { registry } from "@/lib/core/registry";
+import { registerAdapters } from "@/lib/adapters";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
+import { checkPermission } from "@/lib/access-control";
+import { PERMISSIONS } from "@/lib/permissions";
+import { DatabaseInfo } from "@/lib/core/interfaces";
+import prisma from "@/lib/prisma";
+import { decryptConfig } from "@/lib/crypto";
+
+// Ensure adapters are registered
+registerAdapters();
+
+/**
+ * POST /api/adapters/database-stats
+ *
+ * Returns databases with size and table count information for a given source.
+ * Accepts either raw config (adapterId + config) or a saved source ID (sourceId).
+ */
+export async function POST(req: NextRequest) {
+    const session = await auth.api.getSession({
+        headers: await headers()
+    });
+
+    if (!session) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    await checkPermission(PERMISSIONS.SOURCES.READ);
+
+    try {
+        const body = await req.json();
+        const { adapterId, config, sourceId } = body;
+
+        let resolvedAdapterId = adapterId;
+        let resolvedConfig = config;
+
+        // If sourceId is provided, look up the adapter config from DB
+        if (sourceId && !config) {
+            const source = await prisma.adapterConfig.findUnique({
+                where: { id: sourceId }
+            });
+
+            if (!source) {
+                return NextResponse.json({ success: false, message: "Source not found" }, { status: 404 });
+            }
+
+            resolvedAdapterId = source.adapterId;
+            resolvedConfig = decryptConfig(JSON.parse(source.config));
+        }
+
+        if (!resolvedAdapterId || !resolvedConfig) {
+            return NextResponse.json({ success: false, message: "Missing adapterId/config or sourceId" }, { status: 400 });
+        }
+
+        const adapter = registry.get(resolvedAdapterId);
+
+        if (!adapter) {
+            return NextResponse.json({ success: false, message: "Adapter not found" }, { status: 404 });
+        }
+
+        // Prefer getDatabasesWithStats, fall back to getDatabases
+        let databases: DatabaseInfo[];
+
+        if (adapter.getDatabasesWithStats) {
+            databases = await adapter.getDatabasesWithStats(resolvedConfig);
+        } else if (adapter.getDatabases) {
+            const names = await adapter.getDatabases(resolvedConfig);
+            databases = names.map(name => ({ name }));
+        } else {
+            return NextResponse.json({ success: false, message: "This adapter does not support listing databases." });
+        }
+
+        return NextResponse.json({ success: true, databases });
+
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : "Unknown error";
+        return NextResponse.json({ success: false, message }, { status: 500 });
+    }
+}

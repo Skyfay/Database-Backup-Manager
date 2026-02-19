@@ -77,3 +77,53 @@ export async function getDatabases(config: MongoDBConfig): Promise<string[]> {
         }
     }
 }
+
+import { DatabaseInfo } from "@/lib/core/interfaces";
+
+export async function getDatabasesWithStats(config: MongoDBConfig): Promise<DatabaseInfo[]> {
+    let client: MongoClient | null = null;
+
+    try {
+        const uri = buildConnectionUri(config);
+        client = new MongoClient(uri, {
+            connectTimeoutMS: 10000,
+            serverSelectionTimeoutMS: 10000,
+        });
+
+        await client.connect();
+
+        const adminDb = client.db("admin");
+        const result = await adminDb.command({ listDatabases: 1 });
+
+        const sysDbs = ["admin", "config", "local"];
+        const databases: DatabaseInfo[] = [];
+
+        for (const db of result.databases) {
+            if (sysDbs.includes(db.name)) continue;
+
+            let tableCount: number | undefined;
+            try {
+                const dbRef = client.db(db.name);
+                const collections = await dbRef.listCollections().toArray();
+                tableCount = collections.length;
+            } catch {
+                // Collection count is best-effort
+            }
+
+            databases.push({
+                name: db.name,
+                sizeInBytes: db.sizeOnDisk ?? undefined,
+                tableCount,
+            });
+        }
+
+        return databases;
+    } catch (error: unknown) {
+        const err = error as { message?: string };
+        throw new Error("Failed to list databases with stats: " + (err.message || "Unknown error"));
+    } finally {
+        if (client) {
+            await client.close().catch(() => {});
+        }
+    }
+}

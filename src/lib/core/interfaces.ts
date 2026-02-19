@@ -49,6 +49,18 @@ export interface BackupMetadata {
     [key: string]: unknown;
 }
 
+/**
+ * Extended database information with optional size and table count.
+ * Returned by getDatabasesWithStats() for displaying DB details in the UI.
+ */
+export interface DatabaseInfo {
+    name: string;
+    /** Total size in bytes (data + index). Undefined if not available. */
+    sizeInBytes?: number;
+    /** Number of tables/collections in the database. Undefined if not available. */
+    tableCount?: number;
+}
+
 export interface BaseAdapter {
     id: string; // Unique identifier (e.g., 'mysql', 's3')
     name: string; // Display name
@@ -62,6 +74,12 @@ export interface BaseAdapter {
      * Optional method to list available databases (for Source adapters)
      */
     getDatabases?: (config: AdapterConfig) => Promise<string[]>;
+
+    /**
+     * Optional method to list databases with size and table count information.
+     * Falls back to getDatabases() if not implemented.
+     */
+    getDatabasesWithStats?: (config: AdapterConfig) => Promise<DatabaseInfo[]>;
 }
 
 export type BackupResult = {

@@ -136,6 +136,46 @@ export async function getDatabases(config: MSSQLConfig): Promise<string[]> {
     }
 }
 
+import { DatabaseInfo } from "@/lib/core/interfaces";
+
+/**
+ * Get user databases with size and table count information
+ */
+export async function getDatabasesWithStats(config: MSSQLConfig): Promise<DatabaseInfo[]> {
+    let pool: sql.ConnectionPool | null = null;
+
+    try {
+        const connConfig = buildConnectionConfig(config);
+        pool = await sql.connect(connConfig);
+
+        const result = await pool.request().query(`
+            SELECT
+                d.name,
+                SUM(mf.size) * 8 * 1024 AS size_bytes,
+                (SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES t WHERE t.TABLE_CATALOG = d.name) AS table_count
+            FROM sys.databases d
+            LEFT JOIN sys.master_files mf ON d.database_id = mf.database_id
+            WHERE d.database_id > 4
+              AND d.state = 0
+            GROUP BY d.name
+            ORDER BY d.name
+        `);
+
+        return result.recordset.map((row: any) => ({
+            name: row.name,
+            sizeInBytes: row.size_bytes ?? 0,
+            tableCount: row.table_count ?? 0,
+        }));
+    } catch (error: unknown) {
+        log.error("Failed to get databases with stats", {}, wrapError(error));
+        return [];
+    } finally {
+        if (pool) {
+            await pool.close();
+        }
+    }
+}
+
 /**
  * Execute a SQL query and return raw results
  * Used internally by dump/restore operations

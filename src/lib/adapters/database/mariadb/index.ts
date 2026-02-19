@@ -3,7 +3,7 @@ import { MariaDBSchema } from "@/lib/adapters/definitions";
 // Temporary re-use of MySQL logic until Dialect-Switch is implemented in Phase 2
 import { dump } from "../mysql/dump";
 import { restore, prepareRestore } from "../mysql/restore";
-import { test, getDatabases } from "../mysql/connection";
+import { test, getDatabases, getDatabasesWithStats } from "../mysql/connection";
 
 export const MariaDBAdapter: DatabaseAdapter = {
     id: "mariadb",
@@ -14,5 +14,6 @@ export const MariaDBAdapter: DatabaseAdapter = {
     restore,
     prepareRestore,
     test,
-    getDatabases
+    getDatabases,
+    getDatabasesWithStats
 };

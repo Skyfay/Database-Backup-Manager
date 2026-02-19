@@ -84,3 +84,47 @@ export async function getDatabases(config: MySQLConfig): Promise<string[]> {
     const sysDbs = ['information_schema', 'mysql', 'performance_schema', 'sys'];
     return stdout.split('\n').map(s => s.trim()).filter(s => s && !sysDbs.includes(s));
 }
+
+import { DatabaseInfo } from "@/lib/core/interfaces";
+
+export async function getDatabasesWithStats(config: MySQLConfig): Promise<DatabaseInfo[]> {
+    const args = ['-h', config.host, '-P', String(config.port), '-u', config.user, '--protocol=tcp'];
+    if (config.disableSsl) {
+        args.push('--skip-ssl');
+    }
+
+    const env = { ...process.env };
+    if (config.password) {
+        env.MYSQL_PWD = config.password;
+    }
+
+    // Query database sizes and table counts from information_schema
+    const query = `
+        SELECT
+            s.schema_name AS db_name,
+            COALESCE(SUM(t.data_length + t.index_length), 0) AS size_bytes,
+            COUNT(t.table_name) AS table_count
+        FROM information_schema.schemata s
+        LEFT JOIN information_schema.tables t ON s.schema_name = t.table_schema
+        WHERE s.schema_name NOT IN ('information_schema', 'mysql', 'performance_schema', 'sys')
+        GROUP BY s.schema_name
+        ORDER BY s.schema_name;
+    `.trim();
+
+    args.push('-e', query, '--skip-column-names', '--batch');
+
+    const { stdout } = await execFileAsync(getMysqlCommand(), args, { env });
+
+    return stdout
+        .split('\n')
+        .map(line => line.trim())
+        .filter(line => line)
+        .map(line => {
+            const [name, sizeStr, tableStr] = line.split('\t');
+            return {
+                name,
+                sizeInBytes: parseInt(sizeStr, 10) || 0,
+                tableCount: parseInt(tableStr, 10) || 0,
+            };
+        });
+}
