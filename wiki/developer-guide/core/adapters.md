@@ -22,6 +22,12 @@ src/lib/adapters/
 Handles database dump and restore operations.
 
 ```typescript
+interface DatabaseInfo {
+  name: string;
+  sizeInBytes?: number;  // Total size in bytes
+  tableCount?: number;   // Number of tables/collections
+}
+
 interface DatabaseAdapter {
   id: string;                    // Unique identifier
   type: "database";
@@ -44,6 +50,7 @@ interface DatabaseAdapter {
 
   test(config: unknown): Promise<TestResult>;
   getDatabases?(config: unknown): Promise<string[]>;
+  getDatabasesWithStats?(config: unknown): Promise<DatabaseInfo[]>;
   prepareRestore?(config: unknown, databases: string[]): Promise<void>;
   analyzeDump?(sourcePath: string): Promise<string[]>;
 }

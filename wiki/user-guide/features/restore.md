@@ -38,6 +38,24 @@ DBackup can restore backups directly to database servers. The restore process:
 | **Target Source** | Database connection to restore to |
 | **Target Database** | Specific database name (optional) |
 
+### Existing Databases on Target
+
+After selecting a target source, DBackup automatically queries the server and displays all existing user databases in a collapsible overview:
+
+| Column | Description |
+| :--- | :--- |
+| **Database** | Name of the existing database |
+| **Size** | Total size (data + indexes) |
+| **Tables** | Number of tables or collections |
+
+**Conflict Detection**: If a database from the backup has the same target name as an existing database on the server, the row is highlighted in red with a ⚠️ warning icon — indicating that database will be overwritten during restore.
+
+A summary footer shows the total number of databases and their combined size.
+
+::: tip
+This overview helps you verify the current state of the target server before restoring. Use it to spot naming conflicts and check available capacity.
+:::
+
 ### Database Mapping
 
 Restore to different database names:

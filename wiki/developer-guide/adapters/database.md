@@ -50,6 +50,12 @@ With compression and encryption enabled:
 ## Interface
 
 ```typescript
+interface DatabaseInfo {
+  name: string;
+  sizeInBytes?: number;  // Total size in bytes (data + index)
+  tableCount?: number;   // Number of tables/collections
+}
+
 interface DatabaseAdapter {
   id: string;
   type: "database";
@@ -74,8 +80,11 @@ interface DatabaseAdapter {
   // Connection test
   test(config: unknown): Promise<TestResult>;
 
-  // Optional: List databases
+  // Optional: List database names
   getDatabases?(config: unknown): Promise<string[]>;
+
+  // Optional: List databases with size and table count
+  getDatabasesWithStats?(config: unknown): Promise<DatabaseInfo[]>;
 
   // Optional: Pre-flight check for restore
   prepareRestore?(config: unknown, databases: string[]): Promise<void>;
@@ -84,6 +93,49 @@ interface DatabaseAdapter {
   analyzeDump?(sourcePath: string): Promise<string[]>;
 }
 ```
+
+## Database Stats (`getDatabasesWithStats`)
+
+Each database adapter can optionally return size and table count information. This is used in the Restore dialog to show existing databases on the target server.
+
+### Implementation per Adapter
+
+| Adapter | Size Source | Table Count Source |
+| :--- | :--- | :--- |
+| **MySQL/MariaDB** | `information_schema.tables` (`data_length + index_length`) | `COUNT(table_name)` from `information_schema.tables` |
+| **PostgreSQL** | `pg_database_size(datname)` | `COUNT(*)` from `information_schema.tables` (excl. system schemas) |
+| **MongoDB** | Native `sizeOnDisk` from `listDatabases` command | `listCollections().length` per database |
+| **MSSQL** | `sys.master_files` (`SUM(size) * 8 * 1024`) | `COUNT(*)` from `INFORMATION_SCHEMA.TABLES` |
+| **SQLite** | Not supported | Not supported |
+| **Redis** | Not supported | Not supported |
+
+### API Endpoint
+
+`POST /api/adapters/database-stats`
+
+Accepts either a saved source ID or raw adapter config:
+
+```json
+// By source ID (loads config from database)
+{ "sourceId": "clxyz..." }
+
+// By raw config
+{ "adapterId": "mysql", "config": { "host": "localhost", ... } }
+```
+
+Returns:
+
+```json
+{
+  "success": true,
+  "databases": [
+    { "name": "myapp", "sizeInBytes": 52428800, "tableCount": 24 },
+    { "name": "analytics", "sizeInBytes": 1073741824, "tableCount": 8 }
+  ]
+}
+```
+
+If `getDatabasesWithStats()` is not implemented, falls back to `getDatabases()` and returns names only (without size/table count).
 
 ## MySQL Adapter
 

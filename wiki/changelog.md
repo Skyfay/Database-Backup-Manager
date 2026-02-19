@@ -48,7 +48,22 @@ This release introduces a visual adapter picker for creating new sources, destin
 - **Encrypt Toggle**: Encryption setting (`encrypt`) now exposed in the UI Configuration tab — enable for Azure SQL or production environments
 - **Trust Server Certificate**: Self-signed certificate toggle (`trustServerCertificate`) now accessible in the UI — resolves "Certificate error" when connecting to development/internal SQL Servers
 
-#### 🔢 Port Placeholders
+#### � Database Stats in Restore Dialog
+- **Existing Databases Overview**: After selecting a target source in the Restore dialog, a collapsible section "Existing Databases on Target" appears showing all user databases on that server
+- **Size & Table Count**: Each database displays its total size (data + index) and number of tables/collections
+- **Conflict Detection**: Databases that would be overwritten by the restore are highlighted in red with a ⚠️ warning tooltip
+- **Total Summary**: Footer row shows total database count and combined size across all databases
+- **Async Loading**: Stats are fetched in the background with skeleton loading states — non-blocking for the restore workflow
+
+#### 🔌 New `getDatabasesWithStats()` Adapter Method
+- **New Interface**: `DatabaseInfo` type with `name`, `sizeInBytes?`, and `tableCount?` fields added to `BaseAdapter`
+- **MySQL/MariaDB**: Queries `information_schema.schemata` + `information_schema.tables` for size (data_length + index_length) and table count
+- **PostgreSQL**: Uses `pg_database_size()` function + `information_schema.tables` count
+- **MongoDB**: Now leverages the native `sizeOnDisk` from `listDatabases` command (previously discarded) + `listCollections()` for collection count
+- **MSSQL**: Queries `sys.master_files` for file sizes + `INFORMATION_SCHEMA.TABLES` for table count
+- **Graceful Fallback**: If `getDatabasesWithStats()` is not implemented, falls back to `getDatabases()` (names only)
+
+#### �🔢 Port Placeholders
 - **MSSQL**: Default port `1433` shown as placeholder
 - **Redis**: Default port `6379` shown as placeholder
 - **MariaDB**: Default port `3306` shown as placeholder
@@ -82,6 +97,15 @@ This release introduces a visual adapter picker for creating new sources, destin
 - Updated `src/components/adapter/form-sections.tsx` — Added third "File Transfer" tab for MSSQL with conditional SSH/local field rendering. Fixed conditional visibility for SQLite SSH fields
 - Updated `src/components/adapter/schema-field.tsx` — Added readable labels for all new MSSQL/SSH fields (`trustServerCertificate`, `fileTransferMode`, `sshHost`, etc.)
 - Updated `src/components/adapter/form-constants.ts` — Added port placeholders (MSSQL 1433, Redis 6379, MariaDB 3306), backup path defaults, and SSH field placeholders
+- New `DatabaseInfo` interface in `src/lib/core/interfaces.ts` — `{ name: string; sizeInBytes?: number; tableCount?: number }`
+- New optional `getDatabasesWithStats()` method on `BaseAdapter` interface in `src/lib/core/interfaces.ts`
+- Updated `src/lib/adapters/database/mysql/connection.ts` — Added `getDatabasesWithStats()` using `information_schema` queries
+- Updated `src/lib/adapters/database/postgres/connection.ts` — Added `getDatabasesWithStats()` using `pg_database_size()`
+- Updated `src/lib/adapters/database/mongodb/connection.ts` — Added `getDatabasesWithStats()` leveraging native `sizeOnDisk` + `listCollections()`
+- Updated `src/lib/adapters/database/mssql/connection.ts` — Added `getDatabasesWithStats()` using `sys.master_files` + `INFORMATION_SCHEMA.TABLES`
+- Updated all database adapter index files (`mysql`, `postgres`, `mongodb`, `mssql`, `mariadb`) to register `getDatabasesWithStats`
+- New `src/app/api/adapters/database-stats/route.ts` — API endpoint accepting `sourceId` or `adapterId` + `config`, with RBAC check (`SOURCES.READ`)
+- Updated `src/components/dashboard/storage/restore-dialog.tsx` — Added collapsible target database overview with conflict detection, skeleton loading, and size summary
 
 ## v0.9.6-beta - Rsync, Google Drive, Dropbox & OneDrive Storage Destinations & New Notification System
 *Released: February 15, 2026*
