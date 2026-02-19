@@ -1,13 +1,12 @@
 
 "use client";
 
-import { createElement } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Edit, Trash2 } from "lucide-react";
 import { AdapterConfig } from "./types";
 import { AdapterDefinition } from "@/lib/adapters/definitions";
-import { getAdapterIcon } from "./utils";
+import { AdapterIcon } from "./adapter-icon";
 
 interface AdapterCardProps {
     config: AdapterConfig;
@@ -19,7 +18,7 @@ interface AdapterCardProps {
 
 export function AdapterCard({ config, definition, onDelete, onEdit, canManage }: AdapterCardProps) {
     const parsedConfig = JSON.parse(config.config);
-    const Icon = getAdapterIcon(definition?.id || config.adapterId);
+    const adapterId = definition?.id || config.adapterId;
 
     // Helper to format config values for display
     const getDisplayValue = (key: string, value: any) => {
@@ -50,7 +49,7 @@ export function AdapterCard({ config, definition, onDelete, onEdit, canManage }:
 
             <CardHeader className="flex flex-row items-center gap-4 pb-2">
                 <div className="flex h-10 w-10 items-center justify-center rounded-md bg-muted text-muted-foreground">
-                    {createElement(Icon, { className: "h-5 w-5" })}
+                    <AdapterIcon adapterId={adapterId} className="h-5 w-5" />
                 </div>
                 <div className="grid gap-1">
                     <CardTitle className="text-base font-semibold leading-none tracking-tight">

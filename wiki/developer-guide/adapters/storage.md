@@ -515,13 +515,21 @@ If your schema introduces field keys that are not in either `STORAGE_CONNECTION_
 
 #### 6. UI: Adapter icon (`src/components/adapter/utils.ts`)
 
-Add your adapter to the `getAdapterIcon()` function so it gets the correct Lucide icon:
+Add a bundled Iconify icon for your adapter. See the [Icon System](/developer-guide/core/icons) guide for full details.
+
+1. Import the icon data (prefer **SVG Logos**, fall back to **Simple Icons** or **Lucide**):
 
 ```typescript
-if (id.includes('webdav')) return Globe;
+import myBrandIcon from "@iconify-icons/logos/my-brand-icon";
 ```
 
-Available icons already imported: `Database`, `Folder`, `HardDrive`, `Network`, `MessageSquare`, `Mail`, `Disc`. Add a new import from `lucide-react` if needed.
+2. Add it to `ADAPTER_ICON_MAP`:
+
+```typescript
+"my-adapter": myBrandIcon,
+```
+
+3. If using Simple Icons (monochrome), also add a brand color to `ADAPTER_COLOR_MAP`.
 
 #### 7. UI: Details column (`src/components/adapter/adapter-manager.tsx`)
 
@@ -579,7 +587,7 @@ brew install your-package
 | 3 | `src/lib/adapters/storage/<name>.ts` | Full adapter implementation (6 methods) |
 | 4 | `src/lib/adapters/index.ts` | Import + `registry.register()` |
 | 5 | `src/components/adapter/form-constants.ts` | `STORAGE_CONNECTION_KEYS`, `STORAGE_CONFIG_KEYS`, `PLACEHOLDERS` |
-| 6 | `src/components/adapter/utils.ts` | `getAdapterIcon()` mapping |
+| 6 | `src/components/adapter/utils.ts` | `ADAPTER_ICON_MAP` + optional `ADAPTER_COLOR_MAP` ([Icon System](/developer-guide/core/icons)) |
 | 7 | `src/components/adapter/adapter-manager.tsx` | `getSummary()` case for details column |
 | 8 | `src/app/api/adapters/test-connection/route.ts` | Add ID to storage permission regex |
 | 9 | `src/app/api/adapters/access-check/route.ts` | Add ID to storage permission regex |

@@ -1,83 +1,92 @@
+/**
+ * Adapter icon mapping — bundled Iconify icon data.
+ *
+ * Icons are imported directly from tree-shakeable @iconify-icons/* packages
+ * so they work offline without API calls (important for self-hosted deployments).
+ *
+ * - @iconify-icons/logos         → SVG Logos (multi-colored brand icons)
+ * - @iconify-icons/simple-icons  → Simple Icons (monochrome, brand color applied)
+ * - @iconify-icons/lucide        → Lucide (generic stroke icons)
+ */
 
-import { Database, Folder, Mail, Disc, Network, Globe, Cloud, HardDrive, MessageSquare } from "lucide-react";
-import {
-    SiMysql,
-    SiMariadb,
-    SiPostgresql,
-    SiMongodb,
-    SiSqlite,
-    SiRedis,
-    SiCloudflare,
-    SiHetzner,
-    SiGoogledrive,
-    SiDropbox,
-    SiMinio,
-    SiDiscord,
-} from "@icons-pack/react-simple-icons";
-import type { ComponentType, SVGProps } from "react";
+import type { IconifyIcon } from "@iconify/react";
 
-type IconComponent = ComponentType<SVGProps<SVGSVGElement> & { size?: string | number }>;
+// — SVG Logos (primary, multi-colored) —
+import mysqlIcon from "@iconify-icons/logos/mysql-icon";
+import mariadbIcon from "@iconify-icons/logos/mariadb-icon";
+import postgresqlIcon from "@iconify-icons/logos/postgresql";
+import mongodbIcon from "@iconify-icons/logos/mongodb-icon";
+import sqliteIcon from "@iconify-icons/logos/sqlite";
+import redisIcon from "@iconify-icons/logos/redis";
+import awsS3Icon from "@iconify-icons/logos/aws-s3";
+import cloudflareIcon from "@iconify-icons/logos/cloudflare-icon";
+import googleDriveIcon from "@iconify-icons/logos/google-drive";
+import dropboxIcon from "@iconify-icons/logos/dropbox";
+import onedriveIcon from "@iconify-icons/logos/microsoft-onedrive";
+import discordIcon from "@iconify-icons/logos/discord-icon";
 
-// Map adapter IDs to their brand icons (Simple Icons) or Lucide fallbacks
-const ADAPTER_ICON_MAP: Record<string, IconComponent> = {
+// — Simple Icons (fallback for brands not in SVG Logos) —
+import mssqlIcon from "@iconify-icons/simple-icons/microsoftsqlserver";
+import minioIcon from "@iconify-icons/simple-icons/minio";
+import hetznerIcon from "@iconify-icons/simple-icons/hetzner";
+
+// — Lucide (generic UI icons) —
+import folderIcon from "@iconify-icons/lucide/folder";
+import networkIcon from "@iconify-icons/lucide/network";
+import globeIcon from "@iconify-icons/lucide/globe";
+import mailIcon from "@iconify-icons/lucide/mail";
+import discIcon from "@iconify-icons/lucide/disc";
+
+// Map adapter IDs to bundled IconifyIcon data objects
+const ADAPTER_ICON_MAP: Record<string, IconifyIcon> = {
     // Databases
-    "mysql": SiMysql,
-    "mariadb": SiMariadb,
-    "postgres": SiPostgresql,
-    "mongodb": SiMongodb,
-    "sqlite": SiSqlite,
-    "redis": SiRedis,
-    "mssql": Database,
+    "mysql": mysqlIcon,
+    "mariadb": mariadbIcon,
+    "postgres": postgresqlIcon,
+    "mongodb": mongodbIcon,
+    "sqlite": sqliteIcon,
+    "redis": redisIcon,
+    "mssql": mssqlIcon,
 
     // Storage — Local
-    "local-filesystem": Folder,
+    "local-filesystem": folderIcon,
 
     // Storage — S3
-    "s3-aws": Cloud,
-    "s3-generic": SiMinio,
-    "s3-r2": SiCloudflare,
-    "s3-hetzner": SiHetzner,
+    "s3-aws": awsS3Icon,
+    "s3-generic": minioIcon,
+    "s3-r2": cloudflareIcon,
+    "s3-hetzner": hetznerIcon,
 
     // Storage — Cloud Drives
-    "google-drive": SiGoogledrive,
-    "dropbox": SiDropbox,
-    "onedrive": Cloud,
+    "google-drive": googleDriveIcon,
+    "dropbox": dropboxIcon,
+    "onedrive": onedriveIcon,
 
     // Storage — Network
-    "sftp": Network,
-    "ftp": Network,
-    "webdav": Globe,
-    "smb": Network,
-    "rsync": Network,
+    "sftp": networkIcon,
+    "ftp": networkIcon,
+    "webdav": globeIcon,
+    "smb": networkIcon,
+    "rsync": networkIcon,
 
     // Notifications
-    "discord": SiDiscord,
-    "email": Mail,
+    "discord": discordIcon,
+    "email": mailIcon,
 };
 
-export function getAdapterIcon(adapterId: string): IconComponent {
-    return ADAPTER_ICON_MAP[adapterId] ?? Disc;
+/** Returns the bundled Iconify icon data for a given adapter ID */
+export function getAdapterIcon(adapterId: string): IconifyIcon {
+    return ADAPTER_ICON_MAP[adapterId] ?? discIcon;
 }
 
-// Brand color hex values for Simple Icons (used for colored rendering)
+// Brand colors for monochrome simple-icons entries only
+// (logos:* icons already have colors embedded in their SVGs)
 const ADAPTER_COLOR_MAP: Record<string, string> = {
-    "mysql": "#4479A1",
-    "mariadb": "#003545",
-    "postgres": "#4169E1",
-    "mongodb": "#47A248",
-    "sqlite": "#003B57",
-    "redis": "#DC382D",
-    "s3-r2": "#F38020",
-    "s3-hetzner": "#D50C2D",
-    "google-drive": "#4285F4",
-    "dropbox": "#0061FF",
-    "discord": "#5865F2",
+    "mssql": "#CC2927",
     "s3-generic": "#C72E49",
+    "s3-hetzner": "#D50C2D",
 };
 
 export function getAdapterColor(adapterId: string): string | undefined {
     return ADAPTER_COLOR_MAP[adapterId];
 }
-
-// Legacy fallback for external consumers that import by category
-export { Database, Folder, HardDrive, MessageSquare, Mail, Disc, Network, Globe, Cloud };
