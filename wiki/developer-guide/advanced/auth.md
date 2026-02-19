@@ -172,10 +172,22 @@ function ProfileButton() {
 }
 ```
 
+## API Key Authentication
+
+In addition to session-based authentication, DBackup supports stateless API key authentication for programmatic access (CI/CD, cron jobs, external tools).
+
+API keys use `Authorization: Bearer dbackup_xxx` headers and are validated via SHA-256 hash lookup. They have their own permission set and **never** inherit SuperAdmin privileges.
+
+All API routes support both authentication methods through the unified `getAuthContext()` function.
+
+→ See [API Keys & Webhooks](./api-keys.md) for the full architecture, key generation, validation flow, and webhook trigger system.
+
 ## Security Best Practices
 
 1. **Never trust client-side checks alone** — Always verify on server
-2. **Use `checkPermission()` in every Server Action** — Defense in depth
-3. **Log authentication events** — Use the Audit System
-4. **Implement rate limiting** — Prevent brute force attacks
-5. **Secure session cookies** — HttpOnly, Secure, SameSite
+2. **Use `getAuthContext()` + `checkPermissionWithContext()` in API routes** — Supports both session and API key auth
+3. **Use `checkPermission()` in Server Actions** — Session-only, defense in depth
+4. **Log authentication events** — Use the Audit System
+5. **Implement rate limiting** — Prevent brute force attacks
+6. **Secure session cookies** — HttpOnly, Secure, SameSite
+7. **API keys: hash-only storage** — Never persist raw keys

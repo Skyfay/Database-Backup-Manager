@@ -131,6 +131,12 @@ export const PERMISSIONS = {
   AUDIT: {
     READ: "audit:read",
   },
+
+  // API Keys
+  API_KEYS: {
+    READ: "api-keys:read",
+    WRITE: "api-keys:write",
+  },
 } as const;
 
 export type Permission = typeof PERMISSIONS[keyof typeof PERMISSIONS][keyof typeof PERMISSIONS[keyof typeof PERMISSIONS]];

@@ -207,6 +207,7 @@ export default defineConfig({
           collapsed: false,
           items: [
             { text: 'Authentication', link: '/developer-guide/advanced/auth' },
+            { text: 'API Keys & Webhooks', link: '/developer-guide/advanced/api-keys' },
             { text: 'SSO / OIDC', link: '/developer-guide/advanced/sso' },
             { text: 'Permission System (RBAC)', link: '/developer-guide/advanced/permissions' },
             { text: 'Audit Logging', link: '/developer-guide/advanced/audit' },
