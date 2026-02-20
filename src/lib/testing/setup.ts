@@ -1,4 +1,12 @@
 import { vi, beforeEach } from 'vitest';
+import '@testing-library/jest-dom/vitest';
+
+// Polyfill ResizeObserver for Radix UI components (Select, etc.)
+global.ResizeObserver = class ResizeObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+};
 
 // Hier können wir globale Mocks definieren
 // z.B. window.matchMedia für UI Komponenten
