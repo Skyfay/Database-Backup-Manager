@@ -40,6 +40,9 @@ export default async function SettingsPage() {
     const checkUpdatesSetting = await prisma.systemSetting.findUnique({ where: { key: "general.checkForUpdates" } });
     const checkForUpdates = checkUpdatesSetting ? checkUpdatesSetting.value === 'true' : true;
 
+    const quickSetupSetting = await prisma.systemSetting.findUnique({ where: { key: "general.showQuickSetup" } });
+    const showQuickSetup = quickSetupSetting?.value === 'true';
+
     // Load Config Backup Settings
     const configEnabled = await prisma.systemSetting.findUnique({ where: { key: "config.backup.enabled" } });
     const configSchedule = await prisma.systemSetting.findUnique({ where: { key: "config.backup.schedule" } });
@@ -94,6 +97,7 @@ export default async function SettingsPage() {
                         initialDisablePasskeyLogin={disablePasskeyLogin}
                         initialAuditLogRetentionDays={auditLogRetentionDays}
                         initialCheckForUpdates={checkForUpdates}
+                        initialShowQuickSetup={showQuickSetup}
                     />
                 </TabsContent>
                 <TabsContent value="notifications" className="space-y-4">

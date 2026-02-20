@@ -80,11 +80,41 @@ This release adds seven new notification adapters: Slack, Microsoft Teams, Gotif
 - **Email (SMTP)** — Dedicated page with SMTP configurations (Gmail, SendGrid, Mailgun, Amazon SES, Mailtrap), per-user notifications, and security settings
 - **Notifications Feature Page** — Restructured to link to individual channel pages instead of inline setup guides
 
+#### 🚀 Quick Setup Wizard
+- **Guided First-Run Experience** — New step-by-step setup wizard at `/dashboard/setup` guiding new users through creating their first backup — from database source to running the first job
+- **7 Steps** — Welcome → Database Source → Storage Destination → Vault Key (optional) → Notification (optional) → Backup Job → Complete
+- **Inline Adapter Forms** — Each step embeds the full adapter picker and configuration form directly in the wizard — no dialogs, no page navigation
+- **Connection Testing** — Database source and storage destination steps include "Test Connection" before saving to catch misconfigurations early
+- **Vault Key Creation** — Optional step to create an encryption profile for encrypted backups — skippable if not needed or no permission
+- **Notification Setup** — Optional step to configure a notification channel (Discord, Slack, Email, etc.) — skippable
+- **Job Configuration** — Pre-fills the job form with the source, destination, vault, and notifications created in previous steps. Includes cron schedule presets (Daily, Weekly, Hourly, Every 6 Hours) and compression toggle
+- **Run First Backup** — Complete step with a "Run First Backup Now" button that triggers the job immediately and redirects to the History page
+- **Conditional Sidebar Visibility** — Quick Setup appears in the sidebar only when no database sources exist in the system, automatically hiding once the first source is created
+- **Settings Override** — "Always Show Quick Setup" toggle in Settings → General to force-show the wizard in the sidebar even when sources already exist
+- **Permission-Aware** — Requires Sources, Destinations, and Jobs write permissions. Vault and Notification steps are shown based on their respective write permissions
+- **Back Navigation** — "← Change Type" button in adapter forms (wizard and standard dialogs) allows going back to the adapter picker without losing the dialog state
+
 ### 🐛 Bug Fixes
 - **Config Backup Scheduler Not Refreshing**: Enabling or disabling Automated Configuration Backup in Settings now takes effect immediately without requiring a server restart — `scheduler.refresh()` is called after saving the settings
 
 ### 🔧 Technical Changes
 - Updated `src/app/actions/config-backup-settings.ts` — Added `scheduler.refresh()` call after saving config backup settings to immediately apply enabled/disabled state to the cron scheduler
+- New `src/app/dashboard/setup/page.tsx` — Server Component entry point for the Quick Setup wizard with permission checks
+- New `src/components/dashboard/setup/setup-wizard.tsx` — Main wizard container with step navigation, sidebar progress indicator, and `WizardData` context tracking created resource IDs
+- New `src/components/dashboard/setup/steps/welcome-step.tsx` — Welcome overview with dynamic step list based on permissions
+- New `src/components/dashboard/setup/steps/source-step.tsx` — Database source creation with adapter picker, form, and connection test
+- New `src/components/dashboard/setup/steps/destination-step.tsx` — Storage destination creation with adapter picker, form, and connection test
+- New `src/components/dashboard/setup/steps/vault-step.tsx` — Optional encryption profile creation step
+- New `src/components/dashboard/setup/steps/notification-step.tsx` — Optional notification channel creation step
+- New `src/components/dashboard/setup/steps/job-step.tsx` — Backup job creation with cron presets, auto-filled references to previously created resources
+- New `src/components/dashboard/setup/steps/complete-step.tsx` — Summary and "Run First Backup Now" button
+- Updated `src/components/layout/sidebar.tsx` — Added Quick Setup entry with `Rocket` icon and `showQuickSetup` prop for conditional visibility
+- Updated `src/app/dashboard/layout.tsx` — Queries source count and `general.showQuickSetup` SystemSetting to determine sidebar visibility
+- Updated `src/components/adapter/adapter-form.tsx` — Added `onBack` prop and "← Change Type" button in footer for returning to the adapter picker
+- Updated `src/components/adapter/adapter-manager.tsx` — Wired `onBack` callback to navigate from form back to picker dialog
+- Updated `src/app/actions/settings.ts` — Added `showQuickSetup` field to the settings schema and upsert logic (`general.showQuickSetup` SystemSetting key)
+- Updated `src/app/dashboard/settings/page.tsx` — Loads `general.showQuickSetup` setting and passes to `SystemSettingsForm`
+- Updated `src/components/settings/system-settings-form.tsx` — New "Quick Setup Wizard" card with "Always Show Quick Setup" switch in the General tab
 
 ### 🔄 Changes
 - Updated README and documentation to list all 7 notification channels as supported

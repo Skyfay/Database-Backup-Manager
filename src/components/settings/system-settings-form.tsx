@@ -15,7 +15,7 @@ import {
 import { toast } from "sonner"
 import { updateSystemSettings } from "@/app/actions/settings"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Shield, Cpu } from "lucide-react"
+import { Shield, Cpu, Rocket } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 
@@ -24,6 +24,7 @@ const formSchema = z.object({
     disablePasskeyLogin: z.boolean().default(false),
     auditLogRetentionDays: z.coerce.number().min(1).max(365).default(90),
     checkForUpdates: z.boolean().default(true),
+    showQuickSetup: z.boolean().default(false),
 })
 
 interface SystemSettingsFormProps {
@@ -31,9 +32,10 @@ interface SystemSettingsFormProps {
     initialDisablePasskeyLogin?: boolean;
     initialAuditLogRetentionDays?: number;
     initialCheckForUpdates?: boolean;
+    initialShowQuickSetup?: boolean;
 }
 
-export function SystemSettingsForm({ initialMaxConcurrentJobs, initialDisablePasskeyLogin, initialAuditLogRetentionDays = 90, initialCheckForUpdates = true }: SystemSettingsFormProps) {
+export function SystemSettingsForm({ initialMaxConcurrentJobs, initialDisablePasskeyLogin, initialAuditLogRetentionDays = 90, initialCheckForUpdates = true, initialShowQuickSetup = false }: SystemSettingsFormProps) {
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema) as any,
         defaultValues: {
@@ -41,6 +43,7 @@ export function SystemSettingsForm({ initialMaxConcurrentJobs, initialDisablePas
             disablePasskeyLogin: initialDisablePasskeyLogin === true,
             auditLogRetentionDays: initialAuditLogRetentionDays,
             checkForUpdates: initialCheckForUpdates === true,
+            showQuickSetup: initialShowQuickSetup === true,
         },
     })
 
@@ -158,6 +161,41 @@ export function SystemSettingsForm({ initialMaxConcurrentJobs, initialDisablePas
                                         <Switch
                                             checked={field.value}
                                             onCheckedChange={(val) => handleAutoSave("checkForUpdates", val)}
+                                        />
+                                    </FormControl>
+                                </FormItem>
+                            )}
+                        />
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader>
+                        <div className="flex items-center gap-2">
+                            <Rocket className="h-5 w-5 text-muted-foreground" />
+                            <CardTitle>Quick Setup Wizard</CardTitle>
+                        </div>
+                        <CardDescription>
+                            Control visibility of the Quick Setup wizard in the sidebar.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <FormField
+                            control={form.control}
+                            name="showQuickSetup"
+                            render={({ field }) => (
+                                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                                    <div className="space-y-0.5">
+                                        <FormLabel className="text-base">Always Show Quick Setup</FormLabel>
+                                        <FormDescription>
+                                            The Quick Setup wizard is automatically shown when no database sources exist.
+                                            Enable this to always show it in the sidebar.
+                                        </FormDescription>
+                                    </div>
+                                    <FormControl>
+                                        <Switch
+                                            checked={field.value}
+                                            onCheckedChange={(val) => handleAutoSave("showQuickSetup", val)}
                                         />
                                     </FormControl>
                                 </FormItem>

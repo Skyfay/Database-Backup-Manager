@@ -31,7 +31,7 @@ import { PERMISSIONS } from "@/lib/permissions"
 
 const sidebarItems = [
     { icon: LayoutDashboard, label: "Overview", href: "/dashboard" },
-    { icon: Rocket, label: "Quick Setup", href: "/dashboard/setup", permission: [PERMISSIONS.SOURCES.WRITE, PERMISSIONS.DESTINATIONS.WRITE, PERMISSIONS.JOBS.WRITE] },
+    { icon: Rocket, label: "Quick Setup", href: "/dashboard/setup", permission: [PERMISSIONS.SOURCES.WRITE, PERMISSIONS.DESTINATIONS.WRITE, PERMISSIONS.JOBS.WRITE], quickSetupOnly: true },
     { icon: Database, label: "Sources", href: "/dashboard/sources", permission: PERMISSIONS.SOURCES.READ },
     { icon: HardDrive, label: "Destinations", href: "/dashboard/destinations", permission: PERMISSIONS.DESTINATIONS.READ },
     { icon: Bell, label: "Notifications", href: "/dashboard/notifications", permission: PERMISSIONS.NOTIFICATIONS.READ },
@@ -50,9 +50,10 @@ interface SidebarProps {
     updateAvailable?: boolean;
     currentVersion?: string;
     latestVersion?: string;
+    showQuickSetup?: boolean;
 }
 
-export function Sidebar({ permissions = [], isSuperAdmin = false, updateAvailable = false, currentVersion, latestVersion }: SidebarProps) {
+export function Sidebar({ permissions = [], isSuperAdmin = false, updateAvailable = false, currentVersion, latestVersion, showQuickSetup = false }: SidebarProps) {
     const pathname = usePathname()
     const { data: session, isPending } = useSession()
     const router = useRouter()
@@ -93,6 +94,9 @@ export function Sidebar({ permissions = [], isSuperAdmin = false, updateAvailabl
             </div>
             <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
                 {sidebarItems.map((item) => {
+                    // Hide Quick Setup unless showQuickSetup is true
+                    if ('quickSetupOnly' in item && item.quickSetupOnly && !showQuickSetup) return null;
+
                     // Check if item requires specific permission
                     if (item.permission) {
                         const requiredPerms = Array.isArray(item.permission) ? item.permission : [item.permission];

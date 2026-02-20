@@ -7,6 +7,7 @@ import { getUserPermissions, getCurrentUserWithGroup } from "@/lib/access-contro
 import { updateService } from "@/services/update-service"
 import { logger } from "@/lib/logger"
 import { wrapError } from "@/lib/errors"
+import prisma from "@/lib/prisma"
 
 const log = logger.child({ component: "dashboard-layout" });
 
@@ -37,6 +38,14 @@ export default async function DashboardLayout({
     // Next.js patches fetch, so subsequent requests are fast.
     const updateInfo = await updateService.checkForUpdates();
 
+    // Determine whether Quick Setup should be shown in the sidebar
+    const [sourceCount, quickSetupSetting] = await Promise.all([
+        prisma.adapterConfig.count({ where: { type: "database" } }),
+        prisma.systemSetting.findUnique({ where: { key: "general.showQuickSetup" } }),
+    ]);
+    const forceShowQuickSetup = quickSetupSetting?.value === "true";
+    const showQuickSetup = forceShowQuickSetup || sourceCount === 0;
+
     return (
         <div className="flex min-h-screen">
             <Sidebar
@@ -45,6 +54,7 @@ export default async function DashboardLayout({
                 updateAvailable={updateInfo.updateAvailable}
                 currentVersion={updateInfo.currentVersion}
                 latestVersion={updateInfo.latestVersion}
+                showQuickSetup={showQuickSetup}
             />
             <div className="flex-1 flex flex-col min-h-screen">
                 <Header />

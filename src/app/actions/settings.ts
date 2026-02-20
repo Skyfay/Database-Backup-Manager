@@ -15,6 +15,7 @@ const settingsSchema = z.object({
     disablePasskeyLogin: z.boolean().optional(),
     auditLogRetentionDays: z.coerce.number().min(1).max(365).optional(),
     checkForUpdates: z.boolean().optional(),
+    showQuickSetup: z.boolean().optional(),
 });
 
 export async function updateSystemSettings(data: z.infer<typeof settingsSchema>) {
@@ -56,6 +57,15 @@ export async function updateSystemSettings(data: z.infer<typeof settingsSchema>)
                where: { key: "general.checkForUpdates" },
                update: { value: String(result.data.checkForUpdates) },
                create: { key: "general.checkForUpdates", value: String(result.data.checkForUpdates) },
+           });
+       }
+
+        // Show Quick Setup Setting (default false)
+        if (result.data.showQuickSetup !== undefined) {
+            await prisma.systemSetting.upsert({
+               where: { key: "general.showQuickSetup" },
+               update: { value: String(result.data.showQuickSetup) },
+               create: { key: "general.showQuickSetup", value: String(result.data.showQuickSetup) },
            });
        }
 
