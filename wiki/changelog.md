@@ -71,7 +71,7 @@ This release introduces API key authentication for programmatic access, webhook 
 - **Deep Link from Sources**: New inspect button (🔍) on each database source in the Sources table — navigates directly to the Database Explorer with the source pre-selected
 - **URL Parameter Support**: Accepts `?sourceId=...` query parameter for direct linking — auto-selects and loads the specified source on page load
 
-#### �🔢 Port Placeholders
+#### 🔢 Port Placeholders
 - **MSSQL**: Default port `1433` shown as placeholder
 - **Redis**: Default port `6379` shown as placeholder
 - **MariaDB**: Default port `3306` shown as placeholder
@@ -82,7 +82,7 @@ This release introduces API key authentication for programmatic access, webhook 
 - **Graceful Warnings**: Invalid optional variables (e.g., malformed `BETTER_AUTH_URL`) are logged as warnings without blocking startup
 - **Default Values**: Optional variables like `LOG_LEVEL`, `TZ`, `PORT`, and `DATABASE_URL` have documented defaults applied automatically
 
-#### � API Key Management
+#### 🔑 API Key Management
 - **Programmatic Access**: Create API keys with fine-grained permissions to authenticate against the REST API using `Authorization: Bearer dbackup_xxx` headers
 - **Scoped Permissions**: Each API key has individually assigned permissions — SuperAdmin privileges are never inherited, only explicitly granted permissions apply
 - **Key Lifecycle**: Full CRUD management — create, view, toggle (enable/disable), rotate (regenerate), and delete API keys
@@ -119,7 +119,7 @@ This release introduces API key authentication for programmatic access, webhook 
 - **Dual Usage**: Used in both the Group edit form (`onPermissionChange` mode) and the API Key create dialog (`react-hook-form` mode)
 - **Grouped Layout**: Permissions are displayed in categorized groups (Jobs, Storage, Sources, etc.) with "Select All" / "Deselect All" per group
 
-#### �🐳 Docker Health Check
+#### 🐳 Docker Health Check
 - **Built-in HEALTHCHECK**: Dockerfile now includes a `HEALTHCHECK` directive that polls `/api/health` every 30 seconds
 - **Health Endpoint**: New `GET /api/health` API route (unauthenticated) returning app status, database connectivity, uptime, memory usage, and response time
 - **Docker Status Integration**: `docker ps` now shows `healthy` / `unhealthy` status, and orchestrators (Docker Compose, Kubernetes) can use it for automated restarts
