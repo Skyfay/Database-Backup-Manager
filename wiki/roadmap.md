@@ -90,15 +90,15 @@ Allow users to edit their own profile regardless of strict RBAC permissions.
 
 
 
-## 🔔 Planned Notification Adapters
+## 🔔 ~~Planned Notification Adapters~~ ✅ *Implemented in v0.9.8*
 
-### Slack
+### ~~Slack~~ ✅
 Webhook notifications for Slack workspaces.
 
-### Microsoft Teams
+### ~~Microsoft Teams~~ ✅
 Teams channel notifications for enterprise users.
 
-### Generic Webhook
+### ~~Generic Webhook~~ ✅
 - Send JSON payloads to any HTTP endpoint
 - Customizable payload templates
 - Supports PagerDuty, Ntfy, Gotify, Uptime Kuma, and more

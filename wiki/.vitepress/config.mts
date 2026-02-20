@@ -130,6 +130,18 @@ export default defineConfig({
           ]
         },
         {
+          text: 'Notification Channels',
+          collapsed: false,
+          items: [
+            { text: 'Overview', link: '/user-guide/notifications/' },
+            { text: 'Discord', link: '/user-guide/notifications/discord' },
+            { text: 'Slack', link: '/user-guide/notifications/slack' },
+            { text: 'Microsoft Teams', link: '/user-guide/notifications/teams' },
+            { text: 'Generic Webhook', link: '/user-guide/notifications/generic-webhook' },
+            { text: 'Email (SMTP)', link: '/user-guide/notifications/email' }
+          ]
+        },
+        {
           text: 'Backup Jobs',
           collapsed: false,
           items: [

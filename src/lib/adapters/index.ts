@@ -17,6 +17,9 @@ import { GoogleDriveAdapter } from "./storage/google-drive";
 import { DropboxAdapter } from "./storage/dropbox";
 import { OneDriveAdapter } from "./storage/onedrive";
 import { DiscordAdapter } from "./notification/discord";
+import { SlackAdapter } from "./notification/slack";
+import { TeamsAdapter } from "./notification/teams";
+import { GenericWebhookAdapter } from "./notification/generic-webhook";
 import { EmailAdapter } from "./notification/email";
 import { logger } from "@/lib/logger";
 
@@ -51,6 +54,9 @@ export function registerAdapters() {
     registry.register(OneDriveAdapter);
 
     registry.register(DiscordAdapter);
+    registry.register(SlackAdapter);
+    registry.register(TeamsAdapter);
+    registry.register(GenericWebhookAdapter);
     registry.register(EmailAdapter);
 
     initialized = true;

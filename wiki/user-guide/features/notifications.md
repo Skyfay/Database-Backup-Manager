@@ -11,125 +11,19 @@ DBackup has **two notification layers** that work together:
 | **Per-Job Notifications** | Job → Notifications tab | Alerts for an individual backup job (success/failure) |
 | **System Notifications** | Settings → Notifications | Global alerts for system-wide events (login, restore, errors, etc.) |
 
-Both layers share the same notification channels (Email, Discord) that you configure under **Notifications** in the main menu.
+Both layers share the same notification channels that you configure under **Notifications** in the main menu.
 
 ## Supported Channels
 
 | Channel | Best For |
 | :--- | :--- |
-| [Discord](#discord) | Team notifications via webhooks |
-| [Email](#email-smtp) | Formal alerts, per-user notifications |
+| [Discord](/user-guide/notifications/discord) | Team notifications via webhooks |
+| [Slack](/user-guide/notifications/slack) | Workplace communication, DevOps teams |
+| [Microsoft Teams](/user-guide/notifications/teams) | Enterprise environments, Microsoft 365 |
+| [Generic Webhook](/user-guide/notifications/generic-webhook) | Custom integrations (Ntfy, Gotify, PagerDuty, etc.) |
+| [Email (SMTP)](/user-guide/notifications/email) | Formal alerts, per-user notifications |
 
----
-
-## Channel Setup
-
-### Discord
-
-Send notifications to Discord channels via webhooks.
-
-#### Setup
-
-1. In Discord, go to **Server Settings** → **Integrations**
-2. Click **Create Webhook**
-3. Choose channel and copy webhook URL
-4. In DBackup, go to **Notifications**
-5. Click **Add Notification**
-6. Select **Discord Webhook**
-7. Paste the webhook URL
-8. Configure name and avatar (optional)
-9. Click **Test** to verify
-10. Save
-
-#### Configuration
-
-| Field | Description | Default |
-| :--- | :--- | :--- |
-| **Webhook URL** | Discord webhook URL | Required |
-| **Username** | Bot display name | "Backup Manager" |
-| **Avatar URL** | Bot avatar image | Default |
-
-#### Message Format
-
-Discord notifications are displayed as rich embeds with colored sidebars:
-- **Green** – Success (backup complete, restore finished, user created)
-- **Red** – Failure (backup failed, restore failed, system error)
-- **Blue** – Informational (user login)
-- **Purple** – System events (config backup)
-
-Each embed includes structured fields (job name, duration, size, etc.).
-
-### Email (SMTP)
-
-Send HTML notifications via any SMTP server.
-
-#### Setup
-
-1. Go to **Notifications**
-2. Click **Add Notification**
-3. Select **Email (SMTP)**
-4. Configure SMTP settings
-5. Click **Test** to send test email
-6. Save
-
-#### Configuration
-
-| Field | Description | Default |
-| :--- | :--- | :--- |
-| **SMTP Host** | Mail server hostname | Required |
-| **Port** | SMTP port | `587` |
-| **Security** | None, SSL, or STARTTLS | `starttls` |
-| **User** | SMTP username | Optional |
-| **Password** | SMTP password | Optional |
-| **From** | Sender email address | Required |
-| **To** | Recipient email address | Required |
-
-#### Common SMTP Configurations
-
-::: details Gmail
-```
-Host: smtp.gmail.com
-Port: 587
-Security: STARTTLS
-User: your-email@gmail.com
-Password: App Password (not regular password)
-```
-Generate an App Password at: Google Account → Security → 2-Step Verification → App passwords
-:::
-
-::: details SendGrid
-```
-Host: smtp.sendgrid.net
-Port: 587
-Security: STARTTLS
-User: apikey
-Password: Your SendGrid API key
-```
-:::
-
-::: details Mailgun
-```
-Host: smtp.mailgun.org
-Port: 587
-Security: STARTTLS
-User: postmaster@your-domain.mailgun.org
-Password: SMTP password from Mailgun
-```
-:::
-
-::: details Self-Hosted (Postfix)
-```
-Host: mail.example.com
-Port: 587
-Security: STARTTLS
-User: (if required)
-Password: (if required)
-```
-:::
-
-#### Email Format
-
-HTML emails with a colored status bar, structured detail fields, and timestamp. The template is consistent across all notification types.
+For detailed setup instructions for each channel, see the [Notification Channels](/user-guide/notifications/) section.
 
 ---
 
@@ -247,56 +141,13 @@ Each event has a **Test** button that sends a sample notification through all se
 
 ## Troubleshooting
 
-### Discord: Invalid Webhook
+For channel-specific troubleshooting, see the individual channel pages:
 
-```
-Invalid Webhook Token
-```
-
-**Solutions**:
-1. Check webhook URL is complete
-2. Verify webhook wasn't deleted
-3. Regenerate webhook in Discord
-
-### Discord: Rate Limited
-
-```
-You are being rate limited
-```
-
-**Cause**: Too many messages sent quickly
-
-**Solution**: Reduce notification frequency
-
-### Email: Connection Refused
-
-```
-Connection refused to smtp server
-```
-
-**Solutions**:
-1. Verify host and port
-2. Check firewall allows outbound
-3. Verify SMTP server is running
-
-### Email: Authentication Failed
-
-```
-Invalid login credentials
-```
-
-**Solutions**:
-1. Check username/password
-2. Use app password for Gmail
-3. Verify security setting matches server
-
-### Email: Not Received
-
-**Check**:
-1. Spam folder
-2. Correct "To" address
-3. SMTP logs for delivery status
-4. Domain reputation
+- [Discord Troubleshooting](/user-guide/notifications/discord#troubleshooting)
+- [Slack Troubleshooting](/user-guide/notifications/slack#troubleshooting)
+- [Microsoft Teams Troubleshooting](/user-guide/notifications/teams#troubleshooting)
+- [Generic Webhook Troubleshooting](/user-guide/notifications/generic-webhook#troubleshooting)
+- [Email Troubleshooting](/user-guide/notifications/email#troubleshooting)
 
 ---
 
@@ -304,22 +155,25 @@ Invalid login credentials
 
 ### Notification Strategy
 
-1. **Always notify on failure** – Critical for reliability
-2. **Consider noise** – Too many success notifications get ignored
+1. **Always notify on failure** — Critical for reliability
+2. **Consider noise** — Too many success notifications get ignored
 3. **Use channels appropriately**:
-   - Discord: Team visibility
+   - Discord / Slack: Team visibility
+   - Teams: Enterprise communication
+   - Generic Webhook: Automation and monitoring tools
    - Email: Audit trail, per-user alerts
-4. **Test regularly** – Ensure notifications work
+4. **Test regularly** — Ensure notifications work
 
 ### Security
 
-1. **Don't log credentials** – Use environment variables
-2. **Secure webhooks** – Don't share URLs publicly
-3. **Review recipients** – Only needed parties
-4. **SMTP over TLS** – Encrypt email transport
+1. **Don't log credentials** — Use environment variables
+2. **Secure webhooks** — Don't share webhook URLs publicly
+3. **Review recipients** — Only needed parties
+4. **SMTP over TLS** — Encrypt email transport
 
 ## Next Steps
 
-- [Creating Jobs](/user-guide/jobs/) – Assign per-job notifications
-- [Scheduling](/user-guide/jobs/scheduling) – Automate backups
-- [Storage Explorer](/user-guide/features/storage-explorer) – Review backups
+- [Notification Channels](/user-guide/notifications/) — Detailed setup per channel
+- [Creating Jobs](/user-guide/jobs/) — Assign per-job notifications
+- [Scheduling](/user-guide/jobs/scheduling) — Automate backups
+- [Storage Explorer](/user-guide/features/storage-explorer) — Review backups

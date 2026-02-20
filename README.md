@@ -56,7 +56,7 @@ Whether you're running a single MySQL database or managing multiple PostgreSQL, 
 - **Dashboard & Analytics** — Interactive charts, real-time progress tracking, storage usage history, and auto-refreshing activity feeds
 - **One-Click Restore** — Browse backups in the Storage Explorer, verify checksums, and restore to any target database
 - **SSO & RBAC** — OpenID Connect support (Authentik, PocketID, Generic), user groups, and granular permission system
-- **Notifications** — Discord webhooks and multi-recipient email alerts for backups, restores, logins, and system events
+- **Notifications** — Discord, Slack, Microsoft Teams, Generic Webhook, and Email (SMTP) alerts for backups, restores, logins, and system events
 - **Configurable Rate Limits** — Per-category rate limiting (Auth, API Read, API Write) adjustable from the Settings UI
 - **Docker Ready** — Multi-arch images (AMD64/ARM64), built-in health checks, and graceful shutdown with backup-safe SIGTERM handling
 
@@ -125,7 +125,10 @@ Open [http://localhost:3000](http://localhost:3000) and create your admin accoun
 
 | Channel | Details |
 | :--- | :--- |
-| Discord | Webhook-based notifications with custom username & avatar |
+| Discord | Webhook-based notifications with rich embeds |
+| Slack | Incoming webhook notifications with Block Kit formatting |
+| Microsoft Teams | Adaptive Card notifications via Power Automate webhooks |
+| Generic Webhook | JSON payloads to any HTTP endpoint (Ntfy, Gotify, PagerDuty, etc.) |
 | Email (SMTP) | SMTP with SSL/STARTTLS support, multiple recipients |
 
 ## 📚 Documentation

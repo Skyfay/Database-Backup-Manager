@@ -16,9 +16,10 @@ export const NOTIFICATION_CONNECTION_KEYS = [
     'webhookUrl',
     'host', 'port', 'secure',
     'user', 'password',
+    'method', 'contentType', 'authHeader',
 ];
 
-export const NOTIFICATION_CONFIG_KEYS = ['from', 'to', 'username', 'avatarUrl'];
+export const NOTIFICATION_CONFIG_KEYS = ['from', 'to', 'username', 'avatarUrl', 'channel', 'iconEmoji', 'customHeaders', 'payloadTemplate'];
 
 export const PLACEHOLDERS: Record<string, string> = {
     "email.from": "\"Backup Service\" <backup@example.com>",
@@ -122,4 +123,19 @@ export const PLACEHOLDERS: Record<string, string> = {
     "onedrive.clientId": "00000000-0000-0000-0000-000000000000",
     "onedrive.clientSecret": "your-client-secret",
     "onedrive.folderPath": "/backups (optional)",
+
+    // Slack
+    "slack.webhookUrl": "https://hooks.slack.com/services/T.../B.../...",
+    "slack.channel": "#backups",
+    "slack.username": "DBackup",
+    "slack.iconEmoji": ":shield:",
+
+    // Teams
+    "teams.webhookUrl": "https://xxx.webhook.office.com/webhookb2/...",
+
+    // Generic Webhook
+    "generic-webhook.webhookUrl": "https://example.com/webhook",
+    "generic-webhook.authHeader": "Bearer your-token-here",
+    "generic-webhook.customHeaders": "X-Custom: value",
+    "generic-webhook.payloadTemplate": "{\"text\": \"{{title}}: {{message}}\"}",
 };

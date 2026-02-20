@@ -216,6 +216,26 @@ export const DiscordSchema = z.object({
     avatarUrl: z.string().url().optional(),
 });
 
+export const SlackSchema = z.object({
+    webhookUrl: z.string().url("Valid Webhook URL is required"),
+    channel: z.string().optional().describe("Override channel (optional)"),
+    username: z.string().optional().default("DBackup").describe("Bot display name"),
+    iconEmoji: z.string().optional().describe("Bot icon emoji (e.g. :shield:)"),
+});
+
+export const TeamsSchema = z.object({
+    webhookUrl: z.string().url("Valid Webhook URL is required"),
+});
+
+export const GenericWebhookSchema = z.object({
+    webhookUrl: z.string().url("Valid URL is required"),
+    method: z.enum(["POST", "PUT", "PATCH"]).default("POST").describe("HTTP method"),
+    contentType: z.string().default("application/json").describe("Content-Type header"),
+    authHeader: z.string().optional().describe("Authorization header value (e.g. Bearer token)"),
+    customHeaders: z.string().optional().describe("Additional headers (one per line, Key: Value)"),
+    payloadTemplate: z.string().optional().describe("Custom JSON payload template with {{variable}} placeholders"),
+});
+
 export const EmailSchema = z.object({
     host: z.string().min(1, "SMTP Host is required"),
     port: z.coerce.number().default(587),
@@ -260,12 +280,15 @@ export type OneDriveConfig = z.infer<typeof OneDriveSchema>;
 
 // Notification Adapters
 export type DiscordConfig = z.infer<typeof DiscordSchema>;
+export type SlackConfig = z.infer<typeof SlackSchema>;
+export type TeamsConfig = z.infer<typeof TeamsSchema>;
+export type GenericWebhookConfig = z.infer<typeof GenericWebhookSchema>;
 export type EmailConfig = z.infer<typeof EmailSchema>;
 
 // Union types for adapter categories
 export type DatabaseConfig = MySQLConfig | MariaDBConfig | PostgresConfig | MongoDBConfig | SQLiteConfig | MSSQLConfig | RedisConfig;
 export type StorageConfig = LocalStorageConfig | S3GenericConfig | S3AWSConfig | S3R2Config | S3HetznerConfig | SFTPConfig | SMBConfig | WebDAVConfig | FTPConfig | RsyncConfig | GoogleDriveConfig | DropboxConfig | OneDriveConfig;
-export type NotificationConfig = DiscordConfig | EmailConfig;
+export type NotificationConfig = DiscordConfig | SlackConfig | TeamsConfig | GenericWebhookConfig | EmailConfig;
 
 // Generic type alias for dialect base class (accepts any database config)
 export type AnyDatabaseConfig = DatabaseConfig;
@@ -294,6 +317,9 @@ export const ADAPTER_DEFINITIONS: AdapterDefinition[] = [
     { id: "rsync", type: "storage", group: "Network", name: "Rsync (SSH)", configSchema: RsyncSchema },
 
     { id: "discord", type: "notification", name: "Discord Webhook", configSchema: DiscordSchema },
+    { id: "slack", type: "notification", name: "Slack Webhook", configSchema: SlackSchema },
+    { id: "teams", type: "notification", name: "Microsoft Teams", configSchema: TeamsSchema },
+    { id: "generic-webhook", type: "notification", name: "Generic Webhook", configSchema: GenericWebhookSchema },
     { id: "email", type: "notification", name: "Email (SMTP)", configSchema: EmailSchema },
 ];
 

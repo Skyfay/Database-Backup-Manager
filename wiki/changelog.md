@@ -2,6 +2,54 @@
 
 All notable changes to DBackup are documented here.
 
+## v0.9.8-beta - Slack, Microsoft Teams & Generic Webhook Notifications
+*Release: In Progress*
+
+This release adds three new notification adapters: Slack, Microsoft Teams, and Generic Webhook. All five channels (Discord, Slack, Teams, Generic Webhook, Email) are now available for both per-job and system-wide notifications. The notification documentation has been restructured into dedicated per-channel pages with detailed setup guides.
+
+### ✨ New Features
+
+#### 🔔 Slack Notification Adapter
+- **Incoming Webhooks** — Send notifications to Slack channels via [Incoming Webhooks](https://docs.slack.dev/messaging/sending-messages-using-incoming-webhooks/)
+- **Block Kit Formatting** — Rich messages with Header, Section, Fields, and Context blocks
+- **Color-Coded Attachments** — Status bar colors (green for success, red for failure)
+- **Channel Override** — Optionally route messages to a different channel than the webhook default
+- **Custom Bot Identity** — Configurable display name and icon emoji (e.g., `:shield:`)
+
+#### 🔔 Microsoft Teams Notification Adapter
+- **Power Automate Workflows** — Send notifications via [Teams Incoming Webhooks](https://learn.microsoft.com/en-us/microsoftteams/platform/webhooks-and-connectors/how-to/add-incoming-webhook) (Adaptive Cards)
+- **Adaptive Cards v1.4** — Structured content with title, message body, and FactSet key-value pairs
+- **Color Mapping** — Hex colors mapped to Adaptive Card named colors (Good, Attention, Warning, Accent)
+- **Enterprise Ready** — Native Microsoft 365 integration for corporate environments
+
+#### 🔔 Generic Webhook Notification Adapter
+- **Universal HTTP** — Send JSON payloads to any HTTP endpoint via POST, PUT, or PATCH
+- **Custom Payload Templates** — Define your own JSON structure with `{{variable}}` placeholders (title, message, success, color, timestamp, eventType, fields)
+- **Authentication** — Authorization header support for Bearer tokens, API keys, and Basic auth
+- **Custom Headers** — Add arbitrary headers in `Key: Value` format (one per line)
+- **Flexible Content-Type** — Configurable Content-Type header (default: `application/json`)
+- **Compatible Services** — Works with Ntfy, Gotify, PagerDuty, Uptime Kuma, and any custom HTTP receiver
+
+#### 🎨 Brand Icons for New Adapters
+- **Slack** — Multi-colored SVG Logos icon (`logos/slack-icon`)
+- **Microsoft Teams** — Multi-colored SVG Logos icon (`logos/microsoft-teams`)
+- **Generic Webhook** — Material Design Icons webhook icon (`mdi/webhook`)
+
+### 📚 Documentation
+
+#### Notification Channel Pages
+- **New Sidebar Section** — "Notification Channels" with dedicated Overview page and per-adapter pages
+- **Discord** — Dedicated page with setup guide, message format, and troubleshooting
+- **Slack** — Dedicated page with Slack App setup, Block Kit format, channel override, and emoji icons
+- **Microsoft Teams** — Dedicated page with Power Automate Workflows setup, Adaptive Card format, and color mapping
+- **Generic Webhook** — Dedicated page with payload format, template examples (Ntfy, Gotify, PagerDuty), and authentication guide
+- **Email (SMTP)** — Dedicated page with SMTP configurations (Gmail, SendGrid, Mailgun, Amazon SES, Mailtrap), per-user notifications, and security settings
+- **Notifications Feature Page** — Restructured to link to individual channel pages instead of inline setup guides
+
+### 🔄 Changes
+- Updated README and documentation to list all 5 notification channels as supported
+- Notification adapter picker now shows Slack, Microsoft Teams, and Generic Webhook alongside Discord and Email
+
 ## v0.9.7-beta - API Keys, Webhook Triggers, Adapter Picker & Brand Icons
 *Released: February 20, 2026*
 
