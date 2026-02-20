@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { LayoutDashboard, Database, HardDrive, FolderOpen, CalendarClock, History, Settings, Bell, ChevronsUpDown, LogOut, Moon, Sun, Monitor, Users, User, Lock, BookOpen, SearchCode } from "lucide-react"
+import { LayoutDashboard, Database, HardDrive, FolderOpen, CalendarClock, History, Settings, Bell, ChevronsUpDown, LogOut, Moon, Sun, Monitor, Users, User, Lock, BookOpen, SearchCode, Rocket } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { useSession, signOut } from "@/lib/auth-client"
@@ -31,6 +31,7 @@ import { PERMISSIONS } from "@/lib/permissions"
 
 const sidebarItems = [
     { icon: LayoutDashboard, label: "Overview", href: "/dashboard" },
+    { icon: Rocket, label: "Quick Setup", href: "/dashboard/setup", permission: [PERMISSIONS.SOURCES.WRITE, PERMISSIONS.DESTINATIONS.WRITE, PERMISSIONS.JOBS.WRITE] },
     { icon: Database, label: "Sources", href: "/dashboard/sources", permission: PERMISSIONS.SOURCES.READ },
     { icon: HardDrive, label: "Destinations", href: "/dashboard/destinations", permission: PERMISSIONS.DESTINATIONS.READ },
     { icon: Bell, label: "Notifications", href: "/dashboard/notifications", permission: PERMISSIONS.NOTIFICATIONS.READ },
