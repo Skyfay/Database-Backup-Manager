@@ -132,7 +132,7 @@ Open [http://localhost:3000](http://localhost:3000) and create your admin accoun
 
 Full documentation is available at **[dbackup.app](https://dbackup.app)**:
 
-- [User Guide](https://dbackup.app/user-guide/) — Installation, configuration, usage
+- [User Guide](https://dbackup.app/user-guide/getting-started) — Installation, configuration, usage
 - [Developer Guide](https://dbackup.app/developer-guide/) — Architecture, adapters, contributing
 - [Changelog](https://dbackup.app/changelog) — Release history
 - [Roadmap](https://dbackup.app/roadmap) — Planned features
