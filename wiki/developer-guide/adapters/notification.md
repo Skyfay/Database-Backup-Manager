@@ -545,16 +545,17 @@ Every new notification adapter touches these files:
 | 3 | `src/lib/adapters/index.ts` | Import and register the adapter |
 | 4 | `src/components/adapter/utils.ts` | Import icon and add to `ADAPTER_ICON_MAP` |
 | 5 | `src/components/adapter/form-constants.ts` | Add keys to `NOTIFICATION_CONNECTION_KEYS`, `NOTIFICATION_CONFIG_KEYS`, and `PLACEHOLDERS` |
-| 6 | `src/components/adapter/schema-field.tsx` | Update `isTextArea` check (only if adapter has multi-line fields) |
-| 7 | `wiki/user-guide/notifications/<id>.md` | Create wiki page with setup guide |
-| 8 | `wiki/.vitepress/config.mts` | Add sidebar entry under "Notification Channels" |
-| 9 | `wiki/user-guide/notifications/index.md` | Add to supported channels table and "Choosing a Channel" section |
-| 10 | `wiki/user-guide/features/notifications.md` | Add to channels table and best practices |
-| 11 | `README.md` | Update notification feature line and channels table |
-| 12 | `wiki/index.md` | Update feature card and supported notifications table |
-| 13 | `wiki/changelog.md` | Add changelog entry |
-| 14 | `wiki/developer-guide/adapters/notification.md` | Update "Available Adapters" table (this file) |
-| 15 | `tests/unit/adapters/notification/<id>.test.ts` | Write unit tests for `test()` and `send()` |
+| 6 | `src/components/adapter/adapter-manager.tsx` | Add `case` to `getSummary()` for the Details column |
+| 7 | `src/components/adapter/schema-field.tsx` | Update `isTextArea` check (only if adapter has multi-line fields) |
+| 8 | `wiki/user-guide/notifications/<id>.md` | Create wiki page with setup guide |
+| 9 | `wiki/.vitepress/config.mts` | Add sidebar entry under "Notification Channels" |
+| 10 | `wiki/user-guide/notifications/index.md` | Add to supported channels table and "Choosing a Channel" section |
+| 11 | `wiki/user-guide/features/notifications.md` | Add to channels table and best practices |
+| 12 | `README.md` | Update notification feature line and channels table |
+| 13 | `wiki/index.md` | Update feature card and supported notifications table |
+| 14 | `wiki/changelog.md` | Add changelog entry |
+| 15 | `wiki/developer-guide/adapters/notification.md` | Update "Available Adapters" table (this file) |
+| 16 | `tests/unit/adapters/notification/<id>.test.ts` | Write unit tests for `test()` and `send()` |
 
 ### Step 1 — Define the Zod Schema
 
@@ -750,7 +751,35 @@ If your adapter has **multi-line text fields** (like `payloadTemplate` or `custo
 const isTextArea = /* existing checks */ || fieldKey === "myMultiLineField";
 ```
 
-### Step 6 — Documentation
+### Step 6 — Add Details Summary
+
+In `src/components/adapter/adapter-manager.tsx`, add a `case` to the `getSummary()` switch so the **Details** column in the adapter table shows meaningful info instead of `-`:
+
+```typescript
+const getSummary = (adapterId: string, configJson: string) => {
+  const config = JSON.parse(configJson);
+  switch (adapterId) {
+    // ... existing cases
+    case 'my-service':
+      return <span className="text-muted-foreground">{config.serverUrl}</span>;
+    // ...
+  }
+};
+```
+
+**What to show:** Pick the most identifying field(s) from the config — URL, topic, phone number, channel name, etc. Keep it short and scannable. Examples from existing adapters:
+
+| Adapter | Details output |
+| :--- | :--- |
+| Discord / Slack / Teams | `Webhook` |
+| Generic Webhook | `POST → https://...` |
+| Gotify | `https://gotify.example.com` |
+| ntfy | `https://ntfy.sh/my-topic` |
+| Telegram | `Chat 123456789` |
+| Twilio SMS | `+1234... → +5678...` |
+| Email | `from@... → to@...` |
+
+### Step 7 — Documentation
 
 Create the following documentation:
 
@@ -763,7 +792,7 @@ Follow the structure of existing adapter pages:
 - Message Format (example output)
 - Troubleshooting (common error messages)
 
-### Step 7 — Unit Tests
+### Step 8 — Unit Tests
 
 Create `tests/unit/adapters/notification/<id>.test.ts` following the existing pattern:
 
@@ -891,6 +920,7 @@ src/lib/adapters/
     └── <id>.ts             ← NEW: Adapter implementation
 
 src/components/adapter/
+├── adapter-manager.tsx     ← getSummary() case for Details column
 ├── utils.ts                ← Icon import + ADAPTER_ICON_MAP (+ ADAPTER_COLOR_MAP)
 ├── form-constants.ts       ← CONNECTION_KEYS + CONFIG_KEYS + PLACEHOLDERS
 └── schema-field.tsx        ← isTextArea check (only if multi-line fields)
