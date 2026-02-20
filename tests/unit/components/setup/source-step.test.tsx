@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { SourceStep } from "@/components/dashboard/setup/steps/source-step";
@@ -89,14 +89,14 @@ const defaultWizardData: WizardData = {
 
 describe("SourceStep", () => {
     const user = userEvent.setup();
-    let onUpdate: ReturnType<typeof vi.fn>;
-    let onNext: ReturnType<typeof vi.fn>;
-    let onPrev: ReturnType<typeof vi.fn>;
+    let onUpdate: Mock<(data: Partial<WizardData>) => void>;
+    let onNext: Mock<() => void>;
+    let onPrev: Mock<() => void>;
 
     beforeEach(() => {
-        onUpdate = vi.fn();
-        onNext = vi.fn();
-        onPrev = vi.fn();
+        onUpdate = vi.fn<(data: Partial<WizardData>) => void>();
+        onNext = vi.fn<() => void>();
+        onPrev = vi.fn<() => void>();
         mockFetch.mockReset();
         mockTestConnection.mockReset();
     });

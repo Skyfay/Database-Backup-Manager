@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { WelcomeStep } from "@/components/dashboard/setup/steps/welcome-step";
@@ -28,10 +28,10 @@ const mockSteps = [
 
 describe("WelcomeStep", () => {
     const user = userEvent.setup();
-    let onNext: ReturnType<typeof vi.fn>;
+    let onNext: Mock<() => void>;
 
     beforeEach(() => {
-        onNext = vi.fn();
+        onNext = vi.fn<() => void>();
     });
 
     it("should render the welcome heading", () => {

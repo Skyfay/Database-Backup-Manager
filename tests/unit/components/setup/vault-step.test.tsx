@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { VaultStep } from "@/components/dashboard/setup/steps/vault-step";
@@ -46,16 +46,16 @@ const defaultWizardData: WizardData = {
 
 describe("VaultStep", () => {
     const user = userEvent.setup();
-    let onUpdate: ReturnType<typeof vi.fn>;
-    let onNext: ReturnType<typeof vi.fn>;
-    let onPrev: ReturnType<typeof vi.fn>;
-    let onSkip: ReturnType<typeof vi.fn>;
+    let onUpdate: Mock<(data: Partial<WizardData>) => void>;
+    let onNext: Mock<() => void>;
+    let onPrev: Mock<() => void>;
+    let onSkip: Mock<() => void>;
 
     beforeEach(() => {
-        onUpdate = vi.fn();
-        onNext = vi.fn();
-        onPrev = vi.fn();
-        onSkip = vi.fn();
+        onUpdate = vi.fn<(data: Partial<WizardData>) => void>();
+        onNext = vi.fn<() => void>();
+        onPrev = vi.fn<() => void>();
+        onSkip = vi.fn<() => void>();
         mockCreateEncryptionProfile.mockReset();
     });
 
@@ -168,7 +168,6 @@ describe("VaultStep", () => {
     });
 
     it("should show toast error when name is empty and trimmed", async () => {
-        const { toast } = await import("sonner");
         renderVaultStep();
 
         // Type only spaces
