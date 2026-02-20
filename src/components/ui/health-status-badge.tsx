@@ -62,7 +62,7 @@ export function HealthStatusBadge({ status, adapterId, lastChecked, className, i
                     <span className="text-sm font-medium hidden sm:inline-block text-muted-foreground">{statusLabel}</span>
                 </div>
             </PopoverTrigger>
-            <PopoverContent className="w-[340px] p-0" align="start">
+            <PopoverContent className="w-85 p-0" align="start">
                 <div className="p-4 border-b">
                     <div className="flex items-center gap-2 mb-1">
                         <span className={cn("h-3 w-3 rounded-full", statusColor)} />

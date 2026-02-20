@@ -107,7 +107,7 @@ function LogPoint({ log }: { log: HealthLog }) {
                     <p className="font-semibold">{format(new Date(log.createdAt), "HH:mm:ss")}</p>
                     <p>Status: {log.status}</p>
                     <p>Latency: {log.latencyMs}ms</p>
-                    {log.error && <p className="text-red-400 max-w-[200px] break-words mt-1">{log.error}</p>}
+                    {log.error && <p className="text-red-400 max-w-50 wrap-break-word mt-1">{log.error}</p>}
                 </TooltipContent>
             </Tooltip>
         </TooltipProvider>
