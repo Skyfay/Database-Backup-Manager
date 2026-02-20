@@ -26,6 +26,12 @@ Browse your backups, download files, or restore databases directly from the UI.
 
 ![Storage Explorer](/storage-explorer.png)
 
+## Database Explorer
+
+View and manage your database sources with connection details and health status.
+
+![Database Explorer](/database-explorer.png)
+
 ## Execution History
 
 Detailed logs and history of all backup and restore operations.
