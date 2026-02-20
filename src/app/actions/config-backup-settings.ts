@@ -7,6 +7,7 @@ import { checkPermission } from "@/lib/access-control";
 import { PERMISSIONS } from "@/lib/permissions";
 import { logger } from "@/lib/logger";
 import { wrapError } from "@/lib/errors";
+import { scheduler } from "@/lib/scheduler";
 
 const log = logger.child({ action: "config-backup-settings" });
 
@@ -67,7 +68,8 @@ export async function updateConfigBackupSettings(data: z.infer<typeof configBack
             }),
         ]);
 
-        // TODO: In Phase 3, we will need to re-schedule the cron job here!
+        // Refresh scheduler so enabling/disabling takes effect immediately without a restart
+        await scheduler.refresh();
 
         revalidatePath("/dashboard/settings");
         return { success: true };

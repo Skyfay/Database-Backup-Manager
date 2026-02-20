@@ -80,6 +80,12 @@ This release adds seven new notification adapters: Slack, Microsoft Teams, Gotif
 - **Email (SMTP)** — Dedicated page with SMTP configurations (Gmail, SendGrid, Mailgun, Amazon SES, Mailtrap), per-user notifications, and security settings
 - **Notifications Feature Page** — Restructured to link to individual channel pages instead of inline setup guides
 
+### 🐛 Bug Fixes
+- **Config Backup Scheduler Not Refreshing**: Enabling or disabling Automated Configuration Backup in Settings now takes effect immediately without requiring a server restart — `scheduler.refresh()` is called after saving the settings
+
+### 🔧 Technical Changes
+- Updated `src/app/actions/config-backup-settings.ts` — Added `scheduler.refresh()` call after saving config backup settings to immediately apply enabled/disabled state to the cron scheduler
+
 ### 🔄 Changes
 - Updated README and documentation to list all 7 notification channels as supported
 - Notification adapter picker now shows Slack, Microsoft Teams, and Generic Webhook alongside Discord and Email
