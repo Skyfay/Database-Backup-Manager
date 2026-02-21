@@ -18,7 +18,7 @@ import postgresqlIcon from "@iconify-icons/logos/postgresql";
 import mongodbIcon from "@iconify-icons/logos/mongodb-icon";
 import sqliteIcon from "@iconify-icons/logos/sqlite";
 import redisIcon from "@iconify-icons/logos/redis";
-import awsS3Icon from "@iconify-icons/logos/aws-s3";
+import awsS3Icon from "@iconify-icons/logos/aws";
 import cloudflareIcon from "@iconify-icons/logos/cloudflare-icon";
 import googleDriveIcon from "@iconify-icons/logos/google-drive";
 import dropboxIcon from "@iconify-icons/logos/dropbox";
